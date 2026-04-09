@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5T OTA 설계 실습 툴</title>
+<style>
+:root {
+  --primary:#1e3a5f; --secondary:#2980b9; --accent:#27ae60;
+  --bg:#f0f3f7; --panel:#fff; --border:#d5dde8; --text:#2c3e50; --muted:#7f8c8d;
+  --nmos:#1a5fa8; --pmos:#7d3c98;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+
+/* HEADER */
+header{background:var(--primary);color:white;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;height:48px;}
+header h1{font-size:16px;font-weight:700;}
+.subtitle{font-size:10px;opacity:.75;}
+.hctrl{display:flex;align-items:center;gap:8px;}
+.badge{background:var(--secondary);color:white;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;}
+.btn{padding:5px 12px;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;}
+.btn-imp{background:#e67e22;color:white;} .btn-imp:hover{background:#d35400;}
+.btn-rst{background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.35);}
+.btn-rst:hover{background:rgba(255,255,255,.25);}
+.proc-badge{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:3px 8px;font-size:11px;color:rgba(255,255,255,.9);}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:255px 1fr 1fr;grid-template-rows:1fr minmax(300px,35vh);gap:10px;padding:10px;height:calc(100vh - 48px);}
+.panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.ph{background:var(--primary);color:white;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.4px;flex-shrink:0;}
+.pb{padding:10px;overflow-y:auto;flex:1;}
+
+/* SECTION TITLE */
+.st{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--secondary);padding-bottom:3px;margin:8px 0 6px;}
+.st:first-child{margin-top:0;}
+
+/* INPUTS */
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+.if{display:flex;flex-direction:column;gap:2px;}
+.if label{font-size:10px;color:var(--muted);font-weight:600;}
+.if .si-row{display:flex;align-items:center;gap:4px;}
+.if .si-row input[type="range"]{flex:1;min-width:0;max-width:80px;height:4px;cursor:pointer;accent-color:var(--secondary);}
+.if .si-row input[type="number"]{width:62px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:'Courier New',monospace;color:var(--text);text-align:right;flex-shrink:0;}
+.if .si-row input[type="number"]:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 2px rgba(41,128,185,.15);}
+.if input{padding:5px 7px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:'Courier New',monospace;color:var(--text);}
+.if input:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 2px rgba(41,128,185,.15);}
+
+/* TRANSISTOR W/L */
+.wl-group{background:#f8f9fb;border:1px solid var(--border);border-radius:5px;padding:5px 8px;margin-bottom:5px;}
+.wl-head{font-size:11px;margin-bottom:3px;}
+.cn{color:var(--nmos);font-weight:700;} .cp{color:var(--pmos);font-weight:700;}
+
+/* EQUATIONS */
+.eq{background:#f8f9fb;border-left:3px solid var(--secondary);padding:5px 9px;font-family:'Courier New',monospace;font-size:11px;color:var(--primary);margin:3px 0;border-radius:0 3px 3px 0;}
+
+/* RADIO */
+.rg{display:flex;gap:6px;}
+.rg label{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;}
+.rg label:has(input:checked){background:var(--secondary);color:white;border-color:var(--secondary);}
+
+/* METRICS */
+.mg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:4px;}
+.mc{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 7px;}
+.mc .ml{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;}
+.mc .mv{font-size:17px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;}
+.mc .mu{font-size:10px;color:var(--muted);}
+.mc .ms{font-size:10px;color:var(--muted);font-family:'Courier New',monospace;}
+
+/* OP TABLE */
+.op-tbl{width:100%;border-collapse:collapse;font-size:10.5px;}
+.op-tbl th{background:#eaf2fb;padding:3px 4px;text-align:center;border:1px solid var(--border);font-size:9.5px;color:var(--primary);}
+.op-tbl td{padding:2px 4px;border:1px solid var(--border);text-align:right;font-family:'Courier New',monospace;}
+.op-tbl td:first-child{text-align:center;font-weight:700;background:#f8f9fa;}
+.op-tbl tr.unsat{background:#fdecea;}
+.sb{display:inline-block;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:700;}
+.sb.ok{background:#d5f5e3;color:#1e8449;} .sb.fail{background:#fdecea;color:#c0392b;}
+
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.chart-wrap{display:flex;flex-direction:column;}
+.chart-title{font-size:10px;font-weight:700;color:#444;margin-bottom:3px;text-align:center;flex-shrink:0;}
+canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px;background:#fafbfd;flex:1;}
+
+/* SAT CHECK TABLE */
+.sat-tbl{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:4px;}
+.sat-tbl th{background:#eaf2fb;padding:3px 4px;text-align:center;border:1px solid var(--border);font-size:9px;color:var(--primary);}
+.sat-tbl td{padding:2px 4px;border:1px solid var(--border);text-align:center;font-family:'Courier New',monospace;font-size:10px;}
+.sat-tbl td:first-child{font-weight:700;background:#f8f9fa;}
+.sat-tbl tr.sat-ok td{background:rgba(39,174,96,.06);}
+.sat-tbl tr.sat-fail td{background:rgba(231,76,60,.08);}
+
+/* HINTS */
+.hint-box{font-size:11px;line-height:1.65;color:#444;}
+.hint-box div{margin-bottom:3px;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:#f1f1f1;}
+::-webkit-scrollbar-thumb{background:#bdc3c7;border-radius:3px;}
+#import-file{display:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚡ 5-Transistor OTA 설계 실습 툴</h1>
+    <div class="subtitle">Level 1 MOSFET 모델 &nbsp;|&nbsp; 아날로그 IC 회로설계 실습</div>
+  </div>
+  <div class="hctrl">
+    <div class="proc-badge" id="proc-badge">📋 Default (Level 1)</div>
+    <span class="badge" id="model-badge">MOSFET Level 1</span>
+    <button class="btn btn-imp" onclick="document.getElementById('import-file').click()">📂 공정 파일 불러오기</button>
+    <input type="file" id="import-file" accept=".json,.lib,.mod,.txt" onchange="importProcess(event)">
+    <button class="btn btn-rst" onclick="resetDefaults()">↺ 초기화</button>
+  </div>
+</header>
+
+<div class="grid">
+
+<!-- ============================  LEFT: 회로도  ============================ -->
+<div class="panel">
+  <div class="ph">🔌 회로 구성 — 5T OTA</div>
+  <div class="pb">
+    <div id="ota-svg"></div>
+
+    <div class="st">포화 영역 동작 확인</div>
+    <table class="sat-tbl">
+      <thead><tr><th>소자</th><th>VDS</th><th>Vov</th><th>여유</th><th>상태</th></tr></thead>
+      <tbody id="sat-body"></tbody>
+    </table>
+
+    <div class="st">핵심 설계 수식</div>
+    <div class="eq">ID = ½·μCox·(W/L)·(VGS−VTH)²·(1+λ·VDS)</div>
+    <div class="eq">gm = 2ID/Vov &nbsp;,&nbsp; ro = 1/(λ·ID)</div>
+    <div class="eq">Av = gm1·(ro2 ‖ ro4)</div>
+    <div class="eq">GBW = Gm/(2π·CL)</div>
+    <div class="eq">ISS = ID5(Vb, Vp) &nbsp;← M5 실제 I-V</div>
+  </div>
+</div>
+
+<!-- ============================  CENTER: 파라미터  ============================ -->
+<div class="panel">
+  <div class="ph">⚙️ 설계 파라미터 입력</div>
+  <div class="pb">
+    <div class="st">MOSFET 모델 선택</div>
+    <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+      <div class="rg">
+        <label><input type="radio" name="model" value="1" checked onchange="switchModel()"> Level 1</label>
+        <label><input type="radio" name="model" value="49" onchange="switchModel()"> BSIM3v3</label>
+      </div>
+      <select id="corner-sel" onchange="calc()" style="font-size:9px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;display:none;">
+        <option value="TT">TT (Typical)</option>
+        <option value="SS">SS (Slow)</option>
+        <option value="FF">FF (Fast)</option>
+        <option value="SF">SF (Slow N/Fast P)</option>
+        <option value="FS">FS (Fast N/Slow P)</option>
+      </select>
+      <span id="bsim-info" style="font-size:9px;color:#7f8c8d;display:none;">ETRI 0.5μm</span>
+    </div>
+    <div id="lv1-params">
+    <div class="st">공정 파라미터 (Level 1 MOSFET)</div>
+    <div class="ig">
+      <div class="if"><label>μₙCₒₓ [μA/V²]</label><div class="si-row"><input type="range" id="s_un_cox" min="50" max="800" step="10" value="166" oninput="syncSlider('un_cox',this.value)"><input type="number" id="un_cox" value="166" step="10" oninput="syncNum('s_un_cox',this.value);calc()"></div></div>
+      <div class="if"><label>μₚCₒₓ [μA/V²]</label><div class="si-row"><input type="range" id="s_up_cox" min="20" max="400" step="5" value="88" oninput="syncSlider('up_cox',this.value)"><input type="number" id="up_cox" value="88" step="10" oninput="syncNum('s_up_cox',this.value);calc()"></div></div>
+      <div class="if"><label>VTHₙ [V]</label><div class="si-row"><input type="range" id="s_vthn" min="0.1" max="1.5" step="0.01" value="0.685" oninput="syncSlider('vthn',this.value)"><input type="number" id="vthn" value="0.685" step="0.01" oninput="syncNum('s_vthn',this.value);calc()"></div></div>
+      <div class="if"><label>|VTHₚ| [V]</label><div class="si-row"><input type="range" id="s_vthp" min="0.1" max="1.5" step="0.01" value="0.956" oninput="syncSlider('vthp',this.value)"><input type="number" id="vthp" value="0.956" step="0.01" oninput="syncNum('s_vthp',this.value);calc()"></div></div>
+      <div class="if"><label>λₙ [V⁻¹]</label><div class="si-row"><input type="range" id="s_lam_n" min="0" max="0.5" step="0.01" value="0.1" oninput="syncSlider('lam_n',this.value)"><input type="number" id="lam_n" value="0.1" step="0.01" oninput="syncNum('s_lam_n',this.value);calc()"></div></div>
+      <div class="if"><label>λₚ [V⁻¹]</label><div class="si-row"><input type="range" id="s_lam_p" min="0" max="0.5" step="0.01" value="0.2" oninput="syncSlider('lam_p',this.value)"><input type="number" id="lam_p" value="0.2" step="0.01" oninput="syncNum('s_lam_p',this.value);calc()"></div></div>
+    </div>
+    </div>
+
+    <div class="st">전원 및 바이어스</div>
+    <div class="ig">
+      <div class="if"><label>VDD [V]</label><div class="si-row"><input type="range" id="s_vdd" min="1.0" max="5.0" step="0.1" value="5.0" oninput="syncSlider('vdd',this.value)"><input type="number" id="vdd" value="5.0" step="0.1" oninput="syncNum('s_vdd',this.value);calc()"></div></div>
+      <div class="if"><label>VSS [V]</label><div class="si-row"><input type="range" id="s_vss" min="-2.5" max="1.0" step="0.1" value="0" oninput="syncSlider('vss',this.value)"><input type="number" id="vss" value="0" step="0.1" oninput="syncNum('s_vss',this.value);calc()"></div></div>
+      <div class="if"><label>Vb (M5 gate) [V]</label><div class="si-row"><input type="range" id="s_vbias" min="0" max="3.3" step="0.01" value="0.75" oninput="syncSlider('vbias',this.value)"><input type="number" id="vbias" value="0.75" step="0.01" oninput="syncNum('s_vbias',this.value);calc()"></div></div>
+      <div class="if"><label>CL [pF]</label><div class="si-row"><input type="range" id="s_cl" min="0.1" max="20" step="0.1" value="1" oninput="syncSlider('cl',this.value)"><input type="number" id="cl" value="1" step="0.1" oninput="syncNum('s_cl',this.value);calc()"></div></div>
+    </div>
+
+    <div class="st" style="margin-bottom:5px">입력 차동쌍 타입</div>
+    <div class="rg" style="margin-bottom:8px">
+      <label><input type="radio" name="topo" value="nmos" checked onchange="applyTopoDefaults()"> NMOS 입력쌍</label>
+      <label><input type="radio" name="topo" value="pmos" onchange="applyTopoDefaults()"> PMOS 입력쌍</label>
+    </div>
+
+    <div class="st">트랜지스터 W/L 설정</div>
+    <div class="wl-group">
+      <div class="wl-head"><span class="cn" id="t-m1">NMOS</span> <strong>M1/M2</strong> <span style="color:#999;font-size:9px">(매칭)</span> &nbsp; W/L = <span id="wl1" style="font-family:'Courier New',monospace">20.0</span><span id="wl2" style="display:none"></span></div>
+      <div class="ig">
+        <div class="if"><label>W₁ [μm]</label><div class="si-row"><input type="range" id="s_w1" min="1" max="200" step="1" value="20" oninput="syncSlider('w1',this.value);syncM2()"><input type="number" id="w1" value="20" min="0.1" step="1" oninput="syncNum('s_w1',this.value);syncM2();calc()"></div></div>
+        <div class="if"><label>L₁ [μm]</label><div class="si-row"><input type="range" id="s_l1" min="0.1" max="10" step="0.1" value="1" oninput="syncSlider('l1',this.value);syncM2()"><input type="number" id="l1" value="1" min="0.1" step="0.1" oninput="syncNum('s_l1',this.value);syncM2();calc()"></div></div>
+      </div>
+      <input type="hidden" id="w2" value="20"><input type="hidden" id="l2" value="1">
+      <span id="t-m2" style="display:none">NMOS</span>
+    </div>
+    <div class="wl-group">
+      <div class="wl-head"><span class="cp" id="t-m3">PMOS</span> <strong>M3/M4</strong> <span style="color:#999;font-size:9px">(매칭)</span> &nbsp; W/L = <span id="wl3" style="font-family:'Courier New',monospace">10.0</span><span id="wl4" style="display:none"></span></div>
+      <div class="ig">
+        <div class="if"><label>W₃ [μm]</label><div class="si-row"><input type="range" id="s_w3" min="1" max="200" step="1" value="10" oninput="syncSlider('w3',this.value);syncM4()"><input type="number" id="w3" value="10" min="0.1" step="1" oninput="syncNum('s_w3',this.value);syncM4();calc()"></div></div>
+        <div class="if"><label>L₃ [μm]</label><div class="si-row"><input type="range" id="s_l3" min="0.1" max="10" step="0.1" value="1" oninput="syncSlider('l3',this.value);syncM4()"><input type="number" id="l3" value="1" min="0.1" step="0.1" oninput="syncNum('s_l3',this.value);syncM4();calc()"></div></div>
+      </div>
+      <input type="hidden" id="w4" value="10"><input type="hidden" id="l4" value="1">
+      <span id="t-m4" style="display:none">PMOS</span>
+    </div>
+    <div class="wl-group">
+      <div class="wl-head"><span id="t-m5" style="color:#2c3e50;font-weight:600">NMOS</span> <strong>M5</strong> (tail) &nbsp; W/L = <span id="wl5" style="font-family:'Courier New',monospace">40.0</span></div>
+      <div class="ig">
+        <div class="if"><label>W₅ [μm]</label><div class="si-row"><input type="range" id="s_w5" min="1" max="200" step="1" value="40" oninput="syncSlider('w5',this.value)"><input type="number" id="w5" value="40" min="0.1" step="1" oninput="syncNum('s_w5',this.value);calc()"></div></div>
+        <div class="if"><label>L₅ [μm]</label><div class="si-row"><input type="range" id="s_l5" min="0.1" max="10" step="0.1" value="1" oninput="syncSlider('l5',this.value)"><input type="number" id="l5" value="1" min="0.1" step="0.1" oninput="syncNum('s_l5',this.value);calc()"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================  RIGHT: 결과  ============================ -->
+<div class="panel">
+  <div class="ph">📊 시뮬레이션 결과 (실시간)</div>
+  <div class="pb">
+
+    <!-- 6 key metrics -->
+    <div class="st">성능 지표</div>
+    <div class="mg">
+      <div class="mc">
+        <div class="ml">전압 이득 |Av|</div>
+        <div class="mv" id="r-av">—</div>
+        <div class="mu">V/V</div>
+        <div class="ms" id="r-av-db">— dB</div>
+      </div>
+      <div class="mc">
+        <div class="ml">Gm (OTA)</div>
+        <div class="mv" id="r-gm">—</div>
+        <div class="mu">μA/V</div>
+      </div>
+      <div class="mc">
+        <div class="ml">GBW</div>
+        <div class="mv" id="r-gbw">—</div>
+        <div class="mu">MHz</div>
+      </div>
+      <div class="mc">
+        <div class="ml">Rout</div>
+        <div class="mv" id="r-rout">—</div>
+        <div class="mu">MΩ</div>
+      </div>
+      <div class="mc">
+        <div class="ml">슬루율 SR</div>
+        <div class="mv" id="r-sr">—</div>
+        <div class="mu">V/μs</div>
+      </div>
+      <div class="mc">
+        <div class="ml">소비전력</div>
+        <div class="mv" id="r-pwr">—</div>
+        <div class="mu">μW</div>
+      </div>
+      <div class="mc">
+        <div class="ml">ISS (M5)</div>
+        <div class="mv" id="r-iss">—</div>
+        <div class="mu">μA</div>
+      </div>
+    </div>
+
+    <!-- Operating point table -->
+    <div class="st">트랜지스터 동작점</div>
+    <table class="op-tbl">
+      <thead>
+        <tr><th>소자</th><th>ID[μA]</th><th>VGS[V]</th><th>Vov[V]</th><th>gm[μA/V]</th><th>ro[kΩ]</th><th>영역</th></tr>
+      </thead>
+      <tbody id="op-body"></tbody>
+    </table>
+
+    <!-- Hints -->
+    <div class="st">설계 힌트</div>
+    <div class="hint-box" id="hints"></div>
+
+  </div>
+</div>
+
+<!-- ============================  BOTTOM: 특성 곡선 (전체 폭)  ============================ -->
+<div class="panel" style="grid-column:1/-1">
+  <div class="ph">📈 특성 곡선</div>
+  <div class="pb" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 12px;overflow:hidden;flex:1;min-height:0;">
+    <div class="chart-wrap">
+      <div class="chart-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span>Vicm 스윕 — 노드 전압 (Vp, Vout)</span>
+        <button id="btn-ngspice" onclick="runNgspice()" style="font-size:9px;padding:2px 7px;background:#2c3e50;color:#fff;border:none;border-radius:3px;cursor:pointer;">▶ ngspice</button>
+        <span id="ngspice-status" style="font-size:9px;color:#7f8c8d;"></span>
+      </div>
+      <canvas id="cv-icmr"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title" style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+        <span>차동 입력 전달 특성</span>
+        <select id="vid-mode" onchange="calcVid()" style="font-size:9px;padding:1px 4px;border:1px solid #ccc;border-radius:3px;">
+          <option value="sym">Vid 대칭 (V+,V− 동시)</option>
+          <option value="vp">Vin+ 스윕 (Vin− 고정)</option>
+          <option value="vn">Vin− 스윕 (Vin+ 고정)</option>
+        </select>
+        <span style="font-size:9px;color:#555;">Vicm=</span>
+        <input type="range" id="s_vicm" min="0" max="3.3" step="0.01" value="1.65" oninput="syncSlider('vicm',this.value);calcVid()" style="width:60px;height:3px;accent-color:var(--secondary);">
+        <input type="number" id="vicm" value="1.65" step="0.01" oninput="syncNum('s_vicm',this.value);calcVid()" style="width:50px;font-size:9px;padding:1px 3px;border:1px solid #ccc;border-radius:3px;font-family:'Courier New',monospace;text-align:right;">
+        <span style="font-size:9px;color:#555;">V</span>
+        <label style="font-size:9px;display:flex;align-items:center;gap:2px;cursor:pointer;"><input type="checkbox" id="vid-full" checked onchange="calcVid()" style="margin:0;"> Full Scale</label>
+      </div>
+      <canvas id="cv-vid"></canvas>
+    </div>
+  </div>
+</div>
+
+</div><!-- end grid -->
+
+<script>
+// ═══════════════════════════════════════════
+//  정확한 Level 1 MOSFET 시뮬레이션
+//  방법: Newton-Raphson 반복법으로 KCL 연립방정식 풀기
+//  ID = ½·μCox·(W/L)·Vov²·(1+λ·VDS)  ← λ 항 DC에서도 반영
+// ═══════════════════════════════════════════
+
+// ─── Utilities ───
+const kB=1.38e-23, T=300;
+const f2=v=>isFinite(v)?v.toFixed(2):'∞';
+const f3=v=>isFinite(v)?v.toFixed(3):'∞';
+const f1=v=>isFinite(v)?v.toFixed(1):'∞';
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const g=id=>document.getElementById(id);
+const set=(id,val)=>g(id).textContent=val;
+const dpr=window.devicePixelRatio||1;
+
+function syncM2(){g('w2').value=g('w1').value;g('l2').value=g('l1').value;}
+function syncM4(){g('w4').value=g('w3').value;g('l4').value=g('l3').value;}
+// 슬라이더 ↔ 숫자 입력 동기화
+function syncSlider(numId,val){g(numId).value=val;calc();}
+function syncNum(sliderId,val){g(sliderId).value=val;}
+
+let _p={};
+
+// ─── Level 1 MOSFET ID 함수 (SPICE 정식: 선형에도 λ 포함) ───
+// VDS=Vov 경계에서 전류 연속: 양쪽 모두 (1+λ·VDS)
+// NMOS: VGS, VDS (양수 = 정상 동작)
+function idN(mu,wl,vth,lam,VGS,VDS){
+  const Vov=VGS-vth; if(Vov<=0||VDS<=0) return 0;
+  return VDS>=Vov ? 0.5*mu*wl*Vov*Vov*(1+lam*VDS)              // 포화
+                  : mu*wl*(Vov*VDS-0.5*VDS*VDS)*(1+lam*VDS);   // 선형
+}
+// PMOS: VSG, VSD (양수 = 정상 동작)
+function idP(mu,wl,vth,lam,VSG,VSD){
+  const Vov=VSG-vth; if(Vov<=0||VSD<=0) return 0;
+  return VSD>=Vov ? 0.5*mu*wl*Vov*Vov*(1+lam*VSD)
+                  : mu*wl*(Vov*VSD-0.5*VSD*VSD)*(1+lam*VSD);
+}
+
+// ═══════════════════════════════════════════
+//  BSIM3v3 (Level 49) DC I-V Engine
+// ═══════════════════════════════════════════
+
+// 물리 상수
+const _q=1.6022e-19, _esi=1.035e-10, _eox=3.453e-11, _ni=1.45e10, _Vtm=0.02585;
+
+// ETRI 0.5μm 공정 파라미터
+const ETRI_NMOS={
+  VTH0:0.6853721, K1:0.7161694, K2:-4.636134e-5, K3:30, K3B:-10,
+  U0:503.2726356, UA:1e-11, UB:2.436791e-18, UC:8.083776e-11,
+  VSAT:8.511705e4, TOX:1.05e-8,
+  LINT:2.156876e-8, WINT:1.513015e-7, XL:0, XW:-1e-7,
+  DVT0:1.1124703, DVT1:0.2497294, DVT2:0, NLX:2.605385e-7,
+  ETA0:1.109281e-3, ETAB:-0.2, DSUB:0.8836863,
+  PCLM:0.6857613, PDIBLC1:0.0466939, PDIBLC2:5e-4, PDIBLCB:0, DROUT:0.2761545,
+  PSCBE1:4.495624e8, PSCBE2:5.004804e-5, PVAG:0,
+  A0:0.6441421, AGS:0.1378118, B0:1.24596e-8, B1:-1.01e-7, KETA:-7.464619e-3,
+  DELTA:1e-3, RDSW:1.19434e3, PRWG:-0.01, PRWB:8.389165e-3,
+  W0:8.4822e-6, XJ:2.7e-7, NCH:2.4e17, NFACTOR:1.1, VOFF:-0.0998905,
+  CDSC:4.327068e-4, CDSCD:0, CDSCB:4.5945e-4, CIT:0,
+  MOBMOD:1, NOFF:1, RSH:50
+};
+const ETRI_PMOS={
+  VTH0:0.955701, K1:0.506553, K2:0, K3:22.729, K3B:-6.08389,
+  U0:266.196, UA:3.69133e-9, UB:1e-21, UC:-3.87597e-11,
+  VSAT:9.55069e4, TOX:1.05e-8,
+  LINT:6.23443e-9, WINT:1.36348e-7, XL:0, XW:-1e-7,
+  DVT0:3.50997, DVT1:0.727088, DVT2:-0.0183815, NLX:1.9959e-7,
+  ETA0:0.0463143, ETAB:0, DSUB:0.338036,
+  PCLM:1.53691, PDIBLC1:0, PDIBLC2:4.5e-4, PDIBLCB:0, DROUT:1.79767,
+  PSCBE1:8e8, PSCBE2:7e-9, PVAG:-0.29474,
+  A0:0.623211, AGS:0.194947, B0:3.06684e-7, B1:1e-7, KETA:-4.28948e-3,
+  DELTA:7.07618e-3, RDSW:3.60374e3, PRWG:-0.0799373, PRWB:0.0411799,
+  W0:1.69386e-6, XJ:2.2e-7, NCH:5e16, NFACTOR:1.87019, VOFF:-0.134374,
+  CDSC:6.79352e-4, CDSCD:0, CDSCB:1.06434e-3, CIT:0,
+  MOBMOD:1, NOFF:1, RSH:150
+};
+
+// 코너 파라미터 (TOX, VTH0, XL, XW 오버라이드)
+const CORNERS={
+  TT:{TOXN:1.05e-8,VTH0N:0.6854,XLN:0,XWN:-1e-7,TOXP:1.05e-8,VTH0P:0.9557,XLP:0,XWP:-1e-7},
+  SS:{TOXN:1.155e-8,VTH0N:0.754,XLN:2e-8,XWN:-1.2e-7,TOXP:1.155e-8,VTH0P:1.051,XLP:2e-8,XWP:-1.2e-7},
+  FF:{TOXN:0.945e-8,VTH0N:0.617,XLN:-2e-8,XWN:-0.8e-7,TOXP:0.945e-8,VTH0P:0.860,XLP:-2e-8,XWP:-0.8e-7},
+  SF:{TOXN:1.155e-8,VTH0N:0.754,XLN:2e-8,XWN:-1.2e-7,TOXP:0.945e-8,VTH0P:0.860,XLP:-2e-8,XWP:-0.8e-7},
+  FS:{TOXN:0.945e-8,VTH0N:0.617,XLN:-2e-8,XWN:-0.8e-7,TOXP:1.155e-8,VTH0P:1.051,XLP:2e-8,XWP:-1.2e-7}
+};
+
+/**
+ * BSIM3v3 DC I-V 계산
+ * @param {Object} P - 모델 파라미터 (ETRI_NMOS 또는 ETRI_PMOS, VTH0는 양수)
+ * @param {number} W - drawn width [m]
+ * @param {number} L - drawn length [m]
+ * @param {number} Vgs - gate-source voltage (NMOS: +, PMOS: VSG로 양수 전달)
+ * @param {number} Vds - drain-source voltage (NMOS: +, PMOS: VSD로 양수 전달)
+ * @param {number} Vbs - body-source voltage (보통 <=0 for NMOS, >=0 for PMOS body=VDD)
+ * @returns {number} |Ids| (양수)
+ */
+function bsim3Ids(P, W, L, Vgs, Vds, Vbs){
+  if(Vds<0) Vds=0;
+  if(Vgs<-0.5) Vgs=-0.5;  // deep off 보호
+
+  // 1. 유효 치수
+  const Leff=Math.max(L-2*P.LINT+P.XL, 1e-8);
+  const Weff=Math.max(W-2*P.WINT+P.XW, 1e-8);
+  const Cox=_eox/P.TOX;
+  const Vtm=_Vtm;  // kT/q at 300K
+
+  // 2. 표면 전위, depletion width
+  const NDEP=P.NCH;
+  const PHIs=2*Vtm*Math.log(Math.max(NDEP/_ni,1));  // ~0.7V
+  const sqPHIs=Math.sqrt(Math.max(PHIs,0.01));
+  const Xdep=Math.sqrt(2*_esi/((_q)*NDEP))*sqPHIs;
+
+  // 3. 문턱전압 Vth (BSIM3v3 정식)
+  // SCE characteristic length: lt = sqrt(esi/eox * TOX * XJ)
+  const lt=Math.sqrt(_esi/_eox*P.TOX*P.XJ);
+  const dvt1l=P.DVT1*Leff/(2*lt);
+  // SCE: sech 감쇠 (Leff >> lt이면 0으로 수렴)
+  const coshTerm=dvt1l>40?0:2/(Math.exp(dvt1l)+Math.exp(-dvt1l));  // sech
+  // SCE Vth shift: DVT0 is a fitted coefficient, multiply only by thermal voltage scale
+  const dVth_sce=-P.DVT0*2*_Vtm*coshTerm;  // SCE: small Vth lowering for short channels
+  // body effect
+  const sqPHIsVbs=Math.sqrt(Math.max(PHIs-Vbs,1e-6));
+  const dVth_body=P.K1*(sqPHIsVbs - sqPHIs) + P.K2*Vbs;
+  // DIBL on Vth (ETA0, ETAB만 — DSUB는 subthreshold용)
+  const dVth_dibl=-(P.ETA0 + P.ETAB*Vbs)*Vds;
+  // NLX: non-uniform lateral doping Vth correction
+  // Small correction proportional to NLX/Leff
+  const dVth_nlx=(P.NLX>0&&Leff>0)?-2*_Vtm*P.NLX/Leff:0;
+
+  let Vth=P.VTH0 + dVth_body + dVth_sce + dVth_dibl + dVth_nlx;
+  // K3, K3B narrow-width effect (simplify)
+  // Vth += (K3 + K3B*Vbs)*TOX/Weff*PHIs  -- minor for wide devices
+
+  // 4. Subthreshold swing factor n (DSUB는 여기서 반영)
+  const Cdsc=P.CDSC + P.CDSCD*Vds + P.CDSCB*Vbs;
+  const n=Math.max(1 + P.K1/(2*sqPHIsVbs) + Cdsc/Cox + P.DSUB*coshTerm, 1.0);
+
+  // 5. 유효 오버드라이브 Vgsteff (log-exp smoothing → 연속)
+  const Vgst=Vgs-Vth;
+  const x=Vgst/(2*n*Vtm);
+  let Vgsteff;
+  if(x>40) Vgsteff=Vgst;
+  else if(x<-40) Vgsteff=2*n*Vtm*Math.exp(x);
+  else Vgsteff=2*n*Vtm*Math.log(1+Math.exp(x));
+  Vgsteff=Math.max(Vgsteff,1e-12);
+
+  // 6. 유효 이동도 Ueff (MOBMOD=1)
+  const Eeff=Vgsteff/P.TOX;
+  let denom=1+P.UA*Eeff+P.UB*Eeff*Eeff;
+  if(P.MOBMOD===1) denom+=P.UC*Vbs*Eeff;
+  const Ueff=P.U0/Math.max(denom,0.01);  // cm²/Vs
+
+  // 7. 속도 포화
+  // VSAT: m/s in SPICE model, Ueff: cm²/Vs → VSAT*100 = cm/s
+  const Esat=2*P.VSAT*100/(Ueff+1e-10);  // V/cm
+  const EsatL=Esat*Leff*100;  // V (Esat[V/cm]*Leff[m]*100[cm/m])
+
+  // Abulk (bulk charge factor)
+  const Abulk0=1+P.A0*(1-Math.exp(-Leff*1e6/0.5))/(Leff*1e6+1e-6);  // simplified
+  const Abulk=Math.max(Abulk0*(1+P.KETA*Vbs),0.1);
+
+  // Vdsat
+  const Vdsat=Vgsteff*EsatL/(Abulk*Vgsteff+EsatL+1e-20);
+
+  // 8. Vdseff (linear↔saturation smooth transition)
+  const delta4=P.DELTA;
+  const diff=Vdsat-Vds-delta4;
+  const Vdseff=Vdsat-0.5*(diff+Math.sqrt(diff*diff+4*delta4*Vdsat));
+
+  // 9. Core 전류
+  const beta=(Ueff*1e-4)*Cox*Weff/Leff;  // Ueff: cm²/Vs → m²/Vs (*1e-4)
+  const fac=1+Vdseff/EsatL;
+  const Ids0=beta*((Vgsteff-Abulk*Vdseff*0.5)*Vdseff)/Math.max(fac,0.01);
+
+  // 10. 출력 저항 보정 (simplified BSIM3v3 output resistance)
+  const Leff_cm=Leff*1e2;
+  const diffsat=Math.max(Vds-Vdsat,1e-6);
+
+  // CLM: BSIM3v3 정식 — ΔL = PCLM·litl·ln(1+diffsat/(litl·Esat))
+  //       Va_CLM = diffsat·Leff / (PCLM·litl·ln(...))  [≠ PCLM·EsatL/ln(...)]
+  let VaCLM=1e6;
+  if(P.PCLM>0 && diffsat>1e-6){
+    const litl=Math.sqrt(Math.max(3*P.TOX*P.XJ,1e-20));
+    const litl_cm=litl*1e2;
+    const logArg=1+diffsat/(litl_cm*Esat+1e-20);
+    const lnVal=Math.max(Math.log(logArg),1e-10);
+    VaCLM=diffsat*Leff_cm/(P.PCLM*litl_cm*lnVal);
+  }
+
+  // DIBL on Rout
+  let VaDIBL=1e6;
+  const droutExp=Math.exp(-Math.min(P.DROUT*Leff/(2*lt),40));
+  const thetaR=P.PDIBLC1*droutExp+P.PDIBLC2;
+  if(thetaR>1e-10) VaDIBL=Vgsteff/thetaR;
+
+  // SCBE
+  let VaSCBE=1e6;
+  if(P.PSCBE1>0&&diffsat>0.01){
+    const expArg=Math.min(P.PSCBE2*Leff_cm/diffsat,40);
+    VaSCBE=P.PSCBE1*Leff_cm*Math.exp(-expArg)/Math.max(diffsat,1e-4);
+  }
+
+  const Va=1/(1/VaCLM+1/VaDIBL+1/VaSCBE);
+  const Ids=Math.max(Ids0*(1+diffsat/Math.max(Va,1e-3)),0);
+
+  // 11. Series resistance (simplified: single iteration)
+  // Rds = RDSW / Weff_um  (optional)
+  // For now skip to keep NR stable; effect is small for wide devices
+
+  return Ids;
+}
+
+// BSIM3v3 wrapper — NMOS (Vgs, Vds, Vbs 양수 기준)
+function idN_b3(pn,W,L,VGS,VDS,VBS){
+  if(VGS<=0&&VDS<=0) return 0;
+  return bsim3Ids(pn,W*1e-6,L*1e-6,VGS,VDS,VBS||0);
+}
+// BSIM3v3 wrapper — PMOS (VSG, VSD 양수 기준, VBS=Vs-Vb)
+function idP_b3(pp,W,L,VSG,VSD,VBS){
+  if(VSG<=0&&VSD<=0) return 0;
+  return bsim3Ids(pp,W*1e-6,L*1e-6,VSG,VSD,VBS||0);
+}
+
+// 모델 레벨 전역 변수
+let _modelLevel=1;  // 1=Level1, 49=BSIM3v3
+
+// 통합 전류 함수 — solver에서 호출
+function getId(type,Vgs,Vds,Vbs,mu,wl,vth,lam,W,L){
+  if(_modelLevel===49){
+    const pm=type==='nmos'?_bsimN:_bsimP;
+    return type==='nmos'?idN_b3(pm,W,L,Vgs,Vds,Vbs):idP_b3(pm,W,L,Vgs,Vds,Vbs);
+  }
+  return type==='nmos'?idN(mu,wl,vth,lam,Vgs,Vds):idP(mu,wl,vth,lam,Vgs,Vds);
+}
+// 코너 적용된 BSIM 파라미터 (calc에서 세팅)
+let _bsimN={...ETRI_NMOS}, _bsimP={...ETRI_PMOS};
+
+// ─── 선형 연립방정식 풀이 (가우스 소거법, 부분 피벗) ───
+function gaussSolve(A,b){
+  const n=b.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){
+    let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r;
+    [M[c],M[p]]=[M[p],M[c]];
+    if(Math.abs(M[c][c])<1e-20) return null;
+    for(let r=c+1;r<n;r++){const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k];}
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){x[i]=M[i][n];for(let j=i+1;j<n;j++)x[i]-=M[i][j]*x[j];x[i]/=M[i][i];}
+  return x;
+}
+
+// ─── Newton-Raphson (수치 야코비안 + 직선 탐색 + damping) ───
+function newtonSolve(F,x0,maxIter=200,tol=1e-9){
+  let x=[...x0];
+  const n=x.length;
+  for(let it=0;it<maxIter;it++){
+    const f=F(x), res=Math.sqrt(f.reduce((s,v)=>s+v*v,0));
+    if(res<tol) return {x,converged:true,iter:it};
+    // 수치 야코비안 (중심 차분으로 정확도 향상)
+    const h=1e-7;
+    const J=Array.from({length:n},()=>new Array(n).fill(0));
+    for(let j=0;j<n;j++){
+      const xp=[...x],xm=[...x]; xp[j]+=h; xm[j]-=h;
+      const fp=F(xp),fm=F(xm);
+      for(let i=0;i<n;i++) J[i][j]=(fp[i]-fm[i])/(2*h);
+    }
+    const dx=gaussSolve(J,f.map(v=>-v)); if(!dx) break;
+    // 직선 탐색: 더 많은 시도 + 최소 alpha 보장
+    let alpha=1, bestAlpha=0, bestRes=res;
+    for(let ls=0;ls<20;ls++){
+      const xn=x.map((v,i)=>v+alpha*dx[i]);
+      const rn=Math.sqrt(F(xn).reduce((s,v)=>s+v*v,0));
+      if(rn<bestRes){bestRes=rn;bestAlpha=alpha;}
+      if(rn<res*0.99) break;
+      alpha*=0.5;
+    }
+    if(bestAlpha<1e-12) break;  // 진전 없음
+    x=x.map((v,i)=>v+bestAlpha*dx[i]);
+  }
+  const f=F(x); return {x,converged:Math.sqrt(f.reduce((s,v)=>s+v*v,0))<1e-6,iter:maxIter};
+}
+
+// ─── 회로 SVG 동적 생성 ───
+function drawOtaSvg(nmos){
+  // NMOS 입력쌍: load=PMOS(상), diff=NMOS(중), tail=NMOS(하)
+  // PMOS 입력쌍: load=NMOS(하), diff=PMOS(중), tail=PMOS(상)  → 상하 반전
+  const cL=nmos?'#7d3c98':'#1a5fa8'; // load 색
+  const cD=nmos?'#1a5fa8':'#7d3c98'; // diff pair 색
+  const cT='#2c3e50';                 // tail 색
+  const fL=nmos?'rgba(125,60,152,.12)':'rgba(26,95,168,.12)';
+  const fD=nmos?'rgba(26,95,168,.12)':'rgba(125,60,152,.12)';
+  const tL=nmos?'PMOS':'NMOS', tD=nmos?'NMOS':'PMOS', tT=nmos?'NMOS':'PMOS';
+  // 상단 전원, 하단 접지 (NMOS/PMOS 모두 같은 위치)
+  const supTop=nmos?'VDD':'VDD', supBot=nmos?'VSS':'VSS';
+  // PMOS면 tail이 위, load가 아래
+  let s=`<svg viewBox="0 0 255 285" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">`;
+  if(nmos){
+    // ── NMOS 입력쌍 (기존 레이아웃) ──
+    s+=`<!-- VDD -->
+    <line x1="65" y1="20" x2="195" y2="20" stroke="#c0392b" stroke-width="2.5"/>
+    <text x="4" y="25" font-size="11" fill="#c0392b" font-weight="bold" font-family="monospace">VDD</text>
+    <line x1="80" y1="15" x2="80" y2="25" stroke="#c0392b" stroke-width="1.5"/>
+    <line x1="180" y1="15" x2="180" y2="25" stroke="#c0392b" stroke-width="1.5"/>
+    <!-- M3 PMOS load (diode, gate right) -->
+    <line x1="80" y1="20" x2="80" y2="48" stroke="${cL}" stroke-width="1.5"/>
+    <rect x="71" y="48" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
+    <circle cx="95" cy="62" r="3.5" fill="none" stroke="${cL}" stroke-width="1.5"/>
+    <line x1="80" y1="76" x2="80" y2="108" stroke="${cL}" stroke-width="1.5"/>
+    <circle cx="80" cy="82" r="2.5" fill="${cL}"/>
+    <line x1="80" y1="82" x2="110" y2="82" stroke="${cL}" stroke-width="1.2"/>
+    <line x1="110" y1="82" x2="110" y2="62" stroke="${cL}" stroke-width="1.2"/>
+    <circle cx="110" cy="62" r="2.5" fill="${cL}"/>
+    <line x1="98.5" y1="62" x2="161.5" y2="62" stroke="${cL}" stroke-width="1.2"/>
+    <text x="130" y="57" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>
+    <text x="69" y="58" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>
+    <text x="69" y="69" font-size="9" fill="${cL}" text-anchor="end">(${tL})</text>
+    <!-- M4 PMOS load -->
+    <line x1="180" y1="20" x2="180" y2="48" stroke="${cL}" stroke-width="1.5"/>
+    <rect x="171" y="48" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
+    <circle cx="165" cy="62" r="3.5" fill="none" stroke="${cL}" stroke-width="1.5"/>
+    <line x1="180" y1="76" x2="180" y2="108" stroke="${cL}" stroke-width="1.5"/>
+    <text x="191" y="58" font-size="10" fill="${cL}" font-weight="bold">M4</text>
+    <text x="191" y="69" font-size="9" fill="${cL}">(${tL})</text>
+    <!-- Nodes -->
+    <circle cx="80" cy="108" r="3" fill="#555"/>
+    <circle cx="180" cy="108" r="3" fill="#27ae60"/>
+    <line x1="180" y1="108" x2="225" y2="108" stroke="#27ae60" stroke-width="1.8"/>
+    <text x="228" y="112" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
+    <!-- M1 NMOS diff -->
+    <line x1="80" y1="108" x2="80" y2="118" stroke="${cD}" stroke-width="1.5"/>
+    <rect x="71" y="118" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
+    <line x1="71" y1="132" x2="20" y2="132" stroke="${cD}" stroke-width="1.5"/>
+    <circle cx="17" cy="132" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
+    <text x="3" y="128" font-size="9" fill="${cD}" font-weight="bold">Vin+</text>
+    <line x1="80" y1="146" x2="80" y2="188" stroke="${cD}" stroke-width="1.5"/>
+    <text x="92" y="128" font-size="10" fill="${cD}" font-weight="bold">M1</text>
+    <text x="92" y="139" font-size="9" fill="${cD}">(${tD})</text>
+    <!-- M2 NMOS diff -->
+    <line x1="180" y1="108" x2="180" y2="118" stroke="${cD}" stroke-width="1.5"/>
+    <rect x="171" y="118" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
+    <line x1="189" y1="132" x2="238" y2="132" stroke="${cD}" stroke-width="1.5"/>
+    <circle cx="241" cy="132" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
+    <text x="231" y="128" font-size="9" fill="${cD}" font-weight="bold">Vin−</text>
+    <line x1="180" y1="146" x2="180" y2="188" stroke="${cD}" stroke-width="1.5"/>
+    <text x="148" y="128" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M2</text>
+    <text x="168" y="139" font-size="9" fill="${cD}" text-anchor="end">(${tD})</text>
+    <!-- Tail -->
+    <line x1="80" y1="188" x2="180" y2="188" stroke="#555" stroke-width="1.5"/>
+    <line x1="130" y1="188" x2="130" y2="196" stroke="#555" stroke-width="1.5"/>
+    <text x="107" y="185" font-size="9" fill="#7f8c8d" font-style="italic">ISS</text>
+    <circle cx="130" cy="188" r="2.5" fill="#2980b9"/>
+    <text x="135" y="185" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
+    <text x="72" y="170" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
+    <text x="184" y="170" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
+    <!-- M5 NMOS tail -->
+    <rect x="121" y="196" width="18" height="28" rx="2" fill="rgba(44,62,80,.12)" stroke="${cT}" stroke-width="1.8"/>
+    <line x1="121" y1="210" x2="72" y2="210" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>
+    <text x="35" y="214" font-size="9" fill="#7f8c8d">Vb</text>
+    <line x1="130" y1="224" x2="130" y2="256" stroke="${cT}" stroke-width="1.5"/>
+    <text x="142" y="206" font-size="10" fill="${cT}" font-weight="bold">M5</text>
+    <text x="142" y="217" font-size="9" fill="${cT}">(${tT})</text>
+    <!-- VSS -->
+    <line x1="118" y1="256" x2="142" y2="256" stroke="${cT}" stroke-width="2"/>
+    <line x1="121" y1="260" x2="139" y2="260" stroke="${cT}" stroke-width="1.5"/>
+    <line x1="124" y1="264" x2="136" y2="264" stroke="${cT}" stroke-width="1"/>
+    <text x="148" y="263" font-size="11" fill="${cT}" font-weight="bold" font-family="monospace">VSS</text>
+    <text x="60" y="40" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>
+    <text x="184" y="40" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>`;
+  }else{
+    // ── PMOS 입력쌍 (상하 반전) ──
+    // VDD(상) → M5 PMOS tail → diff pair PMOS(M1/M2) → NMOS load(M3/M4) → VSS(하)
+    s+=`<!-- VDD -->
+    <line x1="118" y1="20" x2="142" y2="20" stroke="#c0392b" stroke-width="2.5"/>
+    <line x1="115" y1="16" x2="145" y2="16" stroke="#c0392b" stroke-width="1.5"/>
+    <text x="148" y="23" font-size="11" fill="#c0392b" font-weight="bold" font-family="monospace">VDD</text>
+    <!-- M5 PMOS tail (top) — bubble on gate -->
+    <line x1="130" y1="20" x2="130" y2="32" stroke="${cT}" stroke-width="1.5"/>
+    <rect x="121" y="32" width="18" height="28" rx="2" fill="rgba(44,62,80,.12)" stroke="${cT}" stroke-width="1.8"/>
+    <circle cx="115" cy="46" r="3.5" fill="none" stroke="${cT}" stroke-width="1.5"/>
+    <line x1="111.5" y1="46" x2="72" y2="46" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>
+    <text x="35" y="50" font-size="9" fill="#7f8c8d">Vb</text>
+    <text x="142" y="42" font-size="10" fill="${cT}" font-weight="bold">M5</text>
+    <text x="142" y="53" font-size="9" fill="${cT}">(${tT})</text>
+    <line x1="130" y1="60" x2="130" y2="68" stroke="${cT}" stroke-width="1.5"/>
+    <!-- Tail node -->
+    <line x1="80" y1="68" x2="180" y2="68" stroke="#555" stroke-width="1.5"/>
+    <text x="107" y="80" font-size="9" fill="#7f8c8d" font-style="italic">ISS</text>
+    <circle cx="130" cy="68" r="2.5" fill="#2980b9"/>
+    <text x="135" y="65" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
+    <text x="72" y="100" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
+    <text x="184" y="100" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
+    <!-- M1 PMOS diff — bubble on gate -->
+    <line x1="80" y1="68" x2="80" y2="78" stroke="${cD}" stroke-width="1.5"/>
+    <rect x="71" y="78" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
+    <circle cx="65" cy="92" r="3.5" fill="none" stroke="${cD}" stroke-width="1.5"/>
+    <line x1="61.5" y1="92" x2="20" y2="92" stroke="${cD}" stroke-width="1.5"/>
+    <circle cx="17" cy="92" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
+    <text x="3" y="88" font-size="9" fill="${cD}" font-weight="bold">Vin+</text>
+    <line x1="80" y1="106" x2="80" y2="148" stroke="${cD}" stroke-width="1.5"/>
+    <text x="92" y="88" font-size="10" fill="${cD}" font-weight="bold">M1</text>
+    <text x="92" y="99" font-size="9" fill="${cD}">(${tD})</text>
+    <!-- M2 PMOS diff — bubble on gate -->
+    <line x1="180" y1="68" x2="180" y2="78" stroke="${cD}" stroke-width="1.5"/>
+    <rect x="171" y="78" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
+    <circle cx="195" cy="92" r="3.5" fill="none" stroke="${cD}" stroke-width="1.5"/>
+    <line x1="198.5" y1="92" x2="238" y2="92" stroke="${cD}" stroke-width="1.5"/>
+    <circle cx="241" cy="92" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
+    <text x="231" y="88" font-size="9" fill="${cD}" font-weight="bold">Vin−</text>
+    <line x1="180" y1="106" x2="180" y2="148" stroke="${cD}" stroke-width="1.5"/>
+    <text x="148" y="88" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M2</text>
+    <text x="168" y="99" font-size="9" fill="${cD}" text-anchor="end">(${tD})</text>
+    <!-- Nodes -->
+    <circle cx="80" cy="148" r="3" fill="#555"/>
+    <circle cx="180" cy="148" r="3" fill="#27ae60"/>
+    <line x1="180" y1="148" x2="225" y2="148" stroke="#27ae60" stroke-width="1.8"/>
+    <text x="228" y="152" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
+    <!-- M3 NMOS load (diode, no bubble) -->
+    <!-- drain wire (top, from node A) -->
+    <line x1="80" y1="148" x2="80" y2="158" stroke="${cL}" stroke-width="1.5"/>
+    <rect x="71" y="158" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
+    <!-- gate line: right side of box → to gate bus -->
+    <line x1="89" y1="172" x2="110" y2="172" stroke="${cL}" stroke-width="1.5"/>
+    <!-- diode: drain(top) dot → right to gate column (gate=drain) -->
+    <circle cx="80" cy="153" r="2.5" fill="${cL}"/>
+    <line x1="80" y1="153" x2="110" y2="153" stroke="${cL}" stroke-width="1.2"/>
+    <line x1="110" y1="153" x2="110" y2="172" stroke="${cL}" stroke-width="1.2"/>
+    <circle cx="110" cy="172" r="2.5" fill="${cL}"/>
+    <!-- gate bus: M3(110) → M4(150) at y=172 -->
+    <line x1="110" y1="172" x2="150" y2="172" stroke="${cL}" stroke-width="1.2"/>
+    <text x="130" y="195" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>
+    <text x="69" y="168" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>
+    <text x="69" y="179" font-size="9" fill="${cL}" text-anchor="end">(${tL})</text>
+    <!-- M3 source → individual VSS -->
+    <line x1="80" y1="186" x2="80" y2="210" stroke="${cL}" stroke-width="1.5"/>
+    <text x="72" y="202" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>
+    <line x1="68" y1="210" x2="92" y2="210" stroke="${cT}" stroke-width="2"/>
+    <line x1="71" y1="214" x2="89" y2="214" stroke="${cT}" stroke-width="1.5"/>
+    <line x1="74" y1="218" x2="86" y2="218" stroke="${cT}" stroke-width="1"/>
+    <text x="60" y="220" font-size="8" fill="${cT}" font-family="monospace">VSS</text>
+    <!-- M4 NMOS load (no bubble) -->
+    <line x1="180" y1="148" x2="180" y2="158" stroke="${cL}" stroke-width="1.5"/>
+    <rect x="171" y="158" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
+    <!-- gate direct to gate bus -->
+    <line x1="171" y1="172" x2="150" y2="172" stroke="${cL}" stroke-width="1.5"/>
+    <circle cx="150" cy="172" r="2.5" fill="${cL}"/>
+    <text x="191" y="168" font-size="10" fill="${cL}" font-weight="bold">M4</text>
+    <text x="191" y="179" font-size="9" fill="${cL}">(${tL})</text>
+    <!-- M4 source → individual VSS -->
+    <line x1="180" y1="186" x2="180" y2="210" stroke="${cL}" stroke-width="1.5"/>
+    <text x="184" y="202" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>
+    <line x1="168" y1="210" x2="192" y2="210" stroke="${cT}" stroke-width="2"/>
+    <line x1="171" y1="214" x2="189" y2="214" stroke="${cT}" stroke-width="1.5"/>
+    <line x1="174" y1="218" x2="186" y2="218" stroke="${cT}" stroke-width="1"/>
+    <text x="194" y="216" font-size="8" fill="${cT}" font-family="monospace">VSS</text>`;
+  }
+  // 범례 (공통)
+  s+=`<rect x="4" y="248" width="55" height="32" rx="3" fill="#fafbfc" stroke="#ddd" stroke-width="1"/>
+  <rect x="8" y="252" width="8" height="6" rx="1" fill="rgba(125,60,152,.2)" stroke="#7d3c98" stroke-width="1"/>
+  <text x="19" y="258" font-size="8" fill="#7d3c98">PMOS</text>
+  <rect x="8" y="261" width="8" height="6" rx="1" fill="rgba(26,95,168,.2)" stroke="#1a5fa8" stroke-width="1"/>
+  <text x="19" y="267" font-size="8" fill="#1a5fa8">NMOS</text>
+  <text x="19" y="276" font-size="8" fill="#555">⚫ = 공통노드</text>`;
+  s+=`</svg>`;
+  g('ota-svg').innerHTML=s;
+}
+
+// ─── 균형 DC 풀이: 미지수 [Vtail, Vx=VnodeA=Vout] ───
+// M5를 이상 전류원(ID5=ISS)으로 처리, M1~M4의 KCL을 정확히 풂
+// F1: ID1(Vtail,Vx) = ISS/2
+// F2: ID3(Vx)       = ISS/2
+function solveDCbal(p,Vicm,hint){
+  const{VDD,VSS,ISS,mu12,wl1,vth12,lam12,mu34,wl3,vth34,lam34,nmos}=p;
+  const Ih=ISS/2;
+  const F=([Vt,Vx])=>[
+    (nmos?idN(mu12,wl1,vth12,lam12,Vicm-Vt,Vx-Vt)
+         :idP(mu12,wl1,vth12,lam12,Vt-Vicm,Vt-Vx))-Ih,
+    (nmos?idP(mu34,wl3,vth34,lam34,VDD-Vx,VDD-Vx)
+         :idN(mu34,wl3,vth34,lam34,Vx-VSS,Vx-VSS))-Ih
+  ];
+  if(hint) return newtonSolve(F,hint);
+  const Im=Math.max(Ih,1e-15);
+  const v1=Math.sqrt(2*Im/(mu12*wl1)), v3=Math.sqrt(2*Im/(mu34*wl3));
+  return newtonSolve(F, nmos?[Vicm-vth12-v1,VDD-vth34-v3]:[Vicm+vth12+v1,VSS+vth34+v3]);
+}
+
+
+// ─── 스윕용 균형 DC 풀이: M5의 실제 I-V 포함 ───
+// 미지수 [Vtail, Vx], M5 전류 포함
+// F1: 2·ID1 − ID5 = 0  (tail KCL)
+// F2: ID3 − ID1   = 0  (node A KCL)
+function solveDCbalM5(p,Vicm,Vbias,hint){
+  const{VDD,VSS,mu12,wl1,vth12,lam12,mu34,wl3,vth34,lam34,mu5,wl5,vth5,lam5,nmos,W1,L1,W3,L3,W5,L5}=p;
+  const t12=nmos?'nmos':'pmos', t34=nmos?'pmos':'nmos', t5=nmos?'nmos':'pmos';
+  const F=([Vt,Vx])=>{
+    let i1,i3,i5;
+    // Vbs: M1 body=source rail (diff pair), M3 body=rail, M5 body=rail → 0
+    if(nmos){
+      i1=getId(t12,Vicm-Vt,Vx-Vt,0,     mu12,wl1,vth12,lam12,W1,L1);
+      i3=getId(t34,VDD-Vx,VDD-Vx,0,      mu34,wl3,vth34,lam34,W3,L3);
+      i5=getId(t5, Vbias-VSS,Vt-VSS,0,   mu5,wl5,vth5,lam5,W5,L5);
+    }else{
+      i1=getId(t12,Vt-Vicm,Vt-Vx,0,      mu12,wl1,vth12,lam12,W1,L1);
+      i3=getId(t34,Vx-VSS,Vx-VSS,0,      mu34,wl3,vth34,lam34,W3,L3);
+      i5=getId(t5, VDD-Vbias,VDD-Vt,0,   mu5,wl5,vth5,lam5,W5,L5);
+    }
+    return [2*i1-i5, i3-i1];
+  };
+  if(hint) return newtonSolve(F,hint);
+  const Im=Math.max((p.ISS||1e-6)/2,1e-15);
+  const v1=Math.sqrt(2*Im/(mu12*wl1+1e-20)), v3=Math.sqrt(2*Im/(mu34*wl3+1e-20));
+  return newtonSolve(F, nmos?[Vicm-vth12-v1,VDD-vth34-v3]:[Vicm+vth12+v1,VSS+vth34+v3]);
+}
+
+// ─── 완전 DC 풀이: 미지수 [Vtail, VnodeA, Vout] (Vid≠0 포함) ───
+function solveDCfull(p,V1,V2,Vbias,hint){
+  const{VDD,VSS,mu12,wl1,vth12,lam12,mu34,wl3,vth34,lam34,mu5,wl5,vth5,lam5,nmos,W1,L1,W3,L3,W5,L5}=p;
+  const t12=nmos?'nmos':'pmos', t34=nmos?'pmos':'nmos', t5=nmos?'nmos':'pmos';
+  const F=([Vt,Va,Vo])=>{
+    let i1,i2,i3,i4,i5;
+    if(nmos){
+      i1=getId(t12,V1-Vt,Va-Vt,0,        mu12,wl1,vth12,lam12,W1,L1);
+      i2=getId(t12,V2-Vt,Vo-Vt,0,        mu12,wl1,vth12,lam12,W1,L1);
+      i3=getId(t34,VDD-Va,VDD-Va,0,      mu34,wl3,vth34,lam34,W3,L3);
+      i4=getId(t34,VDD-Va,VDD-Vo,0,      mu34,wl3,vth34,lam34,W3,L3);
+      i5=getId(t5, Vbias-VSS,Vt-VSS,0,   mu5,wl5,vth5,lam5,W5,L5);
+    }else{
+      i1=getId(t12,Vt-V1,Vt-Va,0,        mu12,wl1,vth12,lam12,W1,L1);
+      i2=getId(t12,Vt-V2,Vt-Vo,0,        mu12,wl1,vth12,lam12,W1,L1);
+      i3=getId(t34,Va-VSS,Va-VSS,0,      mu34,wl3,vth34,lam34,W3,L3);
+      i4=getId(t34,Va-VSS,Vo-VSS,0,      mu34,wl3,vth34,lam34,W3,L3);
+      i5=getId(t5, VDD-Vbias,VDD-Vt,0,   mu5,wl5,vth5,lam5,W5,L5);
+    }
+    return [i1+i2-i5, i3-i1, i4-i2];
+  };
+  if(hint) return newtonSolve(F,hint);
+  const bal=solveDCbalM5(p,(V1+V2)/2,Vbias); const[Vt0,Vx0]=bal.x;
+  return newtonSolve(F,[Vt0,Vx0,Vx0]);
+}
+
+// ─── Vicm 스윕 (회로 파라미터에만 의존) ───
+function computeIcmrSweep(p,Vbias){
+  const{VDD,VSS}=p, vsup=VDD-VSS, N=200;
+  const icmrData=[];
+  // 양방향 sweep 후 평균 → hint bias 제거 (BSIM3v3 dip 방지)
+  function oneSweep(forward){
+    const res=[]; let hint=null;
+    for(let i=0;i<=N;i++){
+      const idx=forward?i:N-i;
+      const vicm=VSS+vsup*idx/N;
+      const sol=solveDCbalM5(p,vicm,Vbias,hint);
+      if(sol.converged){hint=sol.x; res[idx]={vicm,Vtail:sol.x[0],Vx:sol.x[1]};}
+      else{hint=null; res[idx]={vicm,Vtail:null,Vx:null};}
+    }
+    return res;
+  }
+  const fwd=oneSweep(true), bwd=oneSweep(false);
+  // 두 스윕이 모두 수렴한 점은 평균, 한쪽만 수렴하면 그 값 사용
+  for(let i=0;i<=N;i++){
+    const a=fwd[i], b=bwd[i];
+    if(a.Vtail!==null && b.Vtail!==null){
+      icmrData.push({vicm:a.vicm, Vtail:(a.Vtail+b.Vtail)/2, Vx:(a.Vx+b.Vx)/2});
+    } else {
+      icmrData.push(a.Vtail!==null?a:b);
+    }
+  }
+  return icmrData;
+}
+
+// ─── Vid 스윕 (Vicm, 모드에 의존) ───
+function computeVidSweep(p,Vbias,Vicm,vov12,fullScale){
+  const{VDD,VSS}=p;
+  const vidMode=g('vid-mode').value;
+  const vSwing=Math.max((VDD-VSS)*0.5, 0.5);
+  let vidMax;
+  if(fullScale){
+    // full scale: 대칭이면 ±(VDD-VSS)/2, 단일입력이면 VSS~VDD
+    vidMax=(vidMode==='sym')?(VDD-VSS)/2:Math.max(VDD-Vicm,Vicm-VSS);
+  }else{
+    const Av_est=Math.max(1, 2/(vov12*(p.lam12+p.lam34)+1e-12));
+    vidMax=Math.max(Math.min(vSwing/Av_est*8, Math.sqrt(2)*vov12*3), 0.005);
+  }
+
+  // 균형점 hint
+  const bal=solveDCbalM5(p,Vicm,Vbias);
+  const hint0=bal.converged?[bal.x[0],bal.x[1],bal.x[1]]:null;
+
+  // sv → (V1,V2,xval) 변환
+  function sv2inputs(sv){
+    if(vidMode==='vp')  return{V1:Vicm+sv,V2:Vicm,xval:Vicm+sv};
+    if(vidMode==='vn')  return{V1:Vicm,V2:Vicm+sv,xval:Vicm+sv};
+    return{V1:Vicm+sv/2,V2:Vicm-sv/2,xval:sv};
+  }
+
+  // NR solve with hint, fallback to no-hint
+  function solve(sv,hint){
+    const{V1,V2,xval}=sv2inputs(sv);
+    let sol=solveDCfull(p,V1,V2,Vbias,hint);
+    if(!sol.converged) sol=solveDCfull(p,V1,V2,Vbias,hint0);
+    if(!sol.converged) sol=solveDCfull(p,V1,V2,Vbias,null);
+    return{xval,Vout:sol.converged?sol.x[2]:null,x3:sol.converged?sol.x:null};
+  }
+
+  // 1단계: 양방향 uniform sweep (중심→양끝, warm-start)
+  function sweepHalf(sign,N){
+    const pts=[]; let hint=hint0?[...hint0]:null;
+    for(let i=0;i<=N;i++){
+      const sv=sign*vidMax*i/N;
+      const r=solve(sv,hint);
+      if(r.x3) hint=r.x3;
+      pts.push({sv,vid:r.xval,Vout:r.Vout,x3:r.x3});
+    }
+    return pts;
+  }
+  const neg=sweepHalf(-1,200).reverse();
+  const pos=sweepHalf(+1,200);
+  let pts=[...neg,...pos.slice(1)];
+
+  // 2단계: 적응형 세분화 — ΔVout 큰 구간에 이분 삽입 (최대 5 pass)
+  const thresh=vSwing*0.01;  // 출력스윙의 1%
+  for(let pass=0;pass<5&&pts.length<2000;pass++){
+    const next=[];
+    let added=0;
+    for(let i=0;i<pts.length;i++){
+      next.push(pts[i]);
+      if(i<pts.length-1){
+        const a=pts[i],b=pts[i+1];
+        if(a.Vout!==null&&b.Vout!==null&&Math.abs(b.Vout-a.Vout)>thresh){
+          const midSv=(a.sv+b.sv)/2;
+          // 보간 hint: 인접 두 점의 NR해를 평균
+          const hintMid=(a.x3&&b.x3)?a.x3.map((v,j)=>(v+b.x3[j])/2):null;
+          const r=solve(midSv,hintMid);
+          if(r.Vout!==null){next.push({sv:midSv,vid:r.xval,Vout:r.Vout,x3:r.x3});added++;}
+        }
+      }
+    }
+    pts=next;
+    if(added===0) break;  // 더 이상 거친 구간 없음
+  }
+
+  const vidData=pts.map(({vid,Vout})=>({vid,Vout}));
+  return{vidData,vidMax};
+}
+
+// ─── Main Calculation ───
+function calc(){
+  syncM2();syncM4();
+  const unCox=parseFloat(g('un_cox').value)*1e-6, upCox=parseFloat(g('up_cox').value)*1e-6;
+  const vthn=parseFloat(g('vthn').value), vthp=parseFloat(g('vthp').value);
+  const lamN=parseFloat(g('lam_n').value), lamP=parseFloat(g('lam_p').value);
+  const VDD=parseFloat(g('vdd').value), VSS=parseFloat(g('vss').value);
+  const Vbias=parseFloat(g('vbias').value), CL=parseFloat(g('cl').value)*1e-12;
+  const nmos=document.querySelector('input[name="topo"]:checked').value==='nmos';
+  const W1=parseFloat(g('w1').value), L1=parseFloat(g('l1').value);
+  const W3=parseFloat(g('w3').value), L3=parseFloat(g('l3').value);
+  const W5=parseFloat(g('w5').value), L5=parseFloat(g('l5').value);
+  const wl1=W1/L1, wl3=W3/L3, wl5=W5/L5;
+
+  g('wl1').textContent=f1(wl1); g('wl2').textContent=f1(wl1);
+  g('wl3').textContent=f1(wl3); g('wl4').textContent=f1(wl3);
+  g('wl5').textContent=f1(wl5);
+
+  let mu12,vth12,lam12,mu34,vth34,lam34,mu5,vth5,lam5,type12,type34,type5;
+  if(nmos){mu12=unCox;vth12=vthn;lam12=lamN;type12='NMOS';mu34=upCox;vth34=vthp;lam34=lamP;type34='PMOS';mu5=unCox;vth5=vthn;lam5=lamN;type5='NMOS';}
+  else{mu12=upCox;vth12=vthp;lam12=lamP;type12='PMOS';mu34=unCox;vth34=vthn;lam34=lamN;type34='NMOS';mu5=upCox;vth5=vthp;lam5=lamP;type5='PMOS';}
+
+  // BSIM3v3 코너 적용
+  if(_modelLevel===49){
+    const c=CORNERS[g('corner-sel').value]||CORNERS.TT;
+    _bsimN={...ETRI_NMOS, TOX:c.TOXN, VTH0:c.VTH0N, XL:c.XLN, XW:c.XWN};
+    _bsimP={...ETRI_PMOS, TOX:c.TOXP, VTH0:c.VTH0P, XL:c.XLP, XW:c.XWP};
+  }
+
+  drawOtaSvg(nmos);
+  g('t-m1').textContent=type12; g('t-m2').textContent=type12;
+  g('t-m3').textContent=type34; g('t-m4').textContent=type34; g('t-m5').textContent=type5;
+  g('t-m1').className=nmos?'cn':'cp'; g('t-m2').className=g('t-m1').className;
+  g('t-m3').className=nmos?'cp':'cn'; g('t-m4').className=g('t-m3').className;
+
+  const Vicm_nom=(VDD+VSS)/2;
+  const pBase={VDD,VSS,mu12,wl1,vth12,lam12,mu34,wl3,vth34,lam34,mu5,wl5,vth5,lam5,nmos,
+               W1,L1,W3,L3,W5,L5};
+
+  // ── DC 동작점 풀기 (solveDCbalM5 사용) ──
+  const pSol={...pBase,ISS:1e-4,Vbias};  // ISS 초기 추정 (나중에 갱신)
+  const sol=solveDCbalM5(pSol,Vicm_nom,Vbias);
+  if(!sol.converged){
+    g('hints').innerHTML='<div style="color:#c0392b;font-weight:bold">⚠️ NR 수렴 실패 — Vb/W/L 조정 필요</div>';
+    return;
+  }
+  const[Vtail,Vx]=sol.x;
+
+  // ISS를 M5 실제 전류에서 추출
+  const t5type=nmos?'nmos':'pmos';
+  const ISS=nmos?getId(t5type,Vbias-VSS,Vtail-VSS,0, mu5,wl5,vth5,lam5,W5,L5)
+                :getId(t5type,VDD-Vbias,VDD-Vtail,0, mu5,wl5,vth5,lam5,W5,L5);
+  const ID12=ISS/2, ID34=ISS/2, ID5=ISS;
+  const p={...pBase,ISS,Vbias};
+
+  // ── 풀린 노드 전압에서 VGS, VDS 계산 ──
+  const VGS1=nmos?Vicm_nom-Vtail:Vtail-Vicm_nom;
+  const VGS3=nmos?VDD-Vx:Vx-VSS;
+  const VDS1=nmos?Vx-Vtail:Vtail-Vx;
+  const VSD3=VGS3;
+  const VDS5=nmos?Vtail-VSS:VDD-Vtail;
+
+  // ── Vov ──
+  const vov12=Math.max(0, VGS1-vth12);
+  const vov34=Math.max(0, VGS3-vth34);
+  const VGS5=nmos?Vbias-VSS:VDD-Vbias;
+  const vov5=Math.max(0, VGS5-vth5);
+
+  // ── gm, ro (Level 1: 해석적, BSIM3v3: 수치 미분) ──
+  let gm12,gm34,gm5,ro12,ro34,ro5;
+  if(_modelLevel===49){
+    // 수치 미분: gm=dId/dVgs, gds=dId/dVds
+    const dV=1e-4;
+    const t12=nmos?'nmos':'pmos', t34=nmos?'pmos':'nmos';
+    const id1c=getId(t12,VGS1,VDS1,0,mu12,wl1,vth12,lam12,W1,L1);
+    const id1gp=getId(t12,VGS1+dV,VDS1,0,mu12,wl1,vth12,lam12,W1,L1);
+    const id1dp=getId(t12,VGS1,VDS1+dV,0,mu12,wl1,vth12,lam12,W1,L1);
+    gm12=(id1gp-id1c)/dV;
+    const gds12=(id1dp-id1c)/dV;
+    ro12=gds12>1e-15?1/gds12:1e12;
+    const id3c=getId(t34,VGS3,VSD3,0,mu34,wl3,vth34,lam34,W3,L3);
+    const id3gp=getId(t34,VGS3+dV,VSD3,0,mu34,wl3,vth34,lam34,W3,L3);
+    const id3dp=getId(t34,VGS3,VSD3+dV,0,mu34,wl3,vth34,lam34,W3,L3);
+    gm34=(id3gp-id3c)/dV;
+    const gds34=(id3dp-id3c)/dV;
+    ro34=gds34>1e-15?1/gds34:1e12;
+    const id5c=getId(t5type,VGS5,VDS5,0,mu5,wl5,vth5,lam5,W5,L5);
+    const id5gp=getId(t5type,VGS5+dV,VDS5,0,mu5,wl5,vth5,lam5,W5,L5);
+    const id5dp=getId(t5type,VGS5,VDS5+dV,0,mu5,wl5,vth5,lam5,W5,L5);
+    gm5=(id5gp-id5c)/dV;
+    const gds5=(id5dp-id5c)/dV;
+    ro5=gds5>1e-15?1/gds5:1e12;
+  }else{
+    gm12=vov12>1e-9?2*ID12/vov12:0;
+    gm34=vov34>1e-9?2*ID34/vov34:0;
+    gm5 =vov5 >1e-9?2*ID5 /vov5 :0;
+    ro12=lam12>0?1/(lam12*ID12):1e12;
+    ro34=lam34>0?1/(lam34*ID34):1e12;
+    ro5 =lam5 >0?1/(lam5 *ID5 ):1e12;
+  }
+
+  const Gm=gm12, Rout=(ro12*ro34)/(ro12+ro34);
+  const Av=Gm*Rout, AvdB=20*Math.log10(Math.max(Av,1e-6));
+  const GBW=Gm/(2*Math.PI*CL), SR=ISS/CL, Pwr=ISS*(VDD-VSS), gmId=ID12>0?gm12/ID12:0;
+  const vgs12=vth12+vov12, vgs34=vth34+vov34, vgs5=VGS5;
+
+  // ── ICMR (λ 보정된 Vov 사용) ──
+  let icmrH,icmrL;
+  if(nmos){icmrH=VDD-vgs34+vth12; icmrL=VSS+vov5+vgs12;}
+  else    {icmrH=VDD-vov5-vgs12;  icmrL=VSS+vgs34-vth12;}
+
+  // ── 출력 스윙 (절대 한계: M5·M2, M4가 포화 경계) ──
+  const voutMax=nmos?VDD-vov34:VDD-vov5-vov12;
+  const voutMin=nmos?VSS+vov5+vov12:VSS+vov34;
+
+  // ── 포화 체크 (실제 풀린 VDS 값 사용) ──
+  const sat1=VDS1>=vov12, sat2=sat1;
+  const sat3=VSD3>=vov34, sat4=sat3;  // 다이오드: VSD3=VSG3, 항상 sat
+  const sat5=VDS5>=vov5;
+
+  set('r-av',f1(Av)); set('r-av-db',f1(AvdB)+' dB');
+  set('r-gm',f1(Gm*1e6)); set('r-gbw',f2(GBW/1e6));
+  set('r-rout',f2(Rout/1e6)); set('r-sr',f2(SR/1e6)); set('r-pwr',f1(Pwr*1e6));
+  set('r-iss',f1(ISS*1e6));
+
+  const ops=[
+    {name:'M1',type:type12,id:ID12,vgs:VGS1,vov:vov12,gm:gm12,ro:ro12,sat:sat1},
+    {name:'M2',type:type12,id:ID12,vgs:VGS1,vov:vov12,gm:gm12,ro:ro12,sat:sat2},
+    {name:'M3',type:type34,id:ID34,vgs:VGS3,vov:vov34,gm:gm34,ro:ro34,sat:sat3},
+    {name:'M4',type:type34,id:ID34,vgs:VGS3,vov:vov34,gm:gm34,ro:ro34,sat:sat4},
+    {name:'M5',type:type5, id:ID5, vgs:vgs5, vov:vov5, gm:gm5, ro:ro5, sat:sat5},
+  ];
+  const tbody=g('op-body'); tbody.innerHTML='';
+  ops.forEach(m=>{
+    const tr=document.createElement('tr'); if(!m.sat) tr.className='unsat';
+    tr.innerHTML=`<td>${m.name}<br><small style="color:#999;font-size:9px">${m.type}</small></td>
+      <td>${f2(m.id*1e6)}</td><td>${f3(m.vgs)}</td><td>${f3(m.vov)}</td>
+      <td>${f1(m.gm*1e6)}</td><td>${f1(m.ro/1e3)}</td>
+      <td><span class="sb ${m.sat?'ok':'fail'}">${m.sat?'SAT':'LIN'}</span></td>`;
+    tbody.appendChild(tr);
+  });
+
+  const chks=[
+    {name:'M1',type:type12,sat:sat1,vds:VDS1,vov:vov12},
+    {name:'M2',type:type12,sat:sat2,vds:VDS1,vov:vov12},
+    {name:'M3',type:type34,sat:sat3,vds:VSD3,vov:vov34},
+    {name:'M4',type:type34,sat:sat4,vds:VSD3,vov:vov34},
+    {name:'M5',type:type5, sat:sat5,vds:VDS5,vov:vov5},
+  ];
+  const satBody=g('sat-body'); satBody.innerHTML='';
+  chks.forEach(c=>{
+    const margin=c.vds-c.vov;
+    const tr=document.createElement('tr');
+    tr.className=c.sat?'sat-ok':'sat-fail';
+    tr.innerHTML=`<td><span class="${c.type==='NMOS'?'cn':'cp'}">${c.name}</span></td>
+      <td>${f3(c.vds)}V</td><td>${f3(c.vov)}V</td>
+      <td style="color:${margin>=0?'#1e8449':'#c0392b'}">${margin>=0?'+':''}${f3(margin)}V</td>
+      <td><span class="sb ${c.sat?'ok':'fail'}">${c.sat?'SAT':'LIN'}</span></td>`;
+    satBody.appendChild(tr);
+  });
+
+  genHints({Av,AvdB,GBW,icmrL,icmrH,voutMin,voutMax,gm12,ID12,Pwr,chks,VDD,VSS,sol,Vicm_nom});
+
+  // ── Vicm 스윕 (회로 파라미터에만 의존) ──
+  const icmrData=computeIcmrSweep(p,Vbias);
+
+  // ── Vid 스윕 (Vicm 입력에 의존) ──
+  const Vicm_vid=parseFloat(g('vicm').value);
+  const vidSweep=computeVidSweep(p,Vbias,Vicm_vid,vov12,g('vid-full').checked);
+
+  // Vicm_vid 기준 출력 스윙 계산
+  let voutMinV=voutMin, voutMaxV=voutMax, vout_balV=Vx;
+  const balV=solveDCbalM5(p,Vicm_vid,Vbias);
+  if(balV.converged){
+    const[VtV,VxV]=balV.x;
+    const VGS1v=nmos?Vicm_vid-VtV:VtV-Vicm_vid;
+    const VGS3v=nmos?VDD-VxV:VxV-VSS;
+    const vov12v=Math.max(0,VGS1v-vth12);
+    const vov34v=Math.max(0,VGS3v-vth34);
+    const vov5v=Math.max(0,(nmos?Vbias-VSS:VDD-Vbias)-vth5);
+    voutMaxV=nmos?VDD-vov34v:VtV-vov12v;          // NMOS: M4 sat, PMOS: M2 sat (Vtail-Vov2)
+    voutMinV=nmos?VtV+vov12v:VSS+vov34v;          // NMOS: M2 sat (Vtail+Vov2), PMOS: M4 sat
+    vout_balV=VxV;
+  }
+
+  _p={p,VDD,VSS,Vbias,Vicm_nom,Vtail,Vx,vout_bal:vout_balV,
+      vov12,vov34,vov5,vgs12,vgs34,vgs5,
+      icmrL,icmrH,voutMin:voutMinV,voutMax:voutMaxV,
+      nmos,gm12,ID12,Rout,Gm,Av,
+      Vicm_vid,vidMode:g('vid-mode').value,
+      icmrData,vidData:vidSweep.vidData,vidMax:vidSweep.vidMax};
+  requestAnimationFrame(drawCharts);
+}
+
+// ─── Vid 스윕만 다시 계산 (Vicm/모드 변경 시) ───
+function calcVid(){
+  if(!_p.p) return;
+  const pp=_p.p, Vbias=_p.Vbias;
+  const{VDD,VSS,mu12,wl1,vth12,lam12,mu34,wl3,vth34,lam34,mu5,wl5,vth5,lam5,nmos}=pp;
+  const Vicm_vid=parseFloat(g('vicm').value);
+
+  // Vicm_vid에서 동작점 풀어서 출력스윙 재계산
+  const balV=solveDCbalM5(pp,Vicm_vid,Vbias);
+  if(balV.converged){
+    const[Vt,Vx]=balV.x;
+    const VGS1v=nmos?Vicm_vid-Vt:Vt-Vicm_vid;
+    const VGS3v=nmos?VDD-Vx:Vx-VSS;
+    const vov12v=Math.max(0,VGS1v-vth12);
+    const vov34v=Math.max(0,VGS3v-vth34);
+    const VGS5v=nmos?Vbias-VSS:VDD-Vbias;
+    const vov5v=Math.max(0,VGS5v-vth5);
+    _p.voutMax=nmos?VDD-vov34v:Vt-vov12v;          // NMOS: M4 sat, PMOS: M2 sat (Vtail-Vov2)
+    _p.voutMin=nmos?Vt+vov12v:VSS+vov34v;          // NMOS: M2 sat, PMOS: M4 sat
+    // 균형 Vout도 갱신
+    _p.vout_bal=Vx;
+  }
+
+  const vidSweep=computeVidSweep(pp,Vbias,Vicm_vid,_p.vov12,g('vid-full').checked);
+  _p.Vicm_vid=Vicm_vid;
+  _p.vidMode=g('vid-mode').value;
+  _p.vidData=vidSweep.vidData;
+  _p.vidMax=vidSweep.vidMax;
+  requestAnimationFrame(drawCharts);
+}
+
+// ─── Design Hints ───
+function genHints({Av,AvdB,GBW,icmrL,icmrH,voutMin,voutMax,gm12,ID12,Pwr,chks,VDD,VSS,sol,Vicm_nom}){
+  const hints=[],allSat=chks.every(c=>c.sat),Vsup=VDD-VSS;
+  const gmId=gm12/ID12, vSwing=voutMax-voutMin;
+  if(sol&&sol.converged) hints.push(`✅ Level 1 NR 수렴 (${sol.iter+1}회 반복, Vicm=${Vicm_nom.toFixed(2)}V 기준)`);
+  if(!allSat) hints.push('⚠️ <strong>포화 조건 위반</strong> — W/L 또는 ISS 조정 필요.');
+  if(Av<5) hints.push('💡 이득 낮음. L ↑ 또는 ISS ↓ 검토.');
+  else if(AvdB>=40) hints.push(`✅ 이득 ${Av.toFixed(0)} V/V (${AvdB.toFixed(1)} dB)`);
+  if(gmId>25) hints.push('✅ gm/ID='+gmId.toFixed(1)+' — 약반전, 전력 효율 우수');
+  else if(gmId>10) hints.push('🟡 gm/ID='+gmId.toFixed(1)+' — 중간 반전 영역');
+  else hints.push('💡 gm/ID='+gmId.toFixed(1)+' — 강반전. ISS↓ 또는 W/L↑ 검토.');
+  if(vSwing<Vsup*0.4) hints.push('💡 출력 스윙 '+f2(vSwing)+'V. W/L(M2,M4) ↑ 고려.');
+  if(icmrH-icmrL<Vsup*0.3) hints.push('💡 ICMR='+f2(icmrH-icmrL)+'V. W/L(M3,M5) ↑ 고려.');
+  if(allSat&&Av>=10&&vSwing>=Vsup*0.4) hints.push('🎉 설계 조건 충족!');
+  g('hints').innerHTML=hints.map(h=>`<div>${h}</div>`).join('');
+}
+
+// ─── Chart Drawing ───
+let _chartH=0;
+function drawCharts(){
+  // 두 차트 공통 높이 계산 (같은 패널 안)
+  const cvs=g('cv-icmr'), panel=cvs.closest('.panel');
+  _chartH=panel?Math.max(130,panel.clientHeight-62):220;
+  drawIcmr();drawVid();
+}
+
+function initCanvas(id,H){
+  const cvs=g(id), W=cvs.clientWidth||300;
+  cvs.width=W*dpr; cvs.height=H*dpr;
+  const ctx=cvs.getContext('2d'); ctx.scale(dpr,dpr);
+  return {ctx,W,H};
+}
+
+function drawAxes(ctx,mx,my,cw,ch,xTicks,yTicks,xlabel,ylabel){
+  ctx.strokeStyle='#e0e4ea'; ctx.lineWidth=1;
+  yTicks.forEach(({v,label,yf})=>{
+    const y=yf(v); ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx+cw,y);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='8px monospace';ctx.textAlign='right';ctx.fillText(label,mx-3,y+3);
+  });
+  xTicks.forEach(({v,label,xf})=>{
+    const x=xf(v); ctx.beginPath();ctx.moveTo(x,my);ctx.lineTo(x,my+ch);ctx.stroke();
+    ctx.fillStyle='#999';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText(label,x,my+ch+10);
+  });
+  ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.strokeRect(mx,my,cw,ch);
+  if(xlabel){ctx.fillStyle='#777';ctx.font='8px sans-serif';ctx.textAlign='center';ctx.fillText(xlabel,mx+cw/2,my+ch+18);}
+  if(ylabel){ctx.save();ctx.translate(8,my+ch/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#777';ctx.font='8px sans-serif';ctx.textAlign='center';ctx.fillText(ylabel,0,0);ctx.restore();}
+}
+
+// ── Chart 1: Vicm 스윕 — NR로 계산된 Vp·Vout ──
+function drawIcmr(){
+  const{VDD,VSS,icmrL,icmrH,icmrData,vov5,nmos,p:pp}=_p;
+  if(!icmrData||!icmrData.length) return;
+  const{ctx,W,H}=initCanvas('cv-icmr',_chartH);
+  const legH=32, mx=38,my=14,mr=8,mb=22+legH,cw=W-mx-mr,ch=H-my-mb;
+  const vsup=VDD-VSS;
+  const xf=v=>mx+(v-VSS)/vsup*cw, yf=v=>my+(1-(v-VSS)/vsup)*ch;
+  const xc=v=>clamp(xf(v),mx,mx+cw), yc=v=>clamp(yf(v),my,my+ch);
+  const inRange=v=>v>=VSS-0.05&&v<=VDD+0.05;
+
+  // 배경 음영
+  const xl=clamp(xf(icmrL),mx,mx+cw), xr=clamp(xf(icmrH),mx,mx+cw);
+  ctx.fillStyle='rgba(231,76,60,.07)';ctx.fillRect(mx,my,xl-mx,ch);ctx.fillRect(xr,my,mx+cw-xr,ch);
+  ctx.fillStyle='rgba(39,174,96,.06)';if(xr>xl)ctx.fillRect(xl,my,xr-xl,ch);
+
+  // 축
+  const yTicks=[0,1,2,3,4].map(i=>({v:VSS+vsup*i/4,label:(VSS+vsup*i/4).toFixed(1)+'V',yf}));
+  const xTicks=[0,1,2,3,4].map(i=>({v:VSS+vsup*i/4,label:(VSS+vsup*i/4).toFixed(1),xf}));
+  drawAxes(ctx,mx,my,cw,ch,xTicks,yTicks,'Vicm [V]','V [V]');
+
+  // ── 보조선 헬퍼 ──
+  const refH=(yVal,color,label,labelSide)=>{  // 수평 보조선
+    if(!inRange(yVal)) return;
+    const y=yf(yVal);
+    ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([5,3]);
+    ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx+cw,y);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=color;ctx.font='7.5px sans-serif';
+    if(labelSide==='right'){ctx.textAlign='right';ctx.fillText(label,mx+cw-2,y-2);}
+    else{ctx.textAlign='left';ctx.fillText(label,mx+2,y-2);}
+  };
+  const refV=(xVal,color,label,anchor)=>{     // 수직 보조선
+    if(xVal<VSS-.1||xVal>VDD+.1) return;
+    ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(xf(xVal),my);ctx.lineTo(xf(xVal),my+ch);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=color;ctx.font='7.5px sans-serif';
+    ctx.textAlign=anchor==='left'?'left':'right';
+    const lx=anchor==='left'?xf(xVal)+2:xf(xVal)-2;
+    ctx.fillText(label,lx,my+10);ctx.fillText(xVal.toFixed(2)+'V',lx,my+18);
+  };
+
+  // ── 1. 대각선: y = Vicm − VTHn (NMOS) / y = Vicm + VTHp (PMOS) ──
+  // 물리적 의미: 입력쌍 M1의 Vov→0 경계 (Vtail이 이 선 위로 가면 M1 차단)
+  const vthIn=pp.vth12;
+  ctx.strokeStyle='rgba(142,68,173,0.65)';ctx.lineWidth=1.2;ctx.setLineDash([6,3]);
+  ctx.beginPath();let diagFirst=true;
+  icmrData.forEach(d=>{
+    const yVal=nmos?d.vicm-vthIn:d.vicm+vthIn;
+    if(!inRange(yVal)){diagFirst=true;return;}
+    const x=xf(d.vicm),y=yc(yVal);
+    diagFirst?ctx.moveTo(x,y):ctx.lineTo(x,y);diagFirst=false;
+  });
+  ctx.stroke();ctx.setLineDash([]);
+  // 레이블: 대각선 중간
+  {const mid=icmrData[Math.floor(icmrData.length/2)];
+   if(mid){const yv=nmos?mid.vicm-vthIn:mid.vicm+vthIn;
+     if(inRange(yv)){ctx.fillStyle='rgba(142,68,173,0.85)';ctx.font='7.5px sans-serif';
+       ctx.textAlign='left';ctx.fillText(nmos?'Vicm−VTHn':'Vicm+VTHp',xf(mid.vicm)+2,yc(yv)-3);}}}
+
+  // ── 2. ICMR_L 수직선 ──
+  refV(icmrL,'#e67e22','ICMR_L','left');
+  // ── ICMR_H 도 유지 ──
+  refV(icmrH,'#e67e22','ICMR_H','right');
+
+  // ── VTHn / |VTHp| 수직 보조선 ──
+  {
+    const vthVal=nmos?pp.vth12:pp.vth12; // NMOS→VTHn, PMOS→|VTHp|
+    const vthLabel=nmos?`VTHn`:`|VTHp|`;
+    const vthColor='rgba(142,68,173,0.75)';
+    if(vthVal>=VSS-0.1&&vthVal<=VDD+0.1){
+      const xv=xf(nmos?VSS+vthVal:VDD-vthVal);
+      ctx.strokeStyle=vthColor;ctx.lineWidth=1.2;ctx.setLineDash([3,4]);
+      ctx.beginPath();ctx.moveTo(xv,my);ctx.lineTo(xv,my+ch);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=vthColor;ctx.font='7.5px sans-serif';
+      ctx.textAlign='left';
+      ctx.fillText(vthLabel,xv+2,my+ch-14);
+      ctx.fillText((nmos?VSS+vthVal:VDD-vthVal).toFixed(2)+'V',xv+2,my+ch-6);
+    }
+  }
+
+  if(nmos){
+    // ── 3. 수평: VDD − |VTHp| — M3(PMOS) 차단 경계 ──
+    const vddVthp=VDD-pp.vth34;
+    refH(vddVthp,'rgba(192,57,43,0.7)',`VDD−|VTHp|=${vddVthp.toFixed(2)}V`,'right');
+    // ── 4. 수평: Vb−VTHn = VSS+Vov5 — M5(NMOS) 포화 경계 ──
+    const vbiasLine=VSS+vov5;
+    refH(vbiasLine,'rgba(41,128,185,0.65)',`Vb−VTHn=${vbiasLine.toFixed(2)}V`,'left');
+  }else{
+    // ── 3. 수평: VSS + VTHn — M3(NMOS) 차단 경계 ──
+    const vssVthn=VSS+pp.vth34;
+    refH(vssVthn,'rgba(192,57,43,0.7)',`VSS+VTHn=${vssVthn.toFixed(2)}V`,'left');
+    // ── 4. 수평: VDD−Vov5 — M5(PMOS) 포화 경계 (Vp 상한) ──
+    const vtailMax=VDD-vov5;
+    refH(vtailMax,'rgba(41,128,185,0.65)',`VDD−Vov5=${vtailMax.toFixed(2)}V`,'right');
+  }
+
+  // ── 메인 곡선 (보조선 위에) ──
+  function plotCurve(getData,color,dash,lw){
+    ctx.strokeStyle=color;ctx.lineWidth=lw||1.8;ctx.setLineDash(dash||[]);
+    ctx.beginPath();let first=true;
+    icmrData.forEach(d=>{
+      const v=getData(d); if(v===null||v===undefined){first=true;return;}
+      const x=xc(d.vicm),y=yc(v);
+      first?ctx.moveTo(x,y):ctx.lineTo(x,y); first=false;
+    });
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  plotCurve(d=>d.Vtail,'#2980b9',[],2.0);
+  plotCurve(d=>d.Vx,   '#27ae60',[],2.2);
+
+  // 곡선 끝 레이블
+  const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
+  if(lastV){
+    const rx=xc(lastV.vicm);
+    ctx.font='8px sans-serif';ctx.textAlign='right';
+    ctx.fillStyle='#27ae60';ctx.fillText('Vout',rx-1,yc(lastV.Vx)-3);
+    ctx.fillStyle='#2980b9';ctx.fillText('Vp',rx-1,yc(lastV.Vtail)+10);
+  }
+
+  // ── Vicm 동작점 마커 ──
+  const Vicm_vid=parseFloat(g('vicm').value);
+  if(isFinite(Vicm_vid)&&Vicm_vid>=VSS&&Vicm_vid<=VDD){
+    // icmrData에서 가장 가까운 수렴 점 찾기
+    let best=null, bestD=Infinity;
+    icmrData.forEach(d=>{
+      if(d.Vtail===null) return;
+      const dist=Math.abs(d.vicm-Vicm_vid);
+      if(dist<bestD){bestD=dist;best=d;}
+    });
+    if(best){
+      const px=xf(Vicm_vid);
+      // 수직 점선
+      ctx.strokeStyle='rgba(230,126,34,.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(px,my);ctx.lineTo(px,my+ch);ctx.stroke();ctx.setLineDash([]);
+      // Vp 점
+      ctx.fillStyle='#2980b9';ctx.beginPath();ctx.arc(xc(best.vicm),yc(best.Vtail),4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+      // Vout 점
+      ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(xc(best.vicm),yc(best.Vx),4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+      // 라벨
+      ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',px,my+ch+10);
+    }
+  }
+
+  // ── ngspice 오버레이 ──
+  if(_ngData&&_ngData.length>0){
+    const ngVSS=_ngData[0][0], ngVDD=_ngData[_ngData.length-1][0];
+    const ngXf=v=>mx+(v-VSS)/vsup*cw;
+    // Vout (ngspice)
+    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+    ctx.beginPath(); let ngFirst=true;
+    _ngData.forEach(r=>{
+      const x=ngXf(r[0]), y=yc(r[2]);
+      ngFirst?ctx.moveTo(x,y):ctx.lineTo(x,y); ngFirst=false;
+    }); ctx.stroke();
+    // Vp (ngspice)
+    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.2; ctx.setLineDash([3,4]);
+    ctx.beginPath(); ngFirst=true;
+    _ngData.forEach(r=>{
+      const x=ngXf(r[0]), y=yc(r[1]);
+      ngFirst?ctx.moveTo(x,y):ctx.lineTo(x,y); ngFirst=false;
+    }); ctx.stroke();
+    ctx.setLineDash([]);
+    // 라벨
+    const lr=_ngData[Math.floor(_ngData.length*0.7)];
+    if(lr){ ctx.fillStyle='#e74c3c'; ctx.font='7.5px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('ngspice',ngXf(lr[0])+2,yc(lr[2])-3);}
+  }
+
+  // 범례 (그래프 아래)
+  const legends=[
+    {c:'#27ae60',lb:'Vout',dash:[]},
+    {c:'#2980b9',lb:'Vp',dash:[]},
+    ...(_ngData?[{c:'#e74c3c',lb:'ngspice Vout/Vp',dash:[5,3]}]:[]),
+    {c:'rgba(142,68,173,0.75)',lb:nmos?'Vicm−VTHn':'Vicm+VTHp',dash:[5,3]},
+    {c:'rgba(142,68,173,0.75)',lb:nmos?`VTHn=${(VSS+pp.vth12).toFixed(2)}V`:`|VTHp|=${(VDD-pp.vth12).toFixed(2)}V`,dash:[3,4]},
+    {c:'rgba(192,57,43,0.75)',lb:nmos?'VDD−|VTHp|':'VSS+VTHn',dash:[5,3]},
+    {c:'rgba(41,128,185,0.65)',lb:nmos?'Vb−VTHn':'VDD−Vov5',dash:[5,3]},
+  ];
+  const legY=my+ch+22;  // x축 라벨 아래
+  let legX=mx;
+  ctx.font='7.5px sans-serif';
+  legends.forEach(({c,lb,dash})=>{
+    ctx.strokeStyle=c;ctx.lineWidth=1.8;ctx.setLineDash(dash);
+    ctx.beginPath();ctx.moveTo(legX,legY);ctx.lineTo(legX+12,legY);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#444';ctx.textAlign='left';ctx.fillText(lb,legX+14,legY+3);
+    legX+=ctx.measureText(lb).width+26;
+  });
+}
+
+// ── Chart 2: Vid 스윕 — NR 3미지수 풀이 결과 ──
+function drawVid(){
+  const{VDD,VSS,voutMin,voutMax,vout_bal,vidData,vidMax,Av,vidMode,Vicm_vid}=_p;
+  if(!vidData||!vidData.length) return;
+  const{ctx,W,H}=initCanvas('cv-vid',_chartH);
+  const legH2=20, mx=36,my=14,mr=6,mb=22+legH2,cw=W-mx-mr,ch=H-my-mb;
+  if(!isFinite(voutMin)||!isFinite(voutMax)||voutMax<=voutMin) return;
+
+  const isFull=g('vid-full').checked;
+  const isSym=(!vidMode||vidMode==='sym');
+
+  // ── Y축 범위 ──
+  let yLo,yHi;
+  if(isFull){
+    yLo=VSS; yHi=VDD;
+  }else{
+    const vouts=vidData.filter(d=>d.Vout!==null).map(d=>d.Vout);
+    const dataMin=Math.min(...vouts,voutMin), dataMax=Math.max(...vouts,voutMax);
+    const marginY=(dataMax-dataMin)*0.15||0.1;
+    yLo=dataMin-marginY; yHi=dataMax+marginY;
+  }
+  const ySpan=yHi-yLo||1;
+
+  // ── X축 범위 ──
+  let xMin,xMax;
+  if(isFull){
+    if(isSym){
+      const half=Math.max((VDD-VSS)/2, vidMax);
+      xMin=-half; xMax=half;
+    }else{
+      xMin=VSS; xMax=VDD;
+    }
+  }else{
+    const xVals=vidData.filter(d=>d.Vout!==null).map(d=>d.vid);
+    xMin=Math.min(...xVals); xMax=Math.max(...xVals);
+  }
+  const xSpan=xMax-xMin||1;
+
+  const xf=v=>mx+(v-xMin)/xSpan*cw;
+  const yf=v=>my+(1-(v-yLo)/ySpan)*ch;
+  const xc=v=>clamp(xf(v),mx,mx+cw), yc=v=>yf(v);
+
+  // 유효 출력 범위 음영
+  ctx.fillStyle='rgba(39,174,96,.06)';
+  const yt=yf(voutMax),yb=yf(voutMin);
+  if(yb>yt)ctx.fillRect(mx,yt,cw,yb-yt);
+
+  // X축 라벨·눈금
+  let xlabel, xTicks;
+  const nxt=5;
+  if(isSym){
+    xlabel='Vid [V]';
+    if(isFull){
+      xTicks=Array.from({length:nxt},(_,i)=>{const v=xMin+xSpan*i/(nxt-1);return{v,label:v.toFixed(2),xf};});
+    }else{
+      xTicks=[-1,-.5,0,.5,1].map(k=>{const v=xMin+xSpan*(k+1)/2;return{v,label:(v*1000).toFixed(0)+'m',xf};});
+    }
+  }else{
+    xlabel=(vidMode==='vp')?'Vin+ [V]':'Vin− [V]';
+    xTicks=Array.from({length:nxt},(_,i)=>{const v=xMin+xSpan*i/(nxt-1);return{v,label:v.toFixed(2),xf};});
+  }
+
+  // Y축 눈금
+  let yTickVals;
+  if(isFull){
+    yTickVals=[0,1,2,3,4].map(i=>VSS+(VDD-VSS)*i/4);
+  }else{
+    yTickVals=[yLo,voutMin,vout_bal,voutMax,yHi];
+  }
+  yTickVals=yTickVals.filter((v,i,a)=>isFinite(v)&&v>=yLo-0.01&&v<=yHi+0.01&&a.findIndex(x=>Math.abs(x-v)<0.01)===i).sort((a,b)=>a-b);
+  const yTicks=yTickVals.map(v=>({v,label:v.toFixed(2),yf}));
+  drawAxes(ctx,mx,my,cw,ch,xTicks,yTicks,xlabel,'Vout [V]');
+
+  // 기준 수직선: Vid=0 (대칭) 또는 Vicm (단일입력)
+  const xRef=isSym?0:Vicm_vid;
+  ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xf(xRef),my);ctx.lineTo(xf(xRef),my+ch);ctx.stroke();
+
+  // Vicm 표시
+  if(!isSym){
+    // 단일입력: Vicm 수직선 + 라벨
+    ctx.strokeStyle='rgba(230,126,34,.6)';ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(xf(Vicm_vid),my);ctx.lineTo(xf(Vicm_vid),my+ch);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',xf(Vicm_vid),my+10);
+  }else{
+    // 대칭: 차트 우상단에 텍스트
+    ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='right';
+    ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',mx+cw-2,my+10);
+  }
+
+  // Vout 한계 (점선)
+  ctx.setLineDash([3,2]);
+  [[voutMax,'#e74c3c'],[voutMin,'#e74c3c']].forEach(([v,c])=>{
+    const py=yf(v); if(py<my-1||py>my+ch+1)return;
+    ctx.strokeStyle=c;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(mx,py);ctx.lineTo(mx+cw,py);ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle='#c0392b';ctx.font='7.5px sans-serif';ctx.textAlign='left';
+  if(yf(voutMax)>=my-1) ctx.fillText('max='+f2(voutMax)+'V',mx+2,yc(voutMax)-2);
+  if(yf(voutMin)<=my+ch+1) ctx.fillText('min='+f2(voutMin)+'V',mx+2,yc(voutMin)+9);
+
+  // 선형 이득 접선 (먼저 그려서 Vout 곡선 아래에 위치)
+  const vidLin=Math.min(vidMax*0.3,(voutMax-voutMin)/(2*Math.abs(Av)+0.001));
+  const xCenter=isSym?0:Vicm_vid;  // 접선 중심
+  ctx.strokeStyle='rgba(41,128,185,.5)';ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(xc(xCenter-vidLin),yc(vout_bal-Av*vidLin));
+  ctx.lineTo(xc(xCenter+vidLin),yc(vout_bal+Av*vidLin));
+  ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(41,128,185,.9)';ctx.font='8px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Av='+f1(Av)+'V/V',xf(xCenter),my+ch-4);
+
+  // NR 기반 전달 곡선 (최상위 레이어)
+  ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;ctx.setLineDash([]);
+  ctx.beginPath();let first=true;
+  vidData.forEach(d=>{
+    if(d.Vout===null){first=true;return;}
+    const x=xc(d.vid),y=yc(d.Vout);
+    first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+  });
+  ctx.stroke();
+
+  // 범례 (그래프 아래)
+  const vLegends=[
+    {c:'#27ae60',lb:isSym?'Vout(Vid)':(vidMode==='vp'?'Vout(Vin+)':'Vout(Vin−)'),dash:[]},
+    {c:'rgba(41,128,185,.7)',lb:'선형 이득 접선',dash:[4,3]},
+    {c:'#e74c3c',lb:'출력 스윙 한계',dash:[3,2]},
+  ];
+  const vLegY=my+ch+22;
+  let vLegX=mx;
+  ctx.font='7.5px sans-serif';
+  vLegends.forEach(({c,lb,dash})=>{
+    ctx.strokeStyle=c;ctx.lineWidth=1.8;ctx.setLineDash(dash);
+    ctx.beginPath();ctx.moveTo(vLegX,vLegY);ctx.lineTo(vLegX+12,vLegY);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#444';ctx.textAlign='left';ctx.fillText(lb,vLegX+14,vLegY+3);
+    vLegX+=ctx.measureText(lb).width+26;
+  });
+}
+
+// ─── Window resize ───
+let _resizeTimer;
+window.addEventListener('resize',()=>{clearTimeout(_resizeTimer);_resizeTimer=setTimeout(()=>requestAnimationFrame(drawCharts),100);});
+
+// ─── Process File Import ───
+function importProcess(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{const ext=file.name.split('.').pop().toLowerCase();
+      if(ext==='json') applyJSON(JSON.parse(ev.target.result),file.name);
+      else parseSPICE(ev.target.result,file.name);
+    }catch(err){alert('파싱 오류: '+err.message);}
+  };
+  reader.readAsText(file); e.target.value='';
+}
+function applyJSON(p,fname){
+  if(p.nmos){if(p.nmos.mu_cox!==undefined)g('un_cox').value=p.nmos.mu_cox;if(p.nmos.vth!==undefined)g('vthn').value=Math.abs(p.nmos.vth);if(p.nmos.lambda!==undefined)g('lam_n').value=Math.abs(p.nmos.lambda);}
+  if(p.pmos){if(p.pmos.mu_cox!==undefined)g('up_cox').value=p.pmos.mu_cox;if(p.pmos.vth!==undefined)g('vthp').value=Math.abs(p.pmos.vth);if(p.pmos.lambda!==undefined)g('lam_p').value=Math.abs(p.pmos.lambda);}
+  if(p.vdd!==undefined)g('vdd').value=p.vdd; if(p.vss!==undefined)g('vss').value=p.vss;
+  g('proc-badge').textContent='📋 '+(p.name||fname); calc(); alert(`"${p.name||fname}" 적용 완료!`);
+}
+function parseSPICE(txt,fname){
+  const re=/\.model\s+\w+\s+(nmos|pmos)\s+\(([^)]+)\)/gi;let m,found={};
+  while((m=re.exec(txt))!==null){const type=m[1].toLowerCase(),params={};const pr=/(\w+)\s*=\s*([\d.e+\-]+)/gi;let pm;while((pm=pr.exec(m[2]))!==null)params[pm[1].toUpperCase()]=parseFloat(pm[2]);found[type]=params;}
+  if(found.nmos){const p=found.nmos;if(p.KP)g('un_cox').value=(p.KP*1e6).toFixed(2);if(p.VTO)g('vthn').value=Math.abs(p.VTO).toFixed(3);if(p.LAMBDA)g('lam_n').value=Math.abs(p.LAMBDA).toFixed(4);}
+  if(found.pmos){const p=found.pmos;if(p.KP)g('up_cox').value=(p.KP*1e6).toFixed(2);if(p.VTO)g('vthp').value=Math.abs(p.VTO).toFixed(3);if(p.LAMBDA)g('lam_p').value=Math.abs(p.LAMBDA).toFixed(4);}
+  g('proc-badge').textContent='📋 SPICE: '+fname; calc(); alert('SPICE .lib 파싱 완료');
+}
+
+// ─── Reset ───
+// 토폴로지별 기본값
+const TOPO_DEFAULTS={
+  nmos:{
+    // NMOS diff: M1/M2 NMOS(큰 W/L), M3/M4 PMOS load(작은 W/L), M5 NMOS tail
+    vbias:0.93, vicm:1.65,
+    w1:20, l1:1, w3:10, l3:1, w5:40, l5:1
+  },
+  pmos:{
+    // PMOS diff: M1/M2 PMOS(큰 W/L, μp 보상), M3/M4 NMOS load, M5 PMOS tail
+    vbias:2.09, vicm:1.65,
+    w1:60, l1:1, w3:10, l3:1, w5:120, l5:1
+  }
+};
+
+function applyTopoDefaults(){
+  const topo=document.querySelector('input[name="topo"]:checked').value;
+  const d=TOPO_DEFAULTS[topo];
+  Object.entries(d).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
+  syncM2();syncM4();calc();
+}
+
+function switchModel(){
+  const lv=document.querySelector('input[name="model"]:checked').value;
+  _modelLevel=parseInt(lv);
+  const isBsim=(_modelLevel===49);
+  g('lv1-params').style.display=isBsim?'none':'';
+  g('corner-sel').style.display=isBsim?'':'none';
+  g('bsim-info').style.display=isBsim?'':'none';
+  g('proc-badge').textContent=isBsim?'📋 ETRI 0.5μm (BSIM3v3)':'📋 Default (Level 1)';
+  g('model-badge').textContent=isBsim?'BSIM3v3 (Level 49)':'MOSFET Level 1';
+  // BSIM3v3일 때 ETRI 공정 기본값
+  if(isBsim){
+    const defs={vdd:3.3,vss:0,vbias:0.75,cl:1,w1:10,l1:1,w3:5,l3:1,w5:20,l5:1,vicm:1.65};
+    Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
+  }
+  syncM2();syncM4();calc();
+}
+
+function resetDefaults(){
+  document.querySelector('input[name="model"][value="1"]').checked=true;
+  _modelLevel=1;
+  g('lv1-params').style.display='';
+  g('corner-sel').style.display='none';
+  g('bsim-info').style.display='none';
+  const defs={un_cox:166,up_cox:88,vthn:0.685,vthp:0.956,lam_n:0.1,lam_p:0.2,
+    vdd:5.0,vss:0,cl:1};
+  Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
+  document.querySelector('input[name="topo"][value="nmos"]').checked=true;
+  g('proc-badge').textContent='📋 Default (Level 1)';
+  applyTopoDefaults();
+}
+
+window.onload=()=>{syncM2();syncM4();calc();};
+</script>
+
+<!-- ══════════ ngspice WASM integration ══════════ -->
+<script>
+// ─── ETRI 0.5μm MOS 모델 (MOS 섹션만) ───
+const ETRI_LIB = `.LIB MOS
+.MODEL nmos4 nmos ( LEVEL=49 VERSION=3.2 TNOM=27 TOX=1.05E-8
++XJ=2.7E-7 NCH=2.4E17 VTH0=0.6853721 K1=0.7161694 K2=-4.636134E-5 K3=30
++K3B=-10 W0=8.4822E-6 NLX=2.605385E-7 DVT0W=0 DVT1W=0 DVT2W=-0.032
++DVT0=1.1124703 DVT1=0.2497294 DVT2=0 U0=503.2726356 UA=1E-11 UB=2.436791E-18
++UC=8.083776E-11 VSAT=8.511705E4 A0=0.6441421 AGS=0.1378118 B0=1.24596E-8 B1=-1.01E-7
++KETA=-7.464619E-3 A1=0 A2=1 RDSW=1.19434E3 PRWG=-0.01 PRWB=8.389165E-3
++WR=1 WINT=1.513015E-7 LINT=2.156876E-8 XL=0 XW=-1E-7 DWG=-1.742794E-8
++DWB=6.866549E-9 VOFF=-0.0998905 NFACTOR=1.1 CIT=0 CDSC=4.327068E-4 CDSCD=0
++CDSCB=4.5945E-4 ETA0=1.109281E-3 ETAB=-0.2 DSUB=0.8836863 PCLM=0.6857613
++PDIBLC1=0.0466939 PDIBLC2=5E-4 PDIBLCB=0 DROUT=0.2761545
++PSCBE1=4.495624E8 PSCBE2=5.004804E-5 PVAG=0 DELTA=1E-3
++MOBMOD=1 NQSMOD=0 )
+.MODEL pmos4 pmos ( LEVEL=49 VERSION=3.2 TNOM=27 TOX=1.05E-8
++XJ=2.2E-7 NCH=5E16 VTH0=-0.955701 K1=0.506553 K2=0 K3=22.729
++K3B=-6.08389 W0=1.69386E-6 NLX=1.9959E-7 DVT0W=0 DVT1W=0 DVT2W=-0.032
++DVT0=3.50997 DVT1=0.727088 DVT2=-0.0183815 U0=266.196 UA=3.69133E-9 UB=1E-21
++UC=-3.87597E-11 VSAT=9.55069E4 A0=0.623211 AGS=0.194947 B0=3.06684E-7 B1=1E-7
++KETA=-4.28948E-3 A1=3.86287E-4 A2=0.9 RDSW=3.60374E3 PRWG=-0.0799373 PRWB=0.0411799
++WR=1 WINT=1.36348E-7 LINT=6.23443E-9 XL=0 XW=-1E-7 DWG=-2.20408E-8
++DWB=3.29479E-9 VOFF=-0.134374 NFACTOR=1.87019 CIT=0 CDSC=6.79352E-4 CDSCD=0
++CDSCB=1.06434E-3 ETA0=0.0463143 ETAB=0 DSUB=0.338036 PCLM=1.53691
++PDIBLC1=0 PDIBLC2=4.5E-4 PDIBLCB=0 DROUT=1.79767
++PSCBE1=8E8 PSCBE2=7E-9 PVAG=-0.29474 DELTA=7.07618E-3
++MOBMOD=1 NQSMOD=0 )
+.ENDL MOS`;
+
+// ─── netlist 생성 ───
+function buildNetlist(){
+  const pp=_p.p; if(!pp) return null;
+  const nmos=document.querySelector('input[name="topo"]:checked').value==='nmos';
+  const VDD=parseFloat(g('vdd').value), VSS=parseFloat(g('vss').value);
+  const Vbias=parseFloat(g('vbias').value);
+  const W1=parseFloat(g('w1').value), L1=parseFloat(g('l1').value);
+  const W3=parseFloat(g('w3').value), L3=parseFloat(g('l3').value);
+  const W5=parseFloat(g('w5').value), L5=parseFloat(g('l5').value);
+  const step=Math.max((VDD-VSS)/200,0.01).toFixed(4);
+
+  let cir;
+  if(nmos){
+    cir=`* 5T OTA Vicm sweep (NMOS pair) - ETRI 0.5um
+.lib "/model.lib" MOS
+VDD vdd 0 DC ${VDD}
+VSS vss 0 DC ${VSS}
+Vb  vb  0 DC ${Vbias}
+Vcm vcm 0 DC 0
+M1 nodea vcm vp  0   nmos4 W=${W1}u L=${L1}u
+M2 vout  vcm vp  0   nmos4 W=${W1}u L=${L1}u
+M3 nodea nodea vdd vdd pmos4 W=${W3}u L=${L3}u
+M4 vout  nodea vdd vdd pmos4 W=${W3}u L=${L3}u
+M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
+.dc Vcm ${VSS} ${VDD} ${step}
+.control
+run
+wrdata /out.dat V(vcm) V(vp) V(vout) V(nodea)
+quit
+.endc
+.end`;
+  } else {
+    cir=`* 5T OTA Vicm sweep (PMOS pair) - ETRI 0.5um
+.lib "/model.lib" MOS
+VDD vdd 0 DC ${VDD}
+VSS vss 0 DC ${VSS}
+Vb  vb  0 DC ${Vbias}
+Vcm vcm 0 DC 0
+M1 nodea vcm vp  vdd pmos4 W=${W1}u L=${L1}u
+M2 vout  vcm vp  vdd pmos4 W=${W1}u L=${L1}u
+M3 nodea nodea 0 0   nmos4 W=${W3}u L=${L3}u
+M4 vout  nodea 0 0   nmos4 W=${W3}u L=${L3}u
+M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
+.dc Vcm ${VSS} ${VDD} ${step}
+.control
+run
+wrdata /out.dat V(vcm) V(vp) V(vout) V(nodea)
+quit
+.endc
+.end`;
+  }
+  return cir;
+}
+
+// ─── wrdata 파싱: "x y1 y2..." 탭/공백 구분 ───
+function parseWrdata(txt){
+  const lines=txt.trim().split('\n').filter(l=>l.trim()&&!l.startsWith('*'));
+  const rows=[];
+  for(const ln of lines){
+    const nums=ln.trim().split(/\s+/).map(Number);
+    if(nums.length>=3&&nums.every(isFinite)) rows.push(nums);
+  }
+  return rows; // [[vcm, vp, vout, vnodea], ...]
+}
+
+// ─── 차트 오버레이 ───
+let _ngData=null;
+function overlayNgspice(rows){
+  _ngData=rows;
+  drawIcmr(); // 기존 drawIcmr이 _ngData를 체크해서 오버레이
+}
+
+// ─── ngspice Web Worker 실행 ───
+function runNgspice(){
+  const netlist=buildNetlist();
+  if(!netlist){alert('먼저 회로를 계산해주세요.');return;}
+
+  const btn=g('btn-ngspice'), st=g('ngspice-status');
+  btn.disabled=true; st.textContent='⏳ 실행 중...'; st.style.color='#e67e22';
+
+  const baseUrl=(()=>{
+    const href=window.location.href;
+    return href.substring(0,href.lastIndexOf('/')+1);
+  })();
+
+  const workerCode=`
+self.onmessage=function(e){
+  var netlist=e.data.netlist, model=e.data.model;
+  var outLines=[];
+  self.Module={
+    locateFile:function(p){return '${baseUrl}'+p;},
+    arguments:['-b','/sim.cir'],
+    preRun:[function(){
+      FS.writeFile('/sim.cir',netlist);
+      FS.writeFile('/model.lib',model);
+    }],
+    print:function(t){outLines.push(t);},
+    printErr:function(t){},
+    postRun:[function(){
+      var data='';
+      try{data=FS.readFile('/out.dat',{encoding:'utf8'});}catch(ex){}
+      self.postMessage({type:'done',data:data,log:outLines.join('\\n')});
+    }]
+  };
+  importScripts('${baseUrl}ngspice.js');
+};`;
+
+  const blob=new Blob([workerCode],{type:'text/javascript'});
+  const worker=new Worker(URL.createObjectURL(blob));
+
+  worker.onmessage=function(e){
+    if(e.data.type==='done'){
+      worker.terminate();
+      btn.disabled=false;
+      const rows=parseWrdata(e.data.data);
+      if(rows.length>0){
+        overlayNgspice(rows);
+        st.textContent=`✅ ${rows.length}점`;
+        st.style.color='#27ae60';
+      } else {
+        st.textContent='⚠️ 데이터 없음';
+        st.style.color='#e74c3c';
+        console.log('ngspice log:', e.data.log);
+      }
+    }
+  };
+  worker.onerror=function(err){
+    worker.terminate(); btn.disabled=false;
+    st.textContent='❌ 오류: '+err.message; st.style.color='#e74c3c';
+  };
+  worker.postMessage({netlist,model:ETRI_LIB});
+}
+</script>
+</body>
+</html>
