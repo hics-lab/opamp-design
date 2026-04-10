@@ -434,7 +434,8 @@ function bsim3Ids(P, W, L, Vgs, Vds, Vbs){
   const sqPHIsVbs=Math.sqrt(Math.max(PHIs-Vbs,1e-6));
   const dVth_body=P.K1*(sqPHIsVbs - sqPHIs) + P.K2*Vbs;
   // DIBL on Vth (ETA0, ETAB만 — DSUB는 subthreshold용)
-  const dVth_dibl=-(P.ETA0 + P.ETAB*Vbs)*Vds;
+  // ETAB*Vbs가 양수이면 DIBL이 비정상적으로 증가 → 0으로 클램핑 (안정성)
+  const dVth_dibl=-(P.ETA0 + Math.min(P.ETAB*Vbs,0))*Vds;
   // NLX: non-uniform lateral doping Vth correction
   // Small correction proportional to NLX/Leff
   const dVth_nlx=(P.NLX>0&&Leff>0)?-2*_Vtm*P.NLX/Leff:0;
@@ -467,8 +468,8 @@ function bsim3Ids(P, W, L, Vgs, Vds, Vbs){
   const Esat=2*P.VSAT*100/(Ueff+1e-10);  // V/cm
   const EsatL=Esat*Leff*100;  // V (Esat[V/cm]*Leff[m]*100[cm/m])
 
-  // Abulk (bulk charge factor)
-  const Abulk0=1+P.A0*(1-Math.exp(-Leff*1e6/0.5))/(Leff*1e6+1e-6);  // simplified
+  // Abulk (bulk charge factor) — 파라미터 추출과 일관된 공식
+  const Abulk0=1+P.A0*(1-Math.exp(-Leff*1e6/0.5))/(Leff*1e6+1e-6);
   const Abulk=Math.max(Abulk0*(1+P.KETA*Vbs),0.1);
 
   // Vdsat
@@ -805,15 +806,17 @@ function solveDCbalM5(p,Vicm,Vbias,hint){
   const t12=nmos?'nmos':'pmos', t34=nmos?'pmos':'nmos', t5=nmos?'nmos':'pmos';
   const F=([Vt,Vx])=>{
     let i1,i3,i5;
-    // Vbs: M1 body=source rail (diff pair), M3 body=rail, M5 body=rail → 0
+    // Vbs: M1/M2 source=tail(Vt), body=supply rail → Vbs≠0 (body effect 필수)
+    // NMOS diff pair: body=VSS, source=Vt → Vbs=VSS-Vt
+    // PMOS diff pair: body=VDD, source=Vt → Vbs=Vt-VDD (VSB convention)
     if(nmos){
-      i1=getId(t12,Vicm-Vt,Vx-Vt,0,     mu12,wl1,vth12,lam12,W1,L1);
-      i3=getId(t34,VDD-Vx,VDD-Vx,0,      mu34,wl3,vth34,lam34,W3,L3);
-      i5=getId(t5, Vbias-VSS,Vt-VSS,0,   mu5,wl5,vth5,lam5,W5,L5);
+      i1=getId(t12,Vicm-Vt,Vx-Vt,VSS-Vt, mu12,wl1,vth12,lam12,W1,L1);  // M1: Vbs=VSS-Vp
+      i3=getId(t34,VDD-Vx,VDD-Vx,0,       mu34,wl3,vth34,lam34,W3,L3);  // M3: src=VDD
+      i5=getId(t5, Vbias-VSS,Vt-VSS,0,    mu5,wl5,vth5,lam5,W5,L5);     // M5: src=VSS
     }else{
-      i1=getId(t12,Vt-Vicm,Vt-Vx,0,      mu12,wl1,vth12,lam12,W1,L1);
-      i3=getId(t34,Vx-VSS,Vx-VSS,0,      mu34,wl3,vth34,lam34,W3,L3);
-      i5=getId(t5, VDD-Vbias,VDD-Vt,0,   mu5,wl5,vth5,lam5,W5,L5);
+      i1=getId(t12,Vt-Vicm,Vt-Vx,Vt-VDD, mu12,wl1,vth12,lam12,W1,L1);  // M1: Vbs=Vp-VDD
+      i3=getId(t34,Vx-VSS,Vx-VSS,0,       mu34,wl3,vth34,lam34,W3,L3);  // M3: src=VSS
+      i5=getId(t5, VDD-Vbias,VDD-Vt,0,    mu5,wl5,vth5,lam5,W5,L5);     // M5: src=VDD
     }
     return [2*i1-i5, i3-i1];
   };
@@ -830,14 +833,14 @@ function solveDCfull(p,V1,V2,Vbias,hint){
   const F=([Vt,Va,Vo])=>{
     let i1,i2,i3,i4,i5;
     if(nmos){
-      i1=getId(t12,V1-Vt,Va-Vt,0,        mu12,wl1,vth12,lam12,W1,L1);
-      i2=getId(t12,V2-Vt,Vo-Vt,0,        mu12,wl1,vth12,lam12,W1,L1);
+      i1=getId(t12,V1-Vt,Va-Vt,VSS-Vt,  mu12,wl1,vth12,lam12,W1,L1);  // M1: Vbs=VSS-Vp
+      i2=getId(t12,V2-Vt,Vo-Vt,VSS-Vt,  mu12,wl1,vth12,lam12,W1,L1);  // M2: Vbs=VSS-Vp
       i3=getId(t34,VDD-Va,VDD-Va,0,      mu34,wl3,vth34,lam34,W3,L3);
       i4=getId(t34,VDD-Va,VDD-Vo,0,      mu34,wl3,vth34,lam34,W3,L3);
       i5=getId(t5, Vbias-VSS,Vt-VSS,0,   mu5,wl5,vth5,lam5,W5,L5);
     }else{
-      i1=getId(t12,Vt-V1,Vt-Va,0,        mu12,wl1,vth12,lam12,W1,L1);
-      i2=getId(t12,Vt-V2,Vt-Vo,0,        mu12,wl1,vth12,lam12,W1,L1);
+      i1=getId(t12,Vt-V1,Vt-Va,Vt-VDD,  mu12,wl1,vth12,lam12,W1,L1);  // M1: Vbs=Vp-VDD
+      i2=getId(t12,Vt-V2,Vt-Vo,Vt-VDD,  mu12,wl1,vth12,lam12,W1,L1);  // M2: Vbs=Vp-VDD
       i3=getId(t34,Va-VSS,Va-VSS,0,      mu34,wl3,vth34,lam34,W3,L3);
       i4=getId(t34,Va-VSS,Vo-VSS,0,      mu34,wl3,vth34,lam34,W3,L3);
       i5=getId(t5, VDD-Vbias,VDD-Vt,0,   mu5,wl5,vth5,lam5,W5,L5);
