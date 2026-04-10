@@ -1790,7 +1790,10 @@ self.onmessage=function(e){
     if(e.data.type==='done'){
       worker.terminate();
       btn.disabled=false;
+      console.log('ngspice raw data (first 300):', e.data.data.slice(0,300));
+      console.log('ngspice log:', e.data.log);
       const rows=parseWrdata(e.data.data);
+      console.log('parsed rows[0]:', rows[0], 'rows[mid]:', rows[Math.floor(rows.length/2)]);
       if(rows.length>0){
         overlayNgspice(rows);
         st.textContent=`✅ ${rows.length}점`;
@@ -1798,7 +1801,6 @@ self.onmessage=function(e){
       } else {
         st.textContent='⚠️ 데이터 없음';
         st.style.color='#e74c3c';
-        console.log('ngspice log:', e.data.log);
       }
     }
   };
