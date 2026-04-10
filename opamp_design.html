@@ -1624,6 +1624,9 @@ function switchModel(){
     Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
   }
   syncM2();syncM4();calc();
+  // BSIM3v3 선택 시 ngspice 자동 실행, Level 1 전환 시 오버레이 제거
+  if(isBsim){ _ngData=null; setTimeout(()=>runNgspice(),300); }
+  else{ _ngData=null; requestAnimationFrame(drawCharts); }
 }
 
 function resetDefaults(){
@@ -1700,7 +1703,7 @@ M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
 .dc Vcm ${VSS} ${VDD} ${step}
 .control
 run
-wrdata /out.dat V(vcm) V(vp) V(vout) V(nodea)
+wrdata /out.dat V(vp) V(vout) V(nodea)
 quit
 .endc
 .end`;
@@ -1719,7 +1722,7 @@ M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
 .dc Vcm ${VSS} ${VDD} ${step}
 .control
 run
-wrdata /out.dat V(vcm) V(vp) V(vout) V(nodea)
+wrdata /out.dat V(vp) V(vout) V(nodea)
 quit
 .endc
 .end`;
