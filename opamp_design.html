@@ -1333,75 +1333,77 @@ function drawIcmr(){
     });
     ctx.stroke();ctx.setLineDash([]);
   }
-  plotCurve(d=>d.Vtail,'#2980b9',[],2.0);
-  plotCurve(d=>d.Vx,   '#27ae60',[],2.2);
-
-  // 곡선 끝 레이블
-  const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
-  if(lastV){
-    const rx=xc(lastV.vicm);
-    ctx.font='8px sans-serif';ctx.textAlign='right';
-    ctx.fillStyle='#27ae60';ctx.fillText('Vout',rx-1,yc(lastV.Vx)-3);
-    ctx.fillStyle='#2980b9';ctx.fillText('Vp',rx-1,yc(lastV.Vtail)+10);
+  // ── 메인 곡선: BSIM3v3→ngspice primary, Level1→JS NR ──
+  const bsimMode=(_modelLevel===49);
+  if(bsimMode && _ngLoading){
+    // 로딩 중
+    ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(mx,my,cw,ch);
+    ctx.fillStyle='#7f8c8d';ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('ngspice 실행 중... ⏳',mx+cw/2,my+ch/2);
+  } else if(bsimMode && _ngData && _ngData.length>0){
+    // ngspice 결과를 primary로 그리기
+    function plotNg(getY,color,lw){
+      ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.setLineDash([]);
+      ctx.beginPath();let first=true;
+      _ngData.forEach(r=>{
+        const v=getY(r);if(!isFinite(v)){first=true;return;}
+        const x=xc(r[0]),y=yc(v);
+        first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+      });ctx.stroke();
+    }
+    plotNg(r=>r[2],'#27ae60',2.2); // Vout
+    plotNg(r=>r[1],'#2980b9',2.0); // Vp
+    // 끝 레이블
+    const lr=_ngData[_ngData.length-1];
+    if(lr){
+      ctx.font='8px sans-serif';ctx.textAlign='right';
+      ctx.fillStyle='#27ae60';ctx.fillText('Vout(ng)',xc(lr[0])-1,yc(lr[2])-3);
+      ctx.fillStyle='#2980b9';ctx.fillText('Vp(ng)',xc(lr[0])-1,yc(lr[1])+10);
+    }
+  } else if(bsimMode){
+    // 아직 결과 없음
+    ctx.fillStyle='#bdc3c7';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('BSIM3v3 선택됨 — ngspice 로드 중...',mx+cw/2,my+ch/2);
+  } else {
+    // Level 1: JS NR 결과
+    plotCurve(d=>d.Vtail,'#2980b9',[],2.0);
+    plotCurve(d=>d.Vx,   '#27ae60',[],2.2);
+    const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
+    if(lastV){
+      const rx=xc(lastV.vicm);
+      ctx.font='8px sans-serif';ctx.textAlign='right';
+      ctx.fillStyle='#27ae60';ctx.fillText('Vout',rx-1,yc(lastV.Vx)-3);
+      ctx.fillStyle='#2980b9';ctx.fillText('Vp',rx-1,yc(lastV.Vtail)+10);
+    }
   }
 
   // ── Vicm 동작점 마커 ──
   const Vicm_vid=parseFloat(g('vicm').value);
   if(isFinite(Vicm_vid)&&Vicm_vid>=VSS&&Vicm_vid<=VDD){
-    // icmrData에서 가장 가까운 수렴 점 찾기
-    let best=null, bestD=Infinity;
-    icmrData.forEach(d=>{
-      if(d.Vtail===null) return;
-      const dist=Math.abs(d.vicm-Vicm_vid);
-      if(dist<bestD){bestD=dist;best=d;}
-    });
-    if(best){
-      const px=xf(Vicm_vid);
-      // 수직 점선
-      ctx.strokeStyle='rgba(230,126,34,.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
-      ctx.beginPath();ctx.moveTo(px,my);ctx.lineTo(px,my+ch);ctx.stroke();ctx.setLineDash([]);
-      // Vp 점
-      ctx.fillStyle='#2980b9';ctx.beginPath();ctx.arc(xc(best.vicm),yc(best.Vtail),4,0,Math.PI*2);ctx.fill();
+    const px=xf(Vicm_vid);
+    ctx.strokeStyle='rgba(230,126,34,.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(px,my);ctx.lineTo(px,my+ch);ctx.stroke();ctx.setLineDash([]);
+    // 동작점 마커: ngspice or JS data
+    const markerData=(bsimMode&&_ngData)?
+      (()=>{const r=_ngData.reduce((b,r)=>Math.abs(r[0]-Vicm_vid)<Math.abs(b[0]-Vicm_vid)?r:b,_ngData[0]);
+            return r?{Vtail:r[1],Vx:r[2],vicm:r[0]}:null;})() :
+      (()=>{let best=null,bestD=Infinity;
+            icmrData.forEach(d=>{if(d.Vtail===null)return;const dist=Math.abs(d.vicm-Vicm_vid);if(dist<bestD){bestD=dist;best=d;}});
+            return best;})();
+    if(markerData){
+      ctx.fillStyle='#2980b9';ctx.beginPath();ctx.arc(xc(markerData.vicm),yc(markerData.Vtail),4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-      // Vout 점
-      ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(xc(best.vicm),yc(best.Vx),4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(xc(markerData.vicm),yc(markerData.Vx),4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-      // 라벨
-      ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='center';
-      ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',px,my+ch+10);
     }
-  }
-
-  // ── ngspice 오버레이 ──
-  if(_ngData&&_ngData.length>0){
-    const ngVSS=_ngData[0][0], ngVDD=_ngData[_ngData.length-1][0];
-    const ngXf=v=>mx+(v-VSS)/vsup*cw;
-    // Vout (ngspice)
-    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
-    ctx.beginPath(); let ngFirst=true;
-    _ngData.forEach(r=>{
-      const x=ngXf(r[0]), y=yc(r[2]);
-      ngFirst?ctx.moveTo(x,y):ctx.lineTo(x,y); ngFirst=false;
-    }); ctx.stroke();
-    // Vp (ngspice)
-    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.2; ctx.setLineDash([3,4]);
-    ctx.beginPath(); ngFirst=true;
-    _ngData.forEach(r=>{
-      const x=ngXf(r[0]), y=yc(r[1]);
-      ngFirst?ctx.moveTo(x,y):ctx.lineTo(x,y); ngFirst=false;
-    }); ctx.stroke();
-    ctx.setLineDash([]);
-    // 라벨
-    const lr=_ngData[Math.floor(_ngData.length*0.7)];
-    if(lr){ ctx.fillStyle='#e74c3c'; ctx.font='7.5px sans-serif'; ctx.textAlign='left';
-      ctx.fillText('ngspice',ngXf(lr[0])+2,yc(lr[2])-3);}
+    ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',px,my+ch+10);
   }
 
   // 범례 (그래프 아래)
   const legends=[
-    {c:'#27ae60',lb:'Vout',dash:[]},
-    {c:'#2980b9',lb:'Vp',dash:[]},
-    ...(_ngData?[{c:'#e74c3c',lb:'ngspice Vout/Vp',dash:[5,3]}]:[]),
+    {c:'#27ae60',lb:bsimMode?'Vout (ngspice)':'Vout',dash:[]},
+    {c:'#2980b9',lb:bsimMode?'Vp (ngspice)':'Vp',dash:[]},
     {c:'rgba(142,68,173,0.75)',lb:nmos?'Vicm−VTHn':'Vicm+VTHp',dash:[5,3]},
     {c:'rgba(142,68,173,0.75)',lb:nmos?`VTHn=${(VSS+pp.vth12).toFixed(2)}V`:`|VTHp|=${(VDD-pp.vth12).toFixed(2)}V`,dash:[3,4]},
     {c:'rgba(192,57,43,0.75)',lb:nmos?'VDD−|VTHp|':'VSS+VTHn',dash:[5,3]},
@@ -1624,9 +1626,9 @@ function switchModel(){
     Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
   }
   syncM2();syncM4();calc();
-  // BSIM3v3 선택 시 ngspice 자동 실행, Level 1 전환 시 오버레이 제거
-  if(isBsim){ _ngData=null; setTimeout(()=>runNgspice(),300); }
-  else{ _ngData=null; requestAnimationFrame(drawCharts); }
+  // BSIM3v3 선택 시 ngspice 자동 실행, Level 1 전환 시 초기화
+  if(isBsim){ _ngData=null; _ngLoading=false; setTimeout(()=>runNgspice(),300); }
+  else{ _ngData=null; _ngLoading=false; requestAnimationFrame(drawCharts); }
 }
 
 function resetDefaults(){
@@ -1703,7 +1705,7 @@ M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
 .dc Vcm ${VSS} ${VDD} ${step}
 .control
 run
-wrdata /out.dat V(vp) V(vout) V(nodea)
+print V(vcm) V(vp) V(vout) V(nodea)
 quit
 .endc
 .end`;
@@ -1722,7 +1724,7 @@ M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
 .dc Vcm ${VSS} ${VDD} ${step}
 .control
 run
-wrdata /out.dat V(vp) V(vout) V(nodea)
+print V(vcm) V(vp) V(vout) V(nodea)
 quit
 .endc
 .end`;
@@ -1741,20 +1743,33 @@ function parseWrdata(txt){
   return rows; // [[vcm, vp, vout, vnodea], ...]
 }
 
-// ─── 차트 오버레이 ───
+// ─── ngspice 상태 ───
 let _ngData=null;
-function overlayNgspice(rows){
-  _ngData=rows;
-  drawIcmr(); // 기존 drawIcmr이 _ngData를 체크해서 오버레이
+let _ngLoading=false;
+
+// ─── ngspice stdout 파싱 (print 명령어 출력) ───
+function parseNgOutput(log){
+  // ngspice print 출력: "Index  v(vcm)  v(vp)  v(vout)  v(nodea)"
+  // 또는 wrdata 형식: 숫자만 있는 줄
+  const rows=[];
+  for(const ln of log.split('\n')){
+    const t=ln.trim();
+    if(!t||t.startsWith('*')||/[a-zA-Z]/.test(t.replace(/e[+\-]\d+/gi,''))) continue;
+    const nums=t.split(/[\s,]+/).map(Number).filter(v=>isFinite(v));
+    if(nums.length===4) rows.push(nums);         // vcm vp vout nodea
+    else if(nums.length===5) rows.push(nums.slice(1)); // index vcm vp vout nodea
+  }
+  return rows; // [[vcm,vp,vout,nodea],...]
 }
 
 // ─── ngspice Web Worker 실행 ───
 function runNgspice(){
   const netlist=buildNetlist();
-  if(!netlist){alert('먼저 회로를 계산해주세요.');return;}
+  if(!netlist){return;}
 
   const btn=g('btn-ngspice'), st=g('ngspice-status');
   btn.disabled=true; st.textContent='⏳ 실행 중...'; st.style.color='#e67e22';
+  _ngLoading=true; _ngData=null; requestAnimationFrame(drawCharts);
 
   const baseUrl=(()=>{
     const href=window.location.href;
@@ -1775,9 +1790,7 @@ self.onmessage=function(e){
     print:function(t){outLines.push(t);},
     printErr:function(t){},
     postRun:[function(){
-      var data='';
-      try{data=FS.readFile('/out.dat',{encoding:'utf8'});}catch(ex){}
-      self.postMessage({type:'done',data:data,log:outLines.join('\\n')});
+      self.postMessage({type:'done',data:outLines.join('\\n')});
     }]
   };
   importScripts('${baseUrl}ngspice.js');
@@ -1790,18 +1803,19 @@ self.onmessage=function(e){
     if(e.data.type==='done'){
       worker.terminate();
       btn.disabled=false;
-      console.log('ngspice raw data (first 300):', e.data.data.slice(0,300));
-      console.log('ngspice log:', e.data.log);
-      const rows=parseWrdata(e.data.data);
-      console.log('parsed rows[0]:', rows[0], 'rows[mid]:', rows[Math.floor(rows.length/2)]);
+      _ngLoading=false;
+      const rows=parseNgOutput(e.data.data);
       if(rows.length>0){
-        overlayNgspice(rows);
-        st.textContent=`✅ ${rows.length}점`;
+        _ngData=rows;
+        st.textContent=`✅ ngspice ${rows.length}점`;
         st.style.color='#27ae60';
       } else {
+        _ngData=null;
         st.textContent='⚠️ 데이터 없음';
         st.style.color='#e74c3c';
+        console.log('ngspice output:', e.data.data.slice(0,500));
       }
+      requestAnimationFrame(drawCharts);
     }
   };
   worker.onerror=function(err){
