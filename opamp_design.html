@@ -1625,7 +1625,8 @@ function switchModel(){
   g('model-badge').textContent=isBsim?'BSIM3v3 (Level 49)':'MOSFET Level 1';
   // BSIM3v3일 때 ETRI 공정 기본값
   if(isBsim){
-    const defs={vdd:3.3,vss:0,vbias:0.75,cl:1,w1:10,l1:1,w3:5,l3:1,w5:20,l5:1,vicm:1.65};
+    // ETRI 0.5μm는 5V 공정 → VDD=5V, Vbias=0.93V (LTspice 검증값: ISS≈167μA, Vp≈0.55V)
+    const defs={vdd:5.0,vss:0,vbias:0.93,cl:1,w1:20,l1:1,w3:10,l3:1,w5:40,l5:1,vicm:1.65};
     Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
   }
   syncM2();syncM4();calc();
@@ -1752,16 +1753,20 @@ let _ngLoading=false;
 
 // ─── ngspice stdout 파싱 (print 명령어 출력) ───
 function parseNgOutput(log){
-  // ngspice print 출력: "Index  v(vcm)  v(vp)  v(vout)  v(nodea)"
-  // 또는 wrdata 형식: 숫자만 있는 줄
+  // ngspice print 출력 형식: "Index  v(vcm)  v(vp)  v(vout)  v(nodea)"
+  // 데이터 행: 5숫자(index vcm vp vout nodea) 또는 4숫자(vcm vp vout nodea)
   const rows=[];
   for(const ln of log.split('\n')){
     const t=ln.trim();
-    if(!t||t.startsWith('*')||/[a-zA-Z]/.test(t.replace(/e[+\-]\d+/gi,''))) continue;
+    if(!t||t.startsWith('*')) continue;
+    // 알파벳 제거 후(e+XX 지수 제외) 문자가 남으면 헤더/라벨 행으로 간주
+    if(/[a-zA-Z]/.test(t.replace(/e[+\-]?\d+/gi,''))) continue;
+    // ------- 구분선 등 숫자 아닌 행 제거
     const nums=t.split(/[\s,]+/).map(Number).filter(v=>isFinite(v));
-    if(nums.length===4) rows.push(nums);         // vcm vp vout nodea
-    else if(nums.length===5) rows.push(nums.slice(1)); // index vcm vp vout nodea
+    if(nums.length===5) rows.push(nums.slice(1));  // index vcm vp vout nodea
+    else if(nums.length===4) rows.push(nums);       // vcm vp vout nodea (index 없는 형식)
   }
+  console.log('[ngspice] parsed rows:', rows.length, rows[0]);
   return rows; // [[vcm,vp,vout,nodea],...]
 }
 
@@ -1807,6 +1812,7 @@ self.onmessage=function(e){
       worker.terminate();
       btn.disabled=false;
       _ngLoading=false;
+      console.log('[ngspice raw]', e.data.data.slice(0,800));
       const rows=parseNgOutput(e.data.data);
       if(rows.length>0){
         _ngData=rows;
@@ -1814,9 +1820,8 @@ self.onmessage=function(e){
         st.style.color='#27ae60';
       } else {
         _ngData=null;
-        st.textContent='⚠️ 데이터 없음';
+        st.textContent='⚠️ 데이터 없음 — 콘솔(F12) 확인';
         st.style.color='#e74c3c';
-        console.log('ngspice output:', e.data.data.slice(0,500));
       }
       requestAnimationFrame(drawCharts);
     }
