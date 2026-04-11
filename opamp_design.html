@@ -280,11 +280,7 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
   <div class="ph">📈 특성 곡선</div>
   <div class="pb" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 12px;overflow:hidden;flex:1;min-height:0;">
     <div class="chart-wrap">
-      <div class="chart-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span>Vicm 스윕 — 노드 전압 (Vp, Vout)</span>
-        <button id="btn-ngspice" onclick="runNgspice()" style="font-size:9px;padding:2px 7px;background:#2c3e50;color:#fff;border:none;border-radius:3px;cursor:pointer;">▶ ngspice</button>
-        <span id="ngspice-status" style="font-size:9px;color:#7f8c8d;"></span>
-      </div>
+      <div class="chart-title">Vicm 스윕 — 노드 전압 (Vp, Vout)</div>
       <canvas id="cv-icmr"></canvas>
     </div>
     <div class="chart-wrap">
@@ -1780,8 +1776,6 @@ function runNgspice(){
   const netlist=buildNetlist();
   if(!netlist){return;}
 
-  const btn=g('btn-ngspice'), st=g('ngspice-status');
-  btn.disabled=true; st.textContent='⏳ 실행 중...'; st.style.color='#e67e22';
   _ngLoading=true; _ngData=null; requestAnimationFrame(drawCharts);
 
   const baseUrl=(()=>{
@@ -1815,25 +1809,22 @@ self.onmessage=function(e){
   worker.onmessage=function(e){
     if(e.data.type==='done'){
       worker.terminate();
-      btn.disabled=false;
       _ngLoading=false;
       console.log('[ngspice raw]', e.data.data.slice(0,800));
       const rows=parseNgOutput(e.data.data);
       if(rows.length>0){
         _ngData=rows;
-        st.textContent=`✅ ngspice ${rows.length}점`;
-        st.style.color='#27ae60';
+        console.log('[ngspice] parsed', rows.length, 'points');
       } else {
         _ngData=null;
-        st.textContent='⚠️ 데이터 없음 — 콘솔(F12) 확인';
-        st.style.color='#e74c3c';
+        console.warn('[ngspice] no data parsed');
       }
       requestAnimationFrame(drawCharts);
     }
   };
   worker.onerror=function(err){
-    worker.terminate(); btn.disabled=false;
-    st.textContent='❌ 오류: '+err.message; st.style.color='#e74c3c';
+    worker.terminate();
+    console.error('[ngspice] worker error:', err.message);
   };
   worker.postMessage({netlist,model:ETRI_LIB});
 }
