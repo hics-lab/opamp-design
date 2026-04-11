@@ -1721,7 +1721,7 @@ M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
 .dc Vcm ${VSS} ${VDD} ${step}
 .control
 run
-print V(vcm) V(vp) V(vout) V(nodea)
+wrdata /output.txt V(vp) V(vout) V(nodea)
 quit
 .endc
 .end`;
@@ -1740,7 +1740,7 @@ M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
 .dc Vcm ${VSS} ${VDD} ${step}
 .control
 run
-print V(vcm) V(vp) V(vout) V(nodea)
+wrdata /output.txt V(vp) V(vout) V(nodea)
 quit
 .endc
 .end`;
@@ -1797,7 +1797,6 @@ function runNgspice(){
   const workerCode=`
 self.onmessage=function(e){
   var netlist=e.data.netlist, model=e.data.model;
-  var outLines=[];
   self.Module={
     locateFile:function(p){return '${baseUrl}'+p;},
     arguments:['-b','/sim.cir'],
@@ -1805,10 +1804,13 @@ self.onmessage=function(e){
       FS.writeFile('/sim.cir',netlist);
       FS.writeFile('/model.lib',model);
     }],
-    print:function(t){outLines.push(t);},
+    print:function(t){},
     printErr:function(t){},
     postRun:[function(){
-      self.postMessage({type:'done',data:outLines.join('\\n')});
+      // wrdata로 저장된 파일 읽기
+      var txt='';
+      try{ txt=FS.readFile('/output.txt',{encoding:'utf8'}); }catch(e){}
+      self.postMessage({type:'done',data:txt});
     }]
   };
   importScripts('${baseUrl}ngspice.js');
@@ -1821,14 +1823,14 @@ self.onmessage=function(e){
     if(e.data.type==='done'){
       worker.terminate();
       _ngLoading=false;
-      console.log('[ngspice raw]', e.data.data.slice(0,800));
-      const rows=parseNgOutput(e.data.data);
+      console.log('[ngspice wrdata]', e.data.data.slice(0,500));
+      const rows=parseWrdata(e.data.data);
       if(rows.length>0){
         _ngData=rows;
-        console.log('[ngspice] parsed', rows.length, 'points');
+        console.log('[ngspice] parsed', rows.length, 'points, first:', rows[0], 'last:', rows[rows.length-1]);
       } else {
         _ngData=null;
-        console.warn('[ngspice] no data parsed');
+        console.warn('[ngspice] no data parsed from wrdata');
       }
       requestAnimationFrame(drawCharts);
     }
