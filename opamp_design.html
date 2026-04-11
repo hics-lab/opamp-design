@@ -1162,6 +1162,8 @@ function calc(){
   if(_modelLevel===49){
     clearTimeout(_ngTimer); _ngData=null; _ngLoading=false;
     _ngTimer=setTimeout(()=>runNgspice(),200);
+    clearTimeout(_ngVidTimer); _ngVidData=null; _ngVidLoading=false;
+    _ngVidTimer=setTimeout(()=>runNgspiceVid(),400);
   }
 }
 
@@ -1194,6 +1196,11 @@ function calcVid(){
   _p.vidData=vidSweep.vidData;
   _p.vidMax=vidSweep.vidMax;
   requestAnimationFrame(drawCharts);
+  // BSIM3v3: Vid ngspice 재실행
+  if(_modelLevel===49){
+    clearTimeout(_ngVidTimer); _ngVidData=null; _ngVidLoading=false;
+    _ngVidTimer=setTimeout(()=>runNgspiceVid(),200);
+  }
 }
 
 // ─── Design Hints ───
@@ -1550,19 +1557,40 @@ function drawVid(){
   ctx.fillStyle='rgba(41,128,185,.9)';ctx.font='8px sans-serif';ctx.textAlign='center';
   ctx.fillText('Av='+f1(Av)+'V/V',xf(xCenter),my+ch-4);
 
-  // NR 기반 전달 곡선 (최상위 레이어)
-  ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;ctx.setLineDash([]);
-  ctx.beginPath();let first=true;
-  vidData.forEach(d=>{
-    if(d.Vout===null){first=true;return;}
-    const x=xc(d.vid),y=yc(d.Vout);
-    first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
-  });
-  ctx.stroke();
+  // 전달 곡선 (최상위 레이어)
+  const bsimVid=(_modelLevel===49);
+  const useNgVid=(bsimVid && _ngVidData && _ngVidData.length>0);
+
+  if(useNgVid){
+    // ngspice 결과
+    ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;ctx.setLineDash([]);
+    ctx.beginPath();let first=true;
+    _ngVidData.forEach(d=>{
+      if(d.Vout===null||!isFinite(d.Vout)){first=true;return;}
+      const x=xc(d.vid),y=yc(d.Vout);
+      first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+    });
+    ctx.stroke();
+  } else if(bsimVid){
+    // ngspice 로딩 중
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText(_ngVidLoading?'ngspice 시뮬레이션 중...':'ngspice 대기 중',mx+cw/2,my+ch/2);
+  } else {
+    // Level 1: JS NR 결과
+    ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;ctx.setLineDash([]);
+    ctx.beginPath();let first=true;
+    vidData.forEach(d=>{
+      if(d.Vout===null){first=true;return;}
+      const x=xc(d.vid),y=yc(d.Vout);
+      first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+    });
+    ctx.stroke();
+  }
 
   // 범례 (그래프 아래)
+  const vidLabel=useNgVid?' (ngspice)':'';
   const vLegends=[
-    {c:'#27ae60',lb:isSym?'Vout(Vid)':(vidMode==='vp'?'Vout(Vin+)':'Vout(Vin−)'),dash:[]},
+    {c:'#27ae60',lb:(isSym?'Vout(Vid)':(vidMode==='vp'?'Vout(Vin+)':'Vout(Vin−)'))+vidLabel,dash:[]},
     {c:'rgba(41,128,185,.7)',lb:'선형 이득 접선',dash:[4,3]},
     {c:'#e74c3c',lb:'출력 스윙 한계',dash:[3,2]},
   ];
@@ -1645,8 +1673,8 @@ function switchModel(){
     Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
   }
   syncM2();syncM4();calc();
-  // BSIM3v3 선택 시 ngspice 실행은 calc() 내부 debounce가 처리
-  if(!isBsim){ _ngData=null; _ngLoading=false; }
+  // Level 1 전환 시 ngspice 데이터 초기화
+  if(!isBsim){ _ngData=null; _ngLoading=false; _ngVidData=null; _ngVidLoading=false; }
 }
 
 function resetDefaults(){
@@ -1750,6 +1778,127 @@ quit
   return cir;
 }
 
+// ─── Vid sweep netlist 생성 ───
+function buildVidNetlist(){
+  const pp=_p?.p; if(!pp) return null;
+  const nmos=document.querySelector('input[name="topo"]:checked').value==='nmos';
+  const VDD=parseFloat(g('vdd').value), VSS=parseFloat(g('vss').value);
+  const Vbias=parseFloat(g('vbias').value);
+  const W1=parseFloat(g('w1').value), L1=parseFloat(g('l1').value);
+  const W3=parseFloat(g('w3').value), L3=parseFloat(g('l3').value);
+  const W5=parseFloat(g('w5').value), L5=parseFloat(g('l5').value);
+  const Vicm=parseFloat(g('vicm').value);
+  const vidMode=g('vid-mode').value;
+  const isFull=g('vid-full').checked;
+
+  // Vid 범위 결정
+  const vsup=VDD-VSS;
+  let vidMax;
+  if(isFull) vidMax=vsup/2;
+  else vidMax=Math.min(vsup*0.15, 0.5);  // 작은 범위
+  const N=200, step=(2*vidMax/N).toFixed(6);
+
+  // 대칭 모드: V1=Vicm+Vid/2, V2=Vicm-Vid/2 → Vid sweep -vidMax~+vidMax
+  // 단일 모드(vp): V1=sweep, V2=Vicm
+  let cir;
+  if(nmos){
+    if(vidMode==='sym'){
+      // 대칭: VCVS로 Vid/2 생성
+      cir=`* 5T OTA Vid sweep (symmetric, NMOS) - ETRI 0.5um
+.lib "/model.lib" MOS
+VDD vdd 0 DC ${VDD}
+VSS vss 0 DC ${VSS}
+Vb  vb  0 DC ${Vbias}
+Vcm cm  0 DC ${Vicm}
+Vd  vid 0 DC 0
+E1  inp 0 POLY(2) cm 0 vid 0  0  1  0.5
+E2  inn 0 POLY(2) cm 0 vid 0  0  1 -0.5
+M1 nodea inp vp  0   nmos4 W=${W1}u L=${L1}u
+M2 vout  inn vp  0   nmos4 W=${W1}u L=${L1}u
+M3 nodea nodea vdd vdd pmos4 W=${W3}u L=${L3}u
+M4 vout  nodea vdd vdd pmos4 W=${W3}u L=${L3}u
+M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
+.dc Vd ${(-vidMax).toFixed(4)} ${vidMax.toFixed(4)} ${step}
+.control
+run
+wrdata /vid_output.txt V(vout)
+quit
+.endc
+.end`;
+    } else {
+      // 단일입력: V1(inp)을 sweep, V2(inn)=Vicm 고정
+      const sweepNode=(vidMode==='vp')?'inp':'inn';
+      const fixNode=(vidMode==='vp')?'inn':'inp';
+      cir=`* 5T OTA Vid sweep (${vidMode}, NMOS) - ETRI 0.5um
+.lib "/model.lib" MOS
+VDD vdd 0 DC ${VDD}
+VSS vss 0 DC ${VSS}
+Vb  vb  0 DC ${Vbias}
+Vfix ${fixNode} 0 DC ${Vicm}
+Vsw  ${sweepNode} 0 DC ${Vicm}
+M1 nodea inp vp  0   nmos4 W=${W1}u L=${L1}u
+M2 vout  inn vp  0   nmos4 W=${W1}u L=${L1}u
+M3 nodea nodea vdd vdd pmos4 W=${W3}u L=${L3}u
+M4 vout  nodea vdd vdd pmos4 W=${W3}u L=${L3}u
+M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
+.dc Vsw ${(VSS).toFixed(4)} ${(VDD).toFixed(4)} ${Math.max(vsup/200,0.01).toFixed(4)}
+.control
+run
+wrdata /vid_output.txt V(vout)
+quit
+.endc
+.end`;
+    }
+  } else {
+    if(vidMode==='sym'){
+      cir=`* 5T OTA Vid sweep (symmetric, PMOS) - ETRI 0.5um
+.lib "/model.lib" MOS
+VDD vdd 0 DC ${VDD}
+VSS vss 0 DC ${VSS}
+Vb  vb  0 DC ${Vbias}
+Vcm cm  0 DC ${Vicm}
+Vd  vid 0 DC 0
+E1  inp 0 POLY(2) cm 0 vid 0  0  1  0.5
+E2  inn 0 POLY(2) cm 0 vid 0  0  1 -0.5
+M1 nodea inp vp  vdd pmos4 W=${W1}u L=${L1}u
+M2 vout  inn vp  vdd pmos4 W=${W1}u L=${L1}u
+M3 nodea nodea 0 0   nmos4 W=${W3}u L=${L3}u
+M4 vout  nodea 0 0   nmos4 W=${W3}u L=${L3}u
+M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
+.dc Vd ${(-vidMax).toFixed(4)} ${vidMax.toFixed(4)} ${step}
+.control
+run
+wrdata /vid_output.txt V(vout)
+quit
+.endc
+.end`;
+    } else {
+      const sweepNode=(vidMode==='vp')?'inp':'inn';
+      const fixNode=(vidMode==='vp')?'inn':'inp';
+      cir=`* 5T OTA Vid sweep (${vidMode}, PMOS) - ETRI 0.5um
+.lib "/model.lib" MOS
+VDD vdd 0 DC ${VDD}
+VSS vss 0 DC ${VSS}
+Vb  vb  0 DC ${Vbias}
+Vfix ${fixNode} 0 DC ${Vicm}
+Vsw  ${sweepNode} 0 DC ${Vicm}
+M1 nodea inp vp  vdd pmos4 W=${W1}u L=${L1}u
+M2 vout  inn vp  vdd pmos4 W=${W1}u L=${L1}u
+M3 nodea nodea 0 0   nmos4 W=${W3}u L=${L3}u
+M4 vout  nodea 0 0   nmos4 W=${W3}u L=${L3}u
+M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
+.dc Vsw ${(VSS).toFixed(4)} ${(VDD).toFixed(4)} ${Math.max(vsup/200,0.01).toFixed(4)}
+.control
+run
+wrdata /vid_output.txt V(vout)
+quit
+.endc
+.end`;
+    }
+  }
+  return cir;
+}
+
 // ─── wrdata 파싱 ───
 // ngspice wrdata 형식: 각 변수마다 x열 반복 → "x y1 x y2 x y3"
 // wrdata V(vp) V(vout) V(nodea) → 6열: vcm vp vcm vout vcm nodea
@@ -1770,9 +1919,12 @@ function parseWrdata(txt){
 }
 
 // ─── ngspice 상태 ───
-let _ngData=null;
+let _ngData=null;        // Vicm sweep 데이터
 let _ngLoading=false;
 let _ngTimer=null;
+let _ngVidData=null;     // Vid sweep 데이터
+let _ngVidLoading=false;
+let _ngVidTimer=null;
 
 // ─── ngspice stdout 파싱 (print 명령어 출력) ───
 function parseNgOutput(log){
@@ -1848,6 +2000,67 @@ self.onmessage=function(e){
   worker.onerror=function(err){
     worker.terminate();
     console.error('[ngspice] worker error:', err.message);
+  };
+  worker.postMessage({netlist,model:ETRI_LIB});
+}
+
+// ─── ngspice Vid sweep 실행 ───
+function runNgspiceVid(){
+  const netlist=buildVidNetlist();
+  if(!netlist) return;
+
+  _ngVidLoading=true; _ngVidData=null; requestAnimationFrame(drawCharts);
+
+  const baseUrl=(()=>{
+    const href=window.location.href;
+    return href.substring(0,href.lastIndexOf('/')+1);
+  })();
+
+  const workerCode=`
+self.onmessage=function(e){
+  var netlist=e.data.netlist, model=e.data.model;
+  self.Module={
+    locateFile:function(p){return '${baseUrl}'+p;},
+    arguments:['-b','/sim.cir'],
+    preRun:[function(){
+      FS.writeFile('/sim.cir',netlist);
+      FS.writeFile('/model.lib',model);
+    }],
+    print:function(t){},
+    printErr:function(t){},
+    postRun:[function(){
+      var txt='';
+      try{ txt=FS.readFile('/vid_output.txt',{encoding:'utf8'}); }catch(e){}
+      self.postMessage({type:'done',data:txt});
+    }]
+  };
+  importScripts('${baseUrl}ngspice.js');
+};`;
+
+  const blob=new Blob([workerCode],{type:'text/javascript'});
+  const worker=new Worker(URL.createObjectURL(blob));
+
+  worker.onmessage=function(e){
+    if(e.data.type==='done'){
+      worker.terminate();
+      _ngVidLoading=false;
+      const rows=parseWrdata(e.data.data);
+      if(rows.length>0){
+        // wrdata V(vout) → 2열: sweep_var, V(vout)
+        // 또는 ngspice 반복 형식: sweep_var V(vout) → 그대로 2열
+        _ngVidData=rows.map(r=>({vid:r[0],Vout:r[1]}));
+        console.log('[ngspice-vid]', rows.length, 'pts');
+      } else {
+        _ngVidData=null;
+        console.warn('[ngspice-vid] parse failed');
+      }
+      requestAnimationFrame(drawCharts);
+    }
+  };
+  worker.onerror=function(err){
+    worker.terminate();
+    _ngVidLoading=false;
+    console.error('[ngspice-vid] error:', err.message);
   };
   worker.postMessage({netlist,model:ETRI_LIB});
 }
