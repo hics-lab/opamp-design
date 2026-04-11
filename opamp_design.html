@@ -1836,7 +1836,7 @@ self.onmessage=function(e){
         if(nums.length>=3&&Math.abs(nums[0]-1.65)<0.03) dbg+=ln+'\n';
       }
       console.log(dbg);
-      alert(dbg);
+      prompt('ngspice wrdata 결과 (Ctrl+C로 복사):', dbg.replace(/\n/g,' | '));
 
       const rows=parseWrdata(e.data.data);
       if(rows.length>0){
