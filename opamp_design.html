@@ -822,8 +822,13 @@ function solveDCbalM5(p,Vicm,Vbias,hint){
   };
   if(hint) return newtonSolve(F,hint);
   const Im=Math.max((p.ISS||1e-6)/2,1e-15);
-  const v1=Math.sqrt(2*Im/(mu12*wl1+1e-20)), v3=Math.sqrt(2*Im/(mu34*wl3+1e-20));
-  return newtonSolve(F, nmos?[Vicm-vth12-v1,VDD-vth34-v3]:[Vicm+vth12+v1,VSS+vth34+v3]);
+  // Vtail은 M5가 결정 (Vicm 무관). Vicm-vth12 초기값은 기울기 1 → 잘못된 수렴 유발
+  const v5=Math.sqrt(2*Im/(mu5*wl5+1e-20));  // M5 Vov 추정
+  const v3=Math.sqrt(2*Im/(mu34*wl3+1e-20)); // M3 Vov 추정
+  const Vt0=nmos ? Math.max(VSS+0.05, Vbias-vth5-v5)
+                 : Math.min(VDD-0.05, Vbias+vth5+v5);
+  const Vx0=nmos ? VDD-vth34-v3 : VSS+vth34+v3;
+  return newtonSolve(F,[Vt0,Vx0]);
 }
 
 // ─── 완전 DC 풀이: 미지수 [Vtail, VnodeA, Vout] (Vid≠0 포함) ───
