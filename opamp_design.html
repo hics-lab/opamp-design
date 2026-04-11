@@ -1823,14 +1823,28 @@ self.onmessage=function(e){
     if(e.data.type==='done'){
       worker.terminate();
       _ngLoading=false;
-      console.log('[ngspice wrdata]', e.data.data.slice(0,500));
+      // 디버그: wrdata 원본 텍스트 처음 5줄 + Vicm≈1.65 근처
+      const rawLines=e.data.data.split('\n');
+      let dbg='=== ngspice wrdata raw ===\n';
+      dbg+='Length: '+e.data.data.length+' chars, '+rawLines.length+' lines\n';
+      dbg+='--- First 5 lines ---\n';
+      for(let i=0;i<Math.min(5,rawLines.length);i++) dbg+=rawLines[i]+'\n';
+      // Vicm≈1.65 근처 행 찾기
+      dbg+='--- Lines near Vcm=1.65 ---\n';
+      for(const ln of rawLines){
+        const nums=ln.trim().split(/\s+/).map(Number);
+        if(nums.length>=3&&Math.abs(nums[0]-1.65)<0.03) dbg+=ln+'\n';
+      }
+      console.log(dbg);
+      alert(dbg);
+
       const rows=parseWrdata(e.data.data);
       if(rows.length>0){
         _ngData=rows;
-        console.log('[ngspice] parsed', rows.length, 'points, first:', rows[0], 'last:', rows[rows.length-1]);
+        console.log('[ngspice] parsed', rows.length, 'points, first:', JSON.stringify(rows[0]), 'last:', JSON.stringify(rows[rows.length-1]));
       } else {
         _ngData=null;
-        console.warn('[ngspice] no data parsed from wrdata');
+        console.warn('[ngspice] no data parsed from wrdata. Raw first 200 chars:', e.data.data.slice(0,200));
       }
       requestAnimationFrame(drawCharts);
     }
