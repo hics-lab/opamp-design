@@ -430,8 +430,9 @@ function bsim3Ids(P, W, L, Vgs, Vds, Vbs){
   const sqPHIsVbs=Math.sqrt(Math.max(PHIs-Vbs,1e-6));
   const dVth_body=P.K1*(sqPHIsVbs - sqPHIs) + P.K2*Vbs;
   // DIBL on Vth (ETA0, ETAB만 — DSUB는 subthreshold용)
-  // ETAB*Vbs가 양수이면 DIBL이 비정상적으로 증가 → 0으로 클램핑 (안정성)
-  const dVth_dibl=-(P.ETA0 + Math.min(P.ETAB*Vbs,0))*Vds;
+  // DIBL: ETAB (Vbs-dependent DIBL) 무시 — Vbseff smoothing 미구현 시 비물리적 폭주 방지
+  // 실제 BSIM3v3는 Vbseff(smoothed Vbs)를 사용하지만, simplified 구현에서는 ETA0만 사용
+  const dVth_dibl=-P.ETA0*Vds;
   // NLX: non-uniform lateral doping Vth correction
   // Small correction proportional to NLX/Leff
   const dVth_nlx=(P.NLX>0&&Leff>0)?-2*_Vtm*P.NLX/Leff:0;
