@@ -1349,6 +1349,15 @@ function drawIcmr(){
   // Level 1이든 BSIM3v3이든 calc()에서 이미 icmrData를 올바른 모델로 계산함
   const bsimMode=(_modelLevel===49);
   const modelLabel=bsimMode?'BSIM3v3':'Level 1';
+  // 디버그: icmrData 샘플 출력
+  {const valid=icmrData.filter(d=>d.Vx!==null);
+   if(valid.length>0){
+     const s0=valid[0],sm=valid[Math.floor(valid.length/2)],se=valid[valid.length-1];
+     console.log(`[drawIcmr] model=${modelLabel}, ${valid.length} valid pts, `+
+       `start: Vicm=${s0.vicm.toFixed(2)}, Vp=${s0.Vtail?.toFixed(3)}, Vout=${s0.Vx?.toFixed(3)} | `+
+       `mid: Vicm=${sm.vicm.toFixed(2)}, Vp=${sm.Vtail?.toFixed(3)}, Vout=${sm.Vx?.toFixed(3)} | `+
+       `end: Vicm=${se.vicm.toFixed(2)}, Vp=${se.Vtail?.toFixed(3)}, Vout=${se.Vx?.toFixed(3)}`);
+   } else { console.warn('[drawIcmr] no valid icmrData points!'); }}
   plotCurve(d=>d.Vtail,'#2980b9',[],2.0);  // Vp (blue)
   plotCurve(d=>d.Vx,   '#27ae60',[],2.2);  // Vout (green)
   const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
