@@ -1158,6 +1158,8 @@ function calc(){
       Vicm_vid,vidMode:g('vid-mode').value,
       icmrData,vidData:vidSweep.vidData,vidMax:vidSweep.vidMax};
   requestAnimationFrame(drawCharts);
+  // BSIM3v3 모드: 파라미터 변경 시 ngspice 재실행
+  if(_modelLevel===49){ _ngData=null; _ngLoading=false; setTimeout(()=>runNgspice(),100); }
 }
 
 // ─── Vid 스윕만 다시 계산 (Vicm/모드 변경 시) ───
@@ -1346,27 +1348,47 @@ function drawIcmr(){
     });
     ctx.stroke();ctx.setLineDash([]);
   }
-  // ── 메인 곡선: 항상 JS NR 결과 (icmrData) 사용 ──
-  // Level 1이든 BSIM3v3이든 calc()에서 이미 icmrData를 올바른 모델로 계산함
+  // ── 메인 곡선 ──
   const bsimMode=(_modelLevel===49);
-  const modelLabel=bsimMode?'BSIM3v3':'Level 1';
-  // 디버그: icmrData 샘플 출력
-  {const valid=icmrData.filter(d=>d.Vx!==null);
-   if(valid.length>0){
-     const s0=valid[0],sm=valid[Math.floor(valid.length/2)],se=valid[valid.length-1];
-     console.log(`[drawIcmr] model=${modelLabel}, ${valid.length} valid pts, `+
-       `start: Vicm=${s0.vicm.toFixed(2)}, Vp=${s0.Vtail?.toFixed(3)}, Vout=${s0.Vx?.toFixed(3)} | `+
-       `mid: Vicm=${sm.vicm.toFixed(2)}, Vp=${sm.Vtail?.toFixed(3)}, Vout=${sm.Vx?.toFixed(3)} | `+
-       `end: Vicm=${se.vicm.toFixed(2)}, Vp=${se.Vtail?.toFixed(3)}, Vout=${se.Vx?.toFixed(3)}`);
-   } else { console.warn('[drawIcmr] no valid icmrData points!'); }}
-  plotCurve(d=>d.Vtail,'#2980b9',[],2.0);  // Vp (blue)
-  plotCurve(d=>d.Vx,   '#27ae60',[],2.2);  // Vout (green)
-  const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
-  if(lastV){
-    const rx=xc(lastV.vicm);
-    ctx.font='8px sans-serif';ctx.textAlign='right';
-    ctx.fillStyle='#27ae60';ctx.fillText('Vout',rx-1,yc(lastV.Vx)-3);
-    ctx.fillStyle='#2980b9';ctx.fillText('Vp',rx-1,yc(lastV.Vtail)+10);
+  const modelLabel=bsimMode?'BSIM3v3 (ngspice)':'Level 1';
+
+  if(bsimMode){
+    // BSIM3v3: ngspice WASM 결과만 사용
+    if(_ngData && _ngData.length>0){
+      // _ngData: [[vcm, vp, vout, nodea], ...]
+      function plotNg(getY,color,lw){
+        ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.setLineDash([]);
+        ctx.beginPath();let first=true;
+        _ngData.forEach(r=>{
+          const v=getY(r);if(!isFinite(v)){first=true;return;}
+          const x=xc(r[0]),y=yc(v);
+          first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+        });ctx.stroke();
+      }
+      plotNg(r=>r[1],'#2980b9',2.0);  // Vp (blue)
+      plotNg(r=>r[2],'#27ae60',2.2);  // Vout (green)
+      const lr=_ngData[_ngData.length-1];
+      if(lr){
+        ctx.font='8px sans-serif';ctx.textAlign='right';
+        ctx.fillStyle='#27ae60';ctx.fillText('Vout',xc(lr[0])-1,yc(lr[2])-3);
+        ctx.fillStyle='#2980b9';ctx.fillText('Vp',xc(lr[0])-1,yc(lr[1])+10);
+      }
+    } else {
+      // ngspice 로딩 중 또는 실패
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText(_ngLoading?'ngspice 시뮬레이션 중...':'ngspice 로드 대기 중',mx+cw/2,my+ch/2);
+    }
+  } else {
+    // Level 1: JS NR 결과
+    plotCurve(d=>d.Vtail,'#2980b9',[],2.0);
+    plotCurve(d=>d.Vx,   '#27ae60',[],2.2);
+    const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
+    if(lastV){
+      const rx=xc(lastV.vicm);
+      ctx.font='8px sans-serif';ctx.textAlign='right';
+      ctx.fillStyle='#27ae60';ctx.fillText('Vout',rx-1,yc(lastV.Vx)-3);
+      ctx.fillStyle='#2980b9';ctx.fillText('Vp',rx-1,yc(lastV.Vtail)+10);
+    }
   }
 
   // ── Vicm 동작점 마커 ──
@@ -1375,9 +1397,14 @@ function drawIcmr(){
     const px=xf(Vicm_vid);
     ctx.strokeStyle='rgba(230,126,34,.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
     ctx.beginPath();ctx.moveTo(px,my);ctx.lineTo(px,my+ch);ctx.stroke();ctx.setLineDash([]);
-    // 동작점 마커
+    // 동작점 마커 — BSIM3v3이면 ngspice 데이터, Level 1이면 icmrData
     let markerData=null,bestD=Infinity;
-    icmrData.forEach(d=>{if(d.Vtail===null)return;const dist=Math.abs(d.vicm-Vicm_vid);if(dist<bestD){bestD=dist;markerData=d;}});
+    if(bsimMode && _ngData && _ngData.length>0){
+      const r=_ngData.reduce((b,r)=>Math.abs(r[0]-Vicm_vid)<Math.abs(b[0]-Vicm_vid)?r:b,_ngData[0]);
+      if(r) markerData={vicm:r[0],Vtail:r[1],Vx:r[2]};
+    } else {
+      icmrData.forEach(d=>{if(d.Vtail===null)return;const dist=Math.abs(d.vicm-Vicm_vid);if(dist<bestD){bestD=dist;markerData=d;}});
+    }
     if(markerData){
       ctx.fillStyle='#2980b9';ctx.beginPath();ctx.arc(xc(markerData.vicm),yc(markerData.Vtail),4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
@@ -1390,8 +1417,8 @@ function drawIcmr(){
 
   // 범례 (그래프 아래)
   const legends=[
-    {c:'#27ae60',lb:'Vout ('+modelLabel+')',dash:[]},
-    {c:'#2980b9',lb:'Vp ('+modelLabel+')',dash:[]},
+    {c:'#27ae60',lb:bsimMode?'Vout (ngspice)':'Vout',dash:[]},
+    {c:'#2980b9',lb:bsimMode?'Vp (ngspice)':'Vp',dash:[]},
     {c:'rgba(142,68,173,0.75)',lb:nmos?'Vicm−VTHn':'Vicm+VTHp',dash:[5,3]},
     {c:'rgba(142,68,173,0.75)',lb:nmos?`VTHn=${(VSS+pp.vth12).toFixed(2)}V`:`|VTHp|=${(VDD-pp.vth12).toFixed(2)}V`,dash:[3,4]},
     {c:'rgba(192,57,43,0.75)',lb:nmos?'VDD−|VTHp|':'VSS+VTHn',dash:[5,3]},
@@ -1615,7 +1642,9 @@ function switchModel(){
     Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
   }
   syncM2();syncM4();calc();
-  // calc() 내부의 requestAnimationFrame(drawCharts)가 그래프 갱신
+  // BSIM3v3 선택 시 ngspice WASM 자동 실행 (정확한 BSIM3v3 결과)
+  if(isBsim){ _ngData=null; _ngLoading=false; setTimeout(()=>runNgspice(),300); }
+  else{ _ngData=null; _ngLoading=false; }
 }
 
 function resetDefaults(){
