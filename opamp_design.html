@@ -1158,8 +1158,11 @@ function calc(){
       Vicm_vid,vidMode:g('vid-mode').value,
       icmrData,vidData:vidSweep.vidData,vidMax:vidSweep.vidMax};
   requestAnimationFrame(drawCharts);
-  // BSIM3v3 모드: 파라미터 변경 시 ngspice 재실행
-  if(_modelLevel===49){ _ngData=null; _ngLoading=false; setTimeout(()=>runNgspice(),100); }
+  // BSIM3v3 모드: 파라미터 변경 시 ngspice 재실행 (debounce)
+  if(_modelLevel===49){
+    clearTimeout(_ngTimer); _ngData=null; _ngLoading=false;
+    _ngTimer=setTimeout(()=>runNgspice(),200);
+  }
 }
 
 // ─── Vid 스윕만 다시 계산 (Vicm/모드 변경 시) ───
@@ -1642,9 +1645,8 @@ function switchModel(){
     Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
   }
   syncM2();syncM4();calc();
-  // BSIM3v3 선택 시 ngspice WASM 자동 실행 (정확한 BSIM3v3 결과)
-  if(isBsim){ _ngData=null; _ngLoading=false; setTimeout(()=>runNgspice(),300); }
-  else{ _ngData=null; _ngLoading=false; }
+  // BSIM3v3 선택 시 ngspice 실행은 calc() 내부 debounce가 처리
+  if(!isBsim){ _ngData=null; _ngLoading=false; }
 }
 
 function resetDefaults(){
@@ -1748,20 +1750,29 @@ quit
   return cir;
 }
 
-// ─── wrdata 파싱: "x y1 y2..." 탭/공백 구분 ───
+// ─── wrdata 파싱 ───
+// ngspice wrdata 형식: 각 변수마다 x열 반복 → "x y1 x y2 x y3"
+// wrdata V(vp) V(vout) V(nodea) → 6열: vcm vp vcm vout vcm nodea
 function parseWrdata(txt){
   const lines=txt.trim().split('\n').filter(l=>l.trim()&&!l.startsWith('*'));
   const rows=[];
   for(const ln of lines){
     const nums=ln.trim().split(/\s+/).map(Number);
-    if(nums.length>=3&&nums.every(isFinite)) rows.push(nums);
+    if(!nums.every(isFinite)) continue;
+    if(nums.length===6){
+      // x y1 x y2 x y3 → [x, y1, y2, y3]
+      rows.push([nums[0], nums[1], nums[3], nums[5]]);
+    } else if(nums.length===4){
+      rows.push(nums);  // 이미 [x, y1, y2, y3] 형식
+    }
   }
-  return rows; // [[vcm, vp, vout, vnodea], ...]
+  return rows; // [[vcm, vp, vout, nodea], ...]
 }
 
 // ─── ngspice 상태 ───
 let _ngData=null;
 let _ngLoading=false;
+let _ngTimer=null;
 
 // ─── ngspice stdout 파싱 (print 명령어 출력) ───
 function parseNgOutput(log){
@@ -1823,28 +1834,13 @@ self.onmessage=function(e){
     if(e.data.type==='done'){
       worker.terminate();
       _ngLoading=false;
-      // 디버그: wrdata 원본 텍스트 처음 5줄 + Vicm≈1.65 근처
-      const rawLines=e.data.data.split('\n');
-      let dbg='=== ngspice wrdata raw ===\n';
-      dbg+='Length: '+e.data.data.length+' chars, '+rawLines.length+' lines\n';
-      dbg+='--- First 5 lines ---\n';
-      for(let i=0;i<Math.min(5,rawLines.length);i++) dbg+=rawLines[i]+'\n';
-      // Vicm≈1.65 근처 행 찾기
-      dbg+='--- Lines near Vcm=1.65 ---\n';
-      for(const ln of rawLines){
-        const nums=ln.trim().split(/\s+/).map(Number);
-        if(nums.length>=3&&Math.abs(nums[0]-1.65)<0.03) dbg+=ln+'\n';
-      }
-      console.log(dbg);
-      prompt('ngspice wrdata 결과 (Ctrl+C로 복사):', dbg.replace(/\n/g,' | '));
-
       const rows=parseWrdata(e.data.data);
       if(rows.length>0){
         _ngData=rows;
-        console.log('[ngspice] parsed', rows.length, 'points, first:', JSON.stringify(rows[0]), 'last:', JSON.stringify(rows[rows.length-1]));
+        console.log('[ngspice]', rows.length, 'pts, @1.65:', JSON.stringify(rows.find(r=>Math.abs(r[0]-1.65)<0.03)));
       } else {
         _ngData=null;
-        console.warn('[ngspice] no data parsed from wrdata. Raw first 200 chars:', e.data.data.slice(0,200));
+        console.warn('[ngspice] parse failed, raw:', e.data.data.slice(0,300));
       }
       requestAnimationFrame(drawCharts);
     }
