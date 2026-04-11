@@ -1803,16 +1803,15 @@ function buildVidNetlist(){
   let cir;
   if(nmos){
     if(vidMode==='sym'){
-      // 대칭: VCVS로 Vid/2 생성
+      // 대칭: B소스로 Vinp=Vicm+Vid/2, Vinn=Vicm-Vid/2
       cir=`* 5T OTA Vid sweep (symmetric, NMOS) - ETRI 0.5um
 .lib "/model.lib" MOS
 VDD vdd 0 DC ${VDD}
 VSS vss 0 DC ${VSS}
 Vb  vb  0 DC ${Vbias}
-Vcm cm  0 DC ${Vicm}
 Vd  vid 0 DC 0
-E1  inp 0 POLY(2) cm 0 vid 0  0  1  0.5
-E2  inn 0 POLY(2) cm 0 vid 0  0  1 -0.5
+Binp inp 0 V=${Vicm}+V(vid)/2
+Binn inn 0 V=${Vicm}-V(vid)/2
 M1 nodea inp vp  0   nmos4 W=${W1}u L=${L1}u
 M2 vout  inn vp  0   nmos4 W=${W1}u L=${L1}u
 M3 nodea nodea vdd vdd pmos4 W=${W3}u L=${L3}u
@@ -1856,10 +1855,9 @@ quit
 VDD vdd 0 DC ${VDD}
 VSS vss 0 DC ${VSS}
 Vb  vb  0 DC ${Vbias}
-Vcm cm  0 DC ${Vicm}
 Vd  vid 0 DC 0
-E1  inp 0 POLY(2) cm 0 vid 0  0  1  0.5
-E2  inn 0 POLY(2) cm 0 vid 0  0  1 -0.5
+Binp inp 0 V=${Vicm}+V(vid)/2
+Binn inn 0 V=${Vicm}-V(vid)/2
 M1 nodea inp vp  vdd pmos4 W=${W1}u L=${L1}u
 M2 vout  inn vp  vdd pmos4 W=${W1}u L=${L1}u
 M3 nodea nodea 0 0   nmos4 W=${W3}u L=${L3}u
@@ -1907,15 +1905,20 @@ function parseWrdata(txt){
   const rows=[];
   for(const ln of lines){
     const nums=ln.trim().split(/\s+/).map(Number);
-    if(!nums.every(isFinite)) continue;
-    if(nums.length===6){
-      // x y1 x y2 x y3 → [x, y1, y2, y3]
-      rows.push([nums[0], nums[1], nums[3], nums[5]]);
-    } else if(nums.length===4){
-      rows.push(nums);  // 이미 [x, y1, y2, y3] 형식
+    if(!nums.every(isFinite)||nums.length<2) continue;
+    // ngspice wrdata: 변수 N개 → 2N열 (x y1 x y2 ... x yN)
+    // x열이 반복되므로 홀수 인덱스(y값)만 추출
+    if(nums.length>=4 && nums.length%2===0){
+      // 다변수: [x, y1, y2, ..., yN]
+      const row=[nums[0]];
+      for(let i=1;i<nums.length;i+=2) row.push(nums[i]);
+      rows.push(row);
+    } else if(nums.length===2){
+      // 단일 변수: [x, y]
+      rows.push(nums);
     }
   }
-  return rows; // [[vcm, vp, vout, nodea], ...]
+  return rows;
 }
 
 // ─── ngspice 상태 ───
