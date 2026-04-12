@@ -616,7 +616,7 @@ function drawOtaSvg(nmos){
     <line x1="110" y1="82" x2="110" y2="62" stroke="${cL}" stroke-width="1.2"/>
     <circle cx="110" cy="62" r="2.5" fill="${cL}"/>
     <line x1="98.5" y1="62" x2="161.5" y2="62" stroke="${cL}" stroke-width="1.2"/>
-    <text x="130" y="57" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>
+    <text x="130" y="55" font-size="11" fill="${cL}" font-weight="bold" text-anchor="middle" font-family="monospace">Vx</text>
     <text x="69" y="58" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>
     <text x="69" y="69" font-size="9" fill="${cL}" text-anchor="end">(${tL})</text>
     <!-- M4 PMOS load -->
@@ -627,10 +627,9 @@ function drawOtaSvg(nmos){
     <text x="191" y="58" font-size="10" fill="${cL}" font-weight="bold">M4</text>
     <text x="191" y="69" font-size="9" fill="${cL}">(${tL})</text>
     <!-- Nodes -->
-    <circle cx="80" cy="108" r="3" fill="#555"/>
     <circle cx="180" cy="108" r="3" fill="#27ae60"/>
-    <line x1="180" y1="108" x2="225" y2="108" stroke="#27ae60" stroke-width="1.8"/>
-    <text x="228" y="112" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
+    <line x1="180" y1="108" x2="222" y2="108" stroke="#27ae60" stroke-width="1.8"/>
+    <text x="225" y="112" font-size="13" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
     <!-- M1 NMOS diff -->
     <line x1="80" y1="108" x2="80" y2="118" stroke="${cD}" stroke-width="1.5"/>
     <rect x="71" y="118" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
@@ -653,14 +652,14 @@ function drawOtaSvg(nmos){
     <line x1="80" y1="188" x2="180" y2="188" stroke="#555" stroke-width="1.5"/>
     <line x1="130" y1="188" x2="130" y2="196" stroke="#555" stroke-width="1.5"/>
     <text x="107" y="185" font-size="9" fill="#7f8c8d" font-style="italic">ISS</text>
-    <circle cx="130" cy="188" r="2.5" fill="#2980b9"/>
-    <text x="135" y="185" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
+    <circle cx="130" cy="188" r="3" fill="#2980b9"/>
+    <text x="136" y="184" font-size="12" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
     <text x="72" y="170" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
     <text x="184" y="170" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
     <!-- M5 NMOS tail -->
     <rect x="121" y="196" width="18" height="28" rx="2" fill="rgba(44,62,80,.12)" stroke="${cT}" stroke-width="1.8"/>
     <line x1="121" y1="210" x2="72" y2="210" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>
-    <text x="35" y="214" font-size="9" fill="#7f8c8d">Vb</text>
+    <text x="35" y="214" font-size="12" fill="#e67e22" font-weight="bold" font-family="monospace">Vb</text>
     <line x1="130" y1="224" x2="130" y2="256" stroke="${cT}" stroke-width="1.5"/>
     <text x="142" y="206" font-size="10" fill="${cT}" font-weight="bold">M5</text>
     <text x="142" y="217" font-size="9" fill="${cT}">(${tT})</text>
@@ -683,15 +682,15 @@ function drawOtaSvg(nmos){
     <rect x="121" y="32" width="18" height="28" rx="2" fill="rgba(44,62,80,.12)" stroke="${cT}" stroke-width="1.8"/>
     <circle cx="115" cy="46" r="3.5" fill="none" stroke="${cT}" stroke-width="1.5"/>
     <line x1="111.5" y1="46" x2="72" y2="46" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>
-    <text x="35" y="50" font-size="9" fill="#7f8c8d">Vb</text>
+    <text x="35" y="50" font-size="12" fill="#e67e22" font-weight="bold" font-family="monospace">Vb</text>
     <text x="142" y="42" font-size="10" fill="${cT}" font-weight="bold">M5</text>
     <text x="142" y="53" font-size="9" fill="${cT}">(${tT})</text>
     <line x1="130" y1="60" x2="130" y2="68" stroke="${cT}" stroke-width="1.5"/>
     <!-- Tail node -->
     <line x1="80" y1="68" x2="180" y2="68" stroke="#555" stroke-width="1.5"/>
     <text x="107" y="80" font-size="9" fill="#7f8c8d" font-style="italic">ISS</text>
-    <circle cx="130" cy="68" r="2.5" fill="#2980b9"/>
-    <text x="135" y="65" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
+    <circle cx="130" cy="68" r="3" fill="#2980b9"/>
+    <text x="136" y="64" font-size="12" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
     <text x="72" y="100" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
     <text x="184" y="100" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
     <!-- M1 PMOS diff — bubble on gate -->
@@ -715,10 +714,9 @@ function drawOtaSvg(nmos){
     <text x="148" y="88" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M2</text>
     <text x="168" y="99" font-size="9" fill="${cD}" text-anchor="end">(${tD})</text>
     <!-- Nodes -->
-    <circle cx="80" cy="148" r="3" fill="#555"/>
     <circle cx="180" cy="148" r="3" fill="#27ae60"/>
-    <line x1="180" y1="148" x2="225" y2="148" stroke="#27ae60" stroke-width="1.8"/>
-    <text x="228" y="152" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
+    <line x1="180" y1="148" x2="222" y2="148" stroke="#27ae60" stroke-width="1.8"/>
+    <text x="225" y="152" font-size="13" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
     <!-- M3 NMOS load (diode, no bubble) -->
     <!-- drain wire (top, from node A) -->
     <line x1="80" y1="148" x2="80" y2="158" stroke="${cL}" stroke-width="1.5"/>
@@ -732,7 +730,7 @@ function drawOtaSvg(nmos){
     <circle cx="110" cy="172" r="2.5" fill="${cL}"/>
     <!-- gate bus: M3(110) → M4(150) at y=172 -->
     <line x1="110" y1="172" x2="150" y2="172" stroke="${cL}" stroke-width="1.2"/>
-    <text x="130" y="195" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>
+    <text x="130" y="193" font-size="11" fill="${cL}" font-weight="bold" text-anchor="middle" font-family="monospace">Vx</text>
     <text x="69" y="168" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>
     <text x="69" y="179" font-size="9" fill="${cL}" text-anchor="end">(${tL})</text>
     <!-- M3 source → individual VSS -->
