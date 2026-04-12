@@ -212,64 +212,63 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
     <!-- ── 시뮬레이션 결과 (같은 패널 내) ── -->
     <div class="st" style="margin-top:8px;border-bottom-color:var(--accent);">📊 시뮬레이션 결과</div>
 
-    <!-- 성능 지표 (좌) + 동작점 (우) -->
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
+    <!-- 성능 지표 (좌) + 동작점 (우) — 균등 배분 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start;">
 
       <!-- 성능 지표 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
-        <div style="grid-column:1/-1;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:5px 5px 0 0;padding:3px 8px;text-align:center;">
-          <span style="color:white;font-size:10px;font-weight:700;letter-spacing:.5px;">PERFORMANCE</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid var(--primary);display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">|Av|</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-av">—</span>
-          <span style="font-size:9px;color:var(--muted);">V/V</span>
-          <span style="font-size:9px;color:var(--secondary);margin-left:2px;" id="r-av-db">(— dB)</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid var(--secondary);display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">Gm</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-gm">—</span>
-          <span style="font-size:9px;color:var(--muted);">μA/V</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #27ae60;display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">GBW</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-gbw">—</span>
-          <span style="font-size:9px;color:var(--muted);">MHz</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #e67e22;display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">Rout</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-rout">—</span>
-          <span style="font-size:9px;color:var(--muted);">MΩ</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #e74c3c;display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">SR</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-sr">—</span>
-          <span style="font-size:9px;color:var(--muted);">V/μs</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #8e44ad;display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">Pwr</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-pwr">—</span>
-          <span style="font-size:9px;color:var(--muted);">μW</span>
-        </div>
-        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #2980b9;display:flex;align-items:baseline;gap:4px;">
-          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">ISS</span>
-          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-iss">—</span>
-          <span style="font-size:9px;color:var(--muted);">μA</span>
-        </div>
-      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--border);">
+        <thead><tr><th colspan="3" style="background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;padding:4px 8px;font-size:10px;letter-spacing:.5px;text-align:center;">PERFORMANCE</th></tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);width:32px;border-left:3px solid var(--primary);">|Av|</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-av">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">V/V <span id="r-av-db" style="color:var(--secondary);">(— dB)</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);border-left:3px solid var(--secondary);">Gm</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-gm">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">μA/V</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);border-left:3px solid #27ae60;">GBW</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-gbw">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">MHz</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);border-left:3px solid #e67e22;">Rout</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-rout">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">MΩ</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);border-left:3px solid #e74c3c;">SR</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-sr">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">V/μs</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);border-left:3px solid #8e44ad;">Power</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-pwr">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">μW</td>
+          </tr>
+          <tr>
+            <td style="padding:3px 8px;font-weight:700;color:var(--muted);border-left:3px solid #2980b9;">ISS</td>
+            <td style="padding:3px 4px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;color:var(--primary);text-align:right;"><span id="r-iss">—</span></td>
+            <td style="padding:3px 8px;color:var(--muted);font-size:10px;">μA</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <!-- 동작점 테이블 (컴팩트) -->
+      <!-- 동작점 테이블 -->
       <div>
-        <table class="op-tbl" style="font-size:10px;">
+        <table class="op-tbl">
           <thead>
-            <tr><th>소자</th><th>ID</th><th>VGS</th><th>Vov</th><th></th></tr>
+            <tr><th>소자</th><th>ID [μA]</th><th>VGS [V]</th><th>Vov [V]</th><th>영역</th></tr>
           </thead>
           <tbody id="op-body"></tbody>
         </table>
+        <div class="hint-box" id="hints" style="margin-top:4px;"></div>
       </div>
 
     </div>
-    <div class="hint-box" id="hints" style="margin-top:4px;"></div>
 
   </div>
 </div>
