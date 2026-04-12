@@ -1310,9 +1310,9 @@ function drawIcmr(){
   // ── ICMR_H 도 유지 ──
   refV(icmrH,'#e67e22','ICMR_H','right');
 
-  // ── VTHn / |VTHp| 수직 보조선 ──
+  // ── VTHn / |VTHp| 수직 보조선 — 레이블을 상단에 배치 ──
   {
-    const vthVal=nmos?pp.vth12:pp.vth12; // NMOS→VTHn, PMOS→|VTHp|
+    const vthVal=nmos?pp.vth12:pp.vth12;
     const vthLabel=nmos?`VTHn`:`|VTHp|`;
     const vthColor='rgba(142,68,173,0.75)';
     if(vthVal>=VSS-0.1&&vthVal<=VDD+0.1){
@@ -1321,8 +1321,7 @@ function drawIcmr(){
       ctx.beginPath();ctx.moveTo(xv,my);ctx.lineTo(xv,my+ch);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle=vthColor;ctx.font='10px sans-serif';
       ctx.textAlign='left';
-      ctx.fillText(vthLabel,xv+2,my+ch-14);
-      ctx.fillText((nmos?VSS+vthVal:VDD-vthVal).toFixed(2)+'V',xv+2,my+ch-6);
+      ctx.fillText(vthLabel+'='+(nmos?VSS+vthVal:VDD-vthVal).toFixed(2)+'V',xv+2,my+12);
     }
   }
 
