@@ -212,63 +212,64 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
     <!-- ── 시뮬레이션 결과 (같은 패널 내) ── -->
     <div class="st" style="margin-top:8px;border-bottom-color:var(--accent);">📊 시뮬레이션 결과</div>
 
-    <!-- 성능 지표 (좌) + 동작점 테이블 (우) -->
-    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;">
+    <!-- 성능 지표 (좌) + 동작점 (우) -->
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
 
-      <!-- 성능 지표 카드 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;min-width:155px;">
-        <div style="grid-column:1/-1;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:6px 6px 0 0;padding:4px 8px;text-align:center;">
+      <!-- 성능 지표 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
+        <div style="grid-column:1/-1;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:5px 5px 0 0;padding:3px 8px;text-align:center;">
           <span style="color:white;font-size:10px;font-weight:700;letter-spacing:.5px;">PERFORMANCE</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid var(--primary);border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">|Av|</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-av">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">V/V <span id="r-av-db" style="color:var(--secondary);">(— dB)</span></div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid var(--primary);display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">|Av|</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-av">—</span>
+          <span style="font-size:9px;color:var(--muted);">V/V</span>
+          <span style="font-size:9px;color:var(--secondary);margin-left:2px;" id="r-av-db">(— dB)</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid var(--secondary);border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">Gm</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-gm">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">μA/V</div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid var(--secondary);display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">Gm</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-gm">—</span>
+          <span style="font-size:9px;color:var(--muted);">μA/V</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid #27ae60;border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">GBW</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-gbw">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">MHz</div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #27ae60;display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">GBW</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-gbw">—</span>
+          <span style="font-size:9px;color:var(--muted);">MHz</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid #e67e22;border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">Rout</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-rout">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">MΩ</div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #e67e22;display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">Rout</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-rout">—</span>
+          <span style="font-size:9px;color:var(--muted);">MΩ</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid #e74c3c;border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">SR</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-sr">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">V/μs</div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #e74c3c;display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">SR</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-sr">—</span>
+          <span style="font-size:9px;color:var(--muted);">V/μs</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid #8e44ad;border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">Power</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-pwr">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">μW</div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #8e44ad;display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">Pwr</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-pwr">—</span>
+          <span style="font-size:9px;color:var(--muted);">μW</span>
         </div>
-        <div style="background:var(--bg);padding:4px 6px;border-left:3px solid #2980b9;border-radius:0 4px 4px 0;">
-          <div style="font-size:8px;color:var(--muted);font-weight:700;">ISS</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;"><span id="r-iss">—</span></div>
-          <div style="font-size:8px;color:var(--muted);">μA</div>
+        <div style="background:var(--bg);padding:5px 8px;border-left:3px solid #2980b9;display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:9px;color:var(--muted);font-weight:700;min-width:28px;">ISS</span>
+          <span style="font-size:16px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;" id="r-iss">—</span>
+          <span style="font-size:9px;color:var(--muted);">μA</span>
         </div>
       </div>
 
-      <!-- 동작점 테이블 + 힌트 -->
+      <!-- 동작점 테이블 (컴팩트) -->
       <div>
-        <table class="op-tbl">
+        <table class="op-tbl" style="font-size:10px;">
           <thead>
-            <tr><th>소자</th><th>ID[μA]</th><th>VGS</th><th>Vov</th><th>영역</th></tr>
+            <tr><th>소자</th><th>ID</th><th>VGS</th><th>Vov</th><th></th></tr>
           </thead>
           <tbody id="op-body"></tbody>
         </table>
-        <div class="hint-box" id="hints" style="margin-top:4px;"></div>
       </div>
 
     </div>
+    <div class="hint-box" id="hints" style="margin-top:4px;"></div>
 
   </div>
 </div>
