@@ -1429,7 +1429,7 @@ function drawIcmr(){
     {c:'rgba(192,57,43,0.75)',lb:nmos?'VDD−|VTHp|':'VSS+VTHn',dash:[5,3]},
     {c:'rgba(41,128,185,0.65)',lb:nmos?'Vb−VTHn':'VDD−Vov5',dash:[5,3]},
   ];
-  const legY=my+ch+22;  // x축 라벨 아래
+  const legY=my+ch+38;  // x축 제목 아래
   let legX=mx;
   ctx.font='10px sans-serif';
   legends.forEach(({c,lb,dash})=>{
@@ -1589,7 +1589,7 @@ function drawVid(){
     {c:'rgba(41,128,185,.7)',lb:'선형 이득 접선',dash:[4,3]},
     {c:'#e74c3c',lb:'출력 스윙 한계',dash:[3,2]},
   ];
-  const vLegY=my+ch+22;
+  const vLegY=my+ch+38;
   let vLegX=mx;
   ctx.font='10px sans-serif';
   vLegends.forEach(({c,lb,dash})=>{
