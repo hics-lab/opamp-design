@@ -315,7 +315,7 @@ const f1=v=>isFinite(v)?v.toFixed(1):'∞';
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const g=id=>document.getElementById(id);
 const set=(id,val)=>g(id).textContent=val;
-const dpr=window.devicePixelRatio||1;
+function dpr(){return window.devicePixelRatio||1;}
 
 function syncM2(){g('w2').value=g('w1').value;g('l2').value=g('l1').value;}
 function syncM4(){g('w4').value=g('w3').value;g('l4').value=g('l3').value;}
@@ -1225,8 +1225,9 @@ function drawCharts(){
 
 function initCanvas(id,H){
   const cvs=g(id), W=cvs.clientWidth||300;
-  cvs.width=W*dpr; cvs.height=H*dpr;
-  const ctx=cvs.getContext('2d'); ctx.scale(dpr,dpr);
+  const d=dpr();
+  cvs.width=W*d; cvs.height=H*d;
+  const ctx=cvs.getContext('2d'); ctx.scale(d,d);
   return {ctx,W,H};
 }
 
