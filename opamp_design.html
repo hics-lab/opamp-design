@@ -1218,11 +1218,8 @@ function genHints({Av,AvdB,GBW,icmrL,icmrH,voutMin,voutMax,gm12,ID12,Pwr,chks,VD
 }
 
 // ─── Chart Drawing ───
-let _chartH=0;
+const _chartH=280;
 function drawCharts(){
-  // 두 차트 공통 높이 계산 (같은 패널 안)
-  const cvs=g('cv-icmr'), panel=cvs.closest('.panel');
-  _chartH=panel?Math.max(130,panel.clientHeight-62):220;
   drawIcmr();drawVid();
 }
 
