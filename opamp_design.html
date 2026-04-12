@@ -212,50 +212,9 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
     <!-- ── 시뮬레이션 결과 (같은 패널 내) ── -->
     <div class="st" style="margin-top:8px;border-bottom-color:var(--accent);">📊 시뮬레이션 결과</div>
 
-    <!-- 7 key metrics in one row -->
-    <div class="mg">
-      <div class="mc">
-        <div class="ml">전압 이득 |Av|</div>
-        <div class="mv" id="r-av">—</div>
-        <div class="mu">V/V</div>
-        <div class="ms" id="r-av-db">— dB</div>
-      </div>
-      <div class="mc">
-        <div class="ml">Gm (OTA)</div>
-        <div class="mv" id="r-gm">—</div>
-        <div class="mu">μA/V</div>
-      </div>
-      <div class="mc">
-        <div class="ml">GBW</div>
-        <div class="mv" id="r-gbw">—</div>
-        <div class="mu">MHz</div>
-      </div>
-      <div class="mc">
-        <div class="ml">Rout</div>
-        <div class="mv" id="r-rout">—</div>
-        <div class="mu">MΩ</div>
-      </div>
-      <div class="mc">
-        <div class="ml">슬루율 SR</div>
-        <div class="mv" id="r-sr">—</div>
-        <div class="mu">V/μs</div>
-      </div>
-      <div class="mc">
-        <div class="ml">소비전력</div>
-        <div class="mv" id="r-pwr">—</div>
-        <div class="mu">μW</div>
-      </div>
-      <div class="mc">
-        <div class="ml">ISS (M5)</div>
-        <div class="mv" id="r-iss">—</div>
-        <div class="mu">μA</div>
-      </div>
-    </div>
-
-    <!-- Operating point table + Hints side by side -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+    <!-- 동작점 테이블 (좌) + 성능 지표 (우) -->
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
       <div>
-        <div class="st">트랜지스터 동작점</div>
         <table class="op-tbl">
           <thead>
             <tr><th>소자</th><th>ID[μA]</th><th>VGS[V]</th><th>Vov[V]</th><th>gm[μA/V]</th><th>ro[kΩ]</th><th>영역</th></tr>
@@ -263,11 +222,22 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
           <tbody id="op-body"></tbody>
         </table>
       </div>
-      <div>
-        <div class="st">설계 힌트</div>
-        <div class="hint-box" id="hints"></div>
-      </div>
+      <table class="op-tbl" style="min-width:130px;">
+        <tbody>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">|Av|</td><td style="font-family:'Courier New',monospace;font-weight:700;color:var(--primary);"><span id="r-av">—</span> V/V<br><span id="r-av-db" style="font-size:9px;color:var(--muted);">— dB</span></td></tr>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">Gm</td><td style="font-family:'Courier New',monospace;"><span id="r-gm">—</span> μA/V</td></tr>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">GBW</td><td style="font-family:'Courier New',monospace;"><span id="r-gbw">—</span> MHz</td></tr>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">Rout</td><td style="font-family:'Courier New',monospace;"><span id="r-rout">—</span> MΩ</td></tr>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">SR</td><td style="font-family:'Courier New',monospace;"><span id="r-sr">—</span> V/μs</td></tr>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">Power</td><td style="font-family:'Courier New',monospace;"><span id="r-pwr">—</span> μW</td></tr>
+          <tr><td style="font-weight:700;color:var(--muted);font-size:9px;">ISS</td><td style="font-family:'Courier New',monospace;"><span id="r-iss">—</span> μA</td></tr>
+        </tbody>
+      </table>
     </div>
+
+    <!-- 설계 힌트 -->
+    <div class="st" style="margin-top:4px;">설계 힌트</div>
+    <div class="hint-box" id="hints"></div>
 
   </div>
 </div>
