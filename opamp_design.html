@@ -587,178 +587,202 @@ function newtonSolve(F,x0,maxIter=200,tol=1e-9){
   const f=F(x); return {x,converged:Math.sqrt(f.reduce((s,v)=>s+v*v,0))<1e-6,iter:maxIter};
 }
 
+// ─── MOSFET 심볼 SVG 헬퍼 ───
+// x,y = 심볼 중심, isPmos = PMOS 여부, gateDir = 'left'|'right' (게이트 방향)
+// 반환: {svg, gx,gy, dx,dy, sx,sy} — 게이트/드레인/소스 단자 좌표
+function mosSym(x,y,color,isPmos,gateDir='left',w=22,h=30){
+  const hw=w/2, hh=h/2;
+  const gl=gateDir==='left'?-1:1; // 게이트 방향 부호
+  let s='';
+  // 채널 (세로 막대)
+  const cx=x+gl*hw*0.35; // 채널 x
+  s+=`<line x1="${cx}" y1="${y-hh*0.7}" x2="${cx}" y2="${y+hh*0.7}" stroke="${color}" stroke-width="2.5"/>`;
+  // 게이트 (세로선 + 가로선)
+  const gx_bar=cx+gl*3;
+  s+=`<line x1="${gx_bar}" y1="${y-hh*0.6}" x2="${gx_bar}" y2="${y+hh*0.6}" stroke="${color}" stroke-width="1.8"/>`;
+  const gx_end=x+gl*hw;
+  const gy=y;
+  // PMOS 버블
+  if(isPmos){
+    const bx=gx_bar+gl*4;
+    s+=`<circle cx="${bx}" cy="${gy}" r="3" fill="none" stroke="${color}" stroke-width="1.5"/>`;
+    s+=`<line x1="${bx+gl*3}" y1="${gy}" x2="${gx_end}" y2="${gy}" stroke="${color}" stroke-width="1.5"/>`;
+  } else {
+    s+=`<line x1="${gx_bar}" y1="${gy}" x2="${gx_end}" y2="${gy}" stroke="${color}" stroke-width="1.5"/>`;
+  }
+  // 드레인 (상단) — 채널에서 가로+세로
+  const dx=x-gl*hw*0.1; // 드레인/소스 와이어 x (게이트 반대쪽)
+  const dy=y-hh;
+  s+=`<line x1="${cx}" y1="${y-hh*0.45}" x2="${dx}" y2="${y-hh*0.45}" stroke="${color}" stroke-width="1.5"/>`;
+  s+=`<line x1="${dx}" y1="${y-hh*0.45}" x2="${dx}" y2="${dy}" stroke="${color}" stroke-width="1.5"/>`;
+  // 소스 (하단) — 채널에서 가로+세로
+  const sx=dx;
+  const sy=y+hh;
+  s+=`<line x1="${cx}" y1="${y+hh*0.45}" x2="${sx}" y2="${y+hh*0.45}" stroke="${color}" stroke-width="1.5"/>`;
+  s+=`<line x1="${sx}" y1="${y+hh*0.45}" x2="${sx}" y2="${sy}" stroke="${color}" stroke-width="1.5"/>`;
+  // NMOS 화살표 (소스에서 채널 방향, 즉 안쪽)
+  if(!isPmos){
+    const ax=cx, ay=y+hh*0.45;
+    const adx=(sx-cx)*0.4, ady=0;
+    s+=`<polygon points="${ax},${ay} ${ax+4},${ay-3} ${ax+4},${ay+3}" fill="${color}"/>`;
+  } else {
+    // PMOS 화살표 (채널에서 소스 방향, 즉 바깥)
+    const ax=(cx+sx)/2, ay=y+hh*0.45;
+    s+=`<polygon points="${sx},${ay} ${sx-4},${ay-3} ${sx-4},${ay+3}" fill="${color}"/>`;
+  }
+  // Body 연결 (소스에 묶음 — 생략, 간략화)
+  return {svg:s, gx:gx_end, gy, dx, dy, sx, sy};
+}
+
 // ─── 회로 SVG 동적 생성 ───
 function drawOtaSvg(nmos){
-  // NMOS 입력쌍: load=PMOS(상), diff=NMOS(중), tail=NMOS(하)
-  // PMOS 입력쌍: load=NMOS(하), diff=PMOS(중), tail=PMOS(상)  → 상하 반전
-  const cL=nmos?'#7d3c98':'#1a5fa8'; // load 색
-  const cD=nmos?'#1a5fa8':'#7d3c98'; // diff pair 색
-  const cT='#2c3e50';                 // tail 색
-  const fL=nmos?'rgba(125,60,152,.12)':'rgba(26,95,168,.12)';
-  const fD=nmos?'rgba(26,95,168,.12)':'rgba(125,60,152,.12)';
+  const cL=nmos?'#7d3c98':'#1a5fa8';
+  const cD=nmos?'#1a5fa8':'#7d3c98';
+  const cT='#2c3e50';
   const tL=nmos?'PMOS':'NMOS', tD=nmos?'NMOS':'PMOS', tT=nmos?'NMOS':'PMOS';
-  // 상단 전원, 하단 접지 (NMOS/PMOS 모두 같은 위치)
-  const supTop=nmos?'VDD':'VDD', supBot=nmos?'VSS':'VSS';
-  // PMOS면 tail이 위, load가 아래
   let s=`<svg viewBox="0 0 255 285" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">`;
   if(nmos){
-    // ── NMOS 입력쌍 (기존 레이아웃) ──
-    s+=`<!-- VDD -->
-    <line x1="65" y1="20" x2="195" y2="20" stroke="#c0392b" stroke-width="2.5"/>
-    <text x="4" y="25" font-size="11" fill="#c0392b" font-weight="bold" font-family="monospace">VDD</text>
-    <line x1="80" y1="15" x2="80" y2="25" stroke="#c0392b" stroke-width="1.5"/>
-    <line x1="180" y1="15" x2="180" y2="25" stroke="#c0392b" stroke-width="1.5"/>
-    <!-- M3 PMOS load (diode, gate right) -->
-    <line x1="80" y1="20" x2="80" y2="48" stroke="${cL}" stroke-width="1.5"/>
-    <rect x="71" y="48" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
-    <circle cx="95" cy="62" r="3.5" fill="none" stroke="${cL}" stroke-width="1.5"/>
-    <line x1="80" y1="76" x2="80" y2="108" stroke="${cL}" stroke-width="1.5"/>
-    <circle cx="80" cy="82" r="2.5" fill="${cL}"/>
-    <line x1="80" y1="82" x2="110" y2="82" stroke="${cL}" stroke-width="1.2"/>
-    <line x1="110" y1="82" x2="110" y2="62" stroke="${cL}" stroke-width="1.2"/>
-    <circle cx="110" cy="62" r="2.5" fill="${cL}"/>
-    <line x1="98.5" y1="62" x2="161.5" y2="62" stroke="${cL}" stroke-width="1.2"/>
-    <text x="130" y="57" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>
-    <text x="69" y="58" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>
-    <text x="69" y="69" font-size="9" fill="${cL}" text-anchor="end">(${tL})</text>
-    <!-- M4 PMOS load -->
-    <line x1="180" y1="20" x2="180" y2="48" stroke="${cL}" stroke-width="1.5"/>
-    <rect x="171" y="48" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
-    <circle cx="165" cy="62" r="3.5" fill="none" stroke="${cL}" stroke-width="1.5"/>
-    <line x1="180" y1="76" x2="180" y2="108" stroke="${cL}" stroke-width="1.5"/>
-    <text x="191" y="58" font-size="10" fill="${cL}" font-weight="bold">M4</text>
-    <text x="191" y="69" font-size="9" fill="${cL}">(${tL})</text>
-    <!-- Nodes -->
-    <circle cx="80" cy="108" r="3" fill="#555"/>
-    <circle cx="180" cy="108" r="3" fill="#27ae60"/>
-    <line x1="180" y1="108" x2="225" y2="108" stroke="#27ae60" stroke-width="1.8"/>
-    <text x="228" y="112" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
-    <!-- M1 NMOS diff -->
-    <line x1="80" y1="108" x2="80" y2="118" stroke="${cD}" stroke-width="1.5"/>
-    <rect x="71" y="118" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
-    <line x1="71" y1="132" x2="20" y2="132" stroke="${cD}" stroke-width="1.5"/>
-    <circle cx="17" cy="132" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
-    <text x="3" y="128" font-size="9" fill="${cD}" font-weight="bold">Vin+</text>
-    <line x1="80" y1="146" x2="80" y2="188" stroke="${cD}" stroke-width="1.5"/>
-    <text x="92" y="128" font-size="10" fill="${cD}" font-weight="bold">M1</text>
-    <text x="92" y="139" font-size="9" fill="${cD}">(${tD})</text>
-    <!-- M2 NMOS diff -->
-    <line x1="180" y1="108" x2="180" y2="118" stroke="${cD}" stroke-width="1.5"/>
-    <rect x="171" y="118" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
-    <line x1="189" y1="132" x2="238" y2="132" stroke="${cD}" stroke-width="1.5"/>
-    <circle cx="241" cy="132" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
-    <text x="231" y="128" font-size="9" fill="${cD}" font-weight="bold">Vin−</text>
-    <line x1="180" y1="146" x2="180" y2="188" stroke="${cD}" stroke-width="1.5"/>
-    <text x="148" y="128" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M2</text>
-    <text x="168" y="139" font-size="9" fill="${cD}" text-anchor="end">(${tD})</text>
-    <!-- Tail -->
-    <line x1="80" y1="188" x2="180" y2="188" stroke="#555" stroke-width="1.5"/>
-    <line x1="130" y1="188" x2="130" y2="196" stroke="#555" stroke-width="1.5"/>
-    <text x="107" y="185" font-size="9" fill="#7f8c8d" font-style="italic">ISS</text>
-    <circle cx="130" cy="188" r="2.5" fill="#2980b9"/>
-    <text x="135" y="185" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
-    <text x="72" y="170" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
-    <text x="184" y="170" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
-    <!-- M5 NMOS tail -->
-    <rect x="121" y="196" width="18" height="28" rx="2" fill="rgba(44,62,80,.12)" stroke="${cT}" stroke-width="1.8"/>
-    <line x1="121" y1="210" x2="72" y2="210" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>
-    <text x="35" y="214" font-size="9" fill="#7f8c8d">Vb</text>
-    <line x1="130" y1="224" x2="130" y2="256" stroke="${cT}" stroke-width="1.5"/>
-    <text x="142" y="206" font-size="10" fill="${cT}" font-weight="bold">M5</text>
-    <text x="142" y="217" font-size="9" fill="${cT}">(${tT})</text>
-    <!-- VSS -->
-    <line x1="118" y1="256" x2="142" y2="256" stroke="${cT}" stroke-width="2"/>
-    <line x1="121" y1="260" x2="139" y2="260" stroke="${cT}" stroke-width="1.5"/>
-    <line x1="124" y1="264" x2="136" y2="264" stroke="${cT}" stroke-width="1"/>
-    <text x="148" y="263" font-size="11" fill="${cT}" font-weight="bold" font-family="monospace">VSS</text>
-    <text x="60" y="40" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>
-    <text x="184" y="40" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>`;
+    // ── NMOS 입력쌍 ──
+    // VDD rail
+    s+=`<line x1="60" y1="18" x2="200" y2="18" stroke="#c0392b" stroke-width="2.5"/>
+    <text x="4" y="23" font-size="11" fill="#c0392b" font-weight="bold" font-family="monospace">VDD</text>`;
+    // M3 PMOS (gate right, drain down, source up=VDD)
+    const m3=mosSym(80,48,cL,true,'right');
+    s+=m3.svg;
+    s+=`<line x1="${m3.sx}" y1="${m3.sy-30}" x2="${m3.sx}" y2="18" stroke="${cL}" stroke-width="1.5"/>`;
+    // M3 diode: drain → gate
+    s+=`<circle cx="${m3.dx}" cy="${m3.dy+30}" r="2" fill="${cL}"/>`;
+    s+=`<line x1="${m3.dx}" y1="${m3.dy+30}" x2="${m3.gx+8}" y2="${m3.dy+30}" stroke="${cL}" stroke-width="1.2"/>`;
+    s+=`<line x1="${m3.gx+8}" y1="${m3.dy+30}" x2="${m3.gx+8}" y2="${m3.gy}" stroke="${cL}" stroke-width="1.2"/>`;
+    s+=`<line x1="${m3.gx+8}" y1="${m3.gy}" x2="${m3.gx}" y2="${m3.gy}" stroke="${cL}" stroke-width="1.2"/>`;
+    // Gate bus M3→M4
+    s+=`<line x1="${m3.gx}" y1="${m3.gy}" x2="170" y2="${m3.gy}" stroke="${cL}" stroke-width="1.2"/>`;
+    s+=`<text x="128" y="${m3.gy-4}" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>`;
+    s+=`<text x="${m3.gx-15}" y="${m3.gy-12}" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>`;
+    // M4 PMOS (gate left, drain down, source up=VDD)
+    const m4=mosSym(180,48,cL,true,'left');
+    s+=m4.svg;
+    s+=`<line x1="${m4.sx}" y1="${m4.sy-30}" x2="${m4.sx}" y2="18" stroke="${cL}" stroke-width="1.5"/>`;
+    s+=`<text x="${m4.gx+15}" y="${m4.gy-12}" font-size="10" fill="${cL}" font-weight="bold">M4</text>`;
+    // Drain nodes
+    const nodeAy=m3.dy+30, nodeBy=m4.dy+30;
+    s+=`<line x1="${m3.dx}" y1="${m3.dy+30}" x2="${m3.dx}" y2="108" stroke="${cL}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m4.dx}" y1="${m4.dy+30}" x2="${m4.dx}" y2="108" stroke="${cL}" stroke-width="1.5"/>`;
+    // nodeA, Vout dots
+    s+=`<circle cx="${m3.dx}" cy="108" r="3" fill="#555"/>`;
+    s+=`<circle cx="${m4.dx}" cy="108" r="3" fill="#27ae60"/>`;
+    s+=`<line x1="${m4.dx}" y1="108" x2="228" y2="108" stroke="#27ae60" stroke-width="1.8"/>`;
+    s+=`<text x="231" y="112" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>`;
+    // M1 NMOS (gate left, drain up=nodeA, source down=tail)
+    const m1=mosSym(80,133,cD,false,'left');
+    s+=m1.svg;
+    s+=`<line x1="${m1.dx}" y1="${m1.dy}" x2="${m1.dx}" y2="108" stroke="${cD}" stroke-width="1.5"/>`;
+    // Gate → Vin+
+    s+=`<line x1="${m1.gx}" y1="${m1.gy}" x2="20" y2="${m1.gy}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<text x="4" y="${m1.gy-4}" font-size="9" fill="${cD}" font-weight="bold">Vin+</text>`;
+    s+=`<text x="${m1.gx-15}" y="${m1.gy-14}" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M1</text>`;
+    // M2 NMOS (gate right, drain up=Vout, source down=tail)
+    const m2=mosSym(180,133,cD,false,'right');
+    s+=m2.svg;
+    s+=`<line x1="${m2.dx}" y1="${m2.dy}" x2="${m2.dx}" y2="108" stroke="${cD}" stroke-width="1.5"/>`;
+    // Gate → Vin-
+    s+=`<line x1="${m2.gx}" y1="${m2.gy}" x2="238" y2="${m2.gy}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<text x="228" y="${m2.gy-4}" font-size="9" fill="${cD}" font-weight="bold">Vin−</text>`;
+    s+=`<text x="${m2.gx+15}" y="${m2.gy-14}" font-size="10" fill="${cD}" font-weight="bold">M2</text>`;
+    // Tail node
+    s+=`<line x1="${m1.sx}" y1="${m1.sy}" x2="${m2.sx}" y2="${m2.sy}" stroke="#555" stroke-width="1.5"/>`;
+    const tailY=m1.sy;
+    s+=`<circle cx="130" cy="${tailY}" r="2.5" fill="#2980b9"/>`;
+    s+=`<text x="135" y="${tailY-4}" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>`;
+    s+=`<line x1="130" y1="${tailY}" x2="130" y2="${tailY+8}" stroke="#555" stroke-width="1.5"/>`;
+    // M5 NMOS tail (gate left)
+    const m5=mosSym(130,tailY+23,cT,false,'left');
+    s+=m5.svg;
+    s+=`<line x1="${m5.dx}" y1="${m5.dy}" x2="${m5.dx}" y2="${tailY+8}" stroke="${cT}" stroke-width="1.5"/>`;
+    // Gate → Vb
+    s+=`<line x1="${m5.gx}" y1="${m5.gy}" x2="42" y2="${m5.gy}" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>`;
+    s+=`<text x="30" y="${m5.gy+4}" font-size="9" fill="#7f8c8d">Vb</text>`;
+    s+=`<text x="${m5.gx-15}" y="${m5.gy-14}" font-size="10" fill="${cT}" font-weight="bold" text-anchor="end">M5</text>`;
+    // VSS
+    const vssY=m5.sy+8;
+    s+=`<line x1="${m5.sx}" y1="${m5.sy}" x2="${m5.sx}" y2="${vssY}" stroke="${cT}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m5.sx-12}" y1="${vssY}" x2="${m5.sx+12}" y2="${vssY}" stroke="${cT}" stroke-width="2"/>`;
+    s+=`<line x1="${m5.sx-9}" y1="${vssY+4}" x2="${m5.sx+9}" y2="${vssY+4}" stroke="${cT}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m5.sx-6}" y1="${vssY+8}" x2="${m5.sx+6}" y2="${vssY+8}" stroke="${cT}" stroke-width="1"/>`;
+    s+=`<text x="${m5.sx+18}" y="${vssY+6}" font-size="11" fill="${cT}" font-weight="bold" font-family="monospace">VSS</text>`;
   }else{
     // ── PMOS 입력쌍 (상하 반전) ──
-    // VDD(상) → M5 PMOS tail → diff pair PMOS(M1/M2) → NMOS load(M3/M4) → VSS(하)
-    s+=`<!-- VDD -->
-    <line x1="118" y1="20" x2="142" y2="20" stroke="#c0392b" stroke-width="2.5"/>
-    <line x1="115" y1="16" x2="145" y2="16" stroke="#c0392b" stroke-width="1.5"/>
-    <text x="148" y="23" font-size="11" fill="#c0392b" font-weight="bold" font-family="monospace">VDD</text>
-    <!-- M5 PMOS tail (top) — bubble on gate -->
-    <line x1="130" y1="20" x2="130" y2="32" stroke="${cT}" stroke-width="1.5"/>
-    <rect x="121" y="32" width="18" height="28" rx="2" fill="rgba(44,62,80,.12)" stroke="${cT}" stroke-width="1.8"/>
-    <circle cx="115" cy="46" r="3.5" fill="none" stroke="${cT}" stroke-width="1.5"/>
-    <line x1="111.5" y1="46" x2="72" y2="46" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>
-    <text x="35" y="50" font-size="9" fill="#7f8c8d">Vb</text>
-    <text x="142" y="42" font-size="10" fill="${cT}" font-weight="bold">M5</text>
-    <text x="142" y="53" font-size="9" fill="${cT}">(${tT})</text>
-    <line x1="130" y1="60" x2="130" y2="68" stroke="${cT}" stroke-width="1.5"/>
-    <!-- Tail node -->
-    <line x1="80" y1="68" x2="180" y2="68" stroke="#555" stroke-width="1.5"/>
-    <text x="107" y="80" font-size="9" fill="#7f8c8d" font-style="italic">ISS</text>
-    <circle cx="130" cy="68" r="2.5" fill="#2980b9"/>
-    <text x="135" y="65" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>
-    <text x="72" y="100" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
-    <text x="184" y="100" font-size="8" fill="#7f8c8d" font-style="italic">ID/2</text>
-    <!-- M1 PMOS diff — bubble on gate -->
-    <line x1="80" y1="68" x2="80" y2="78" stroke="${cD}" stroke-width="1.5"/>
-    <rect x="71" y="78" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
-    <circle cx="65" cy="92" r="3.5" fill="none" stroke="${cD}" stroke-width="1.5"/>
-    <line x1="61.5" y1="92" x2="20" y2="92" stroke="${cD}" stroke-width="1.5"/>
-    <circle cx="17" cy="92" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
-    <text x="3" y="88" font-size="9" fill="${cD}" font-weight="bold">Vin+</text>
-    <line x1="80" y1="106" x2="80" y2="148" stroke="${cD}" stroke-width="1.5"/>
-    <text x="92" y="88" font-size="10" fill="${cD}" font-weight="bold">M1</text>
-    <text x="92" y="99" font-size="9" fill="${cD}">(${tD})</text>
-    <!-- M2 PMOS diff — bubble on gate -->
-    <line x1="180" y1="68" x2="180" y2="78" stroke="${cD}" stroke-width="1.5"/>
-    <rect x="171" y="78" width="18" height="28" rx="2" fill="${fD}" stroke="${cD}" stroke-width="1.8"/>
-    <circle cx="195" cy="92" r="3.5" fill="none" stroke="${cD}" stroke-width="1.5"/>
-    <line x1="198.5" y1="92" x2="238" y2="92" stroke="${cD}" stroke-width="1.5"/>
-    <circle cx="241" cy="92" r="3" fill="none" stroke="${cD}" stroke-width="1.5"/>
-    <text x="231" y="88" font-size="9" fill="${cD}" font-weight="bold">Vin−</text>
-    <line x1="180" y1="106" x2="180" y2="148" stroke="${cD}" stroke-width="1.5"/>
-    <text x="148" y="88" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M2</text>
-    <text x="168" y="99" font-size="9" fill="${cD}" text-anchor="end">(${tD})</text>
-    <!-- Nodes -->
-    <circle cx="80" cy="148" r="3" fill="#555"/>
-    <circle cx="180" cy="148" r="3" fill="#27ae60"/>
-    <line x1="180" y1="148" x2="225" y2="148" stroke="#27ae60" stroke-width="1.8"/>
-    <text x="228" y="152" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>
-    <!-- M3 NMOS load (diode, no bubble) -->
-    <!-- drain wire (top, from node A) -->
-    <line x1="80" y1="148" x2="80" y2="158" stroke="${cL}" stroke-width="1.5"/>
-    <rect x="71" y="158" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
-    <!-- gate line: right side of box → to gate bus -->
-    <line x1="89" y1="172" x2="110" y2="172" stroke="${cL}" stroke-width="1.5"/>
-    <!-- diode: drain(top) dot → right to gate column (gate=drain) -->
-    <circle cx="80" cy="153" r="2.5" fill="${cL}"/>
-    <line x1="80" y1="153" x2="110" y2="153" stroke="${cL}" stroke-width="1.2"/>
-    <line x1="110" y1="153" x2="110" y2="172" stroke="${cL}" stroke-width="1.2"/>
-    <circle cx="110" cy="172" r="2.5" fill="${cL}"/>
-    <!-- gate bus: M3(110) → M4(150) at y=172 -->
-    <line x1="110" y1="172" x2="150" y2="172" stroke="${cL}" stroke-width="1.2"/>
-    <text x="130" y="195" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>
-    <text x="69" y="168" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>
-    <text x="69" y="179" font-size="9" fill="${cL}" text-anchor="end">(${tL})</text>
-    <!-- M3 source → individual VSS -->
-    <line x1="80" y1="186" x2="80" y2="210" stroke="${cL}" stroke-width="1.5"/>
-    <text x="72" y="202" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>
-    <line x1="68" y1="210" x2="92" y2="210" stroke="${cT}" stroke-width="2"/>
-    <line x1="71" y1="214" x2="89" y2="214" stroke="${cT}" stroke-width="1.5"/>
-    <line x1="74" y1="218" x2="86" y2="218" stroke="${cT}" stroke-width="1"/>
-    <text x="60" y="220" font-size="8" fill="${cT}" font-family="monospace">VSS</text>
-    <!-- M4 NMOS load (no bubble) -->
-    <line x1="180" y1="148" x2="180" y2="158" stroke="${cL}" stroke-width="1.5"/>
-    <rect x="171" y="158" width="18" height="28" rx="2" fill="${fL}" stroke="${cL}" stroke-width="1.8"/>
-    <!-- gate direct to gate bus -->
-    <line x1="171" y1="172" x2="150" y2="172" stroke="${cL}" stroke-width="1.5"/>
-    <circle cx="150" cy="172" r="2.5" fill="${cL}"/>
-    <text x="191" y="168" font-size="10" fill="${cL}" font-weight="bold">M4</text>
-    <text x="191" y="179" font-size="9" fill="${cL}">(${tL})</text>
-    <!-- M4 source → individual VSS -->
-    <line x1="180" y1="186" x2="180" y2="210" stroke="${cL}" stroke-width="1.5"/>
-    <text x="184" y="202" font-size="8" fill="#7f8c8d" font-style="italic">ISS/2</text>
-    <line x1="168" y1="210" x2="192" y2="210" stroke="${cT}" stroke-width="2"/>
-    <line x1="171" y1="214" x2="189" y2="214" stroke="${cT}" stroke-width="1.5"/>
-    <line x1="174" y1="218" x2="186" y2="218" stroke="${cT}" stroke-width="1"/>
-    <text x="194" y="216" font-size="8" fill="${cT}" font-family="monospace">VSS</text>`;
+    // VDD rail (top)
+    s+=`<line x1="118" y1="18" x2="142" y2="18" stroke="#c0392b" stroke-width="2.5"/>
+    <line x1="115" y1="14" x2="145" y2="14" stroke="#c0392b" stroke-width="1.5"/>
+    <text x="148" y="21" font-size="11" fill="#c0392b" font-weight="bold" font-family="monospace">VDD</text>`;
+    // M5 PMOS tail (top, gate left)
+    const m5p=mosSym(130,43,cT,true,'left');
+    s+=m5p.svg;
+    s+=`<line x1="${m5p.sx}" y1="${m5p.sy-30}" x2="${m5p.sx}" y2="18" stroke="${cT}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m5p.gx}" y1="${m5p.gy}" x2="42" y2="${m5p.gy}" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="4,3"/>`;
+    s+=`<text x="30" y="${m5p.gy+4}" font-size="9" fill="#7f8c8d">Vb</text>`;
+    s+=`<text x="${m5p.gx-15}" y="${m5p.gy-14}" font-size="10" fill="${cT}" font-weight="bold" text-anchor="end">M5</text>`;
+    // Tail node
+    const tailYp=m5p.dy+30+8;
+    s+=`<line x1="${m5p.dx}" y1="${m5p.dy+30}" x2="${m5p.dx}" y2="${tailYp}" stroke="${cT}" stroke-width="1.5"/>`;
+    s+=`<line x1="80" y1="${tailYp}" x2="180" y2="${tailYp}" stroke="#555" stroke-width="1.5"/>`;
+    s+=`<circle cx="130" cy="${tailYp}" r="2.5" fill="#2980b9"/>`;
+    s+=`<text x="135" y="${tailYp-4}" font-size="9" fill="#2980b9" font-weight="bold" font-family="monospace">Vp</text>`;
+    // M1 PMOS diff (gate left, source up=tail, drain down)
+    const m1p=mosSym(80,tailYp+25,cD,true,'left');
+    s+=m1p.svg;
+    s+=`<line x1="${m1p.sx}" y1="${m1p.sy-30}" x2="${m1p.sx}" y2="${tailYp}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m1p.gx}" y1="${m1p.gy}" x2="20" y2="${m1p.gy}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<text x="4" y="${m1p.gy-4}" font-size="9" fill="${cD}" font-weight="bold">Vin+</text>`;
+    s+=`<text x="${m1p.gx-15}" y="${m1p.gy-14}" font-size="10" fill="${cD}" font-weight="bold" text-anchor="end">M1</text>`;
+    // M2 PMOS diff (gate right, source up=tail, drain down)
+    const m2p=mosSym(180,tailYp+25,cD,true,'right');
+    s+=m2p.svg;
+    s+=`<line x1="${m2p.sx}" y1="${m2p.sy-30}" x2="${m2p.sx}" y2="${tailYp}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m2p.gx}" y1="${m2p.gy}" x2="238" y2="${m2p.gy}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<text x="228" y="${m2p.gy-4}" font-size="9" fill="${cD}" font-weight="bold">Vin−</text>`;
+    s+=`<text x="${m2p.gx+15}" y="${m2p.gy-14}" font-size="10" fill="${cD}" font-weight="bold">M2</text>`;
+    // Drain nodes
+    const drainYp=m1p.dy+30;
+    s+=`<line x1="${m1p.dx}" y1="${m1p.dy+30}" x2="${m1p.dx}" y2="${drainYp+8}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m2p.dx}" y1="${m2p.dy+30}" x2="${m2p.dx}" y2="${drainYp+8}" stroke="${cD}" stroke-width="1.5"/>`;
+    s+=`<circle cx="${m1p.dx}" cy="${drainYp+8}" r="3" fill="#555"/>`;
+    s+=`<circle cx="${m2p.dx}" cy="${drainYp+8}" r="3" fill="#27ae60"/>`;
+    s+=`<line x1="${m2p.dx}" y1="${drainYp+8}" x2="228" y2="${drainYp+8}" stroke="#27ae60" stroke-width="1.8"/>`;
+    s+=`<text x="231" y="${drainYp+12}" font-size="11" fill="#27ae60" font-weight="bold" font-family="monospace">Vout</text>`;
+    // M3 NMOS load (gate right, diode, drain up=nodeA, source down=VSS)
+    const m3p=mosSym(80,drainYp+33,cL,false,'right');
+    s+=m3p.svg;
+    s+=`<line x1="${m3p.dx}" y1="${m3p.dy}" x2="${m3p.dx}" y2="${drainYp+8}" stroke="${cL}" stroke-width="1.5"/>`;
+    // M3 diode
+    s+=`<circle cx="${m3p.dx}" cy="${drainYp+13}" r="2" fill="${cL}"/>`;
+    s+=`<line x1="${m3p.dx}" y1="${drainYp+13}" x2="${m3p.gx-8}" y2="${drainYp+13}" stroke="${cL}" stroke-width="1.2"/>`;
+    s+=`<line x1="${m3p.gx-8}" y1="${drainYp+13}" x2="${m3p.gx-8}" y2="${m3p.gy}" stroke="${cL}" stroke-width="1.2"/>`;
+    s+=`<line x1="${m3p.gx-8}" y1="${m3p.gy}" x2="${m3p.gx}" y2="${m3p.gy}" stroke="${cL}" stroke-width="1.2"/>`;
+    // Gate bus
+    s+=`<line x1="${m3p.gx}" y1="${m3p.gy}" x2="170" y2="${m3p.gy}" stroke="${cL}" stroke-width="1.2"/>`;
+    s+=`<text x="128" y="${m3p.gy-4}" font-size="8" fill="${cL}" text-anchor="middle">Vx</text>`;
+    s+=`<text x="${m3p.gx-15}" y="${m3p.gy-14}" font-size="10" fill="${cL}" font-weight="bold" text-anchor="end">M3</text>`;
+    // M4 NMOS load (gate left, drain up=Vout, source down=VSS)
+    const m4p=mosSym(180,drainYp+33,cL,false,'left');
+    s+=m4p.svg;
+    s+=`<line x1="${m4p.dx}" y1="${m4p.dy}" x2="${m4p.dx}" y2="${drainYp+8}" stroke="${cL}" stroke-width="1.5"/>`;
+    s+=`<text x="${m4p.gx+15}" y="${m4p.gy-14}" font-size="10" fill="${cL}" font-weight="bold">M4</text>`;
+    // VSS for M3
+    const vss3y=m3p.sy+8;
+    s+=`<line x1="${m3p.sx}" y1="${m3p.sy}" x2="${m3p.sx}" y2="${vss3y}" stroke="${cL}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m3p.sx-12}" y1="${vss3y}" x2="${m3p.sx+12}" y2="${vss3y}" stroke="${cT}" stroke-width="2"/>`;
+    s+=`<line x1="${m3p.sx-9}" y1="${vss3y+4}" x2="${m3p.sx+9}" y2="${vss3y+4}" stroke="${cT}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m3p.sx-6}" y1="${vss3y+8}" x2="${m3p.sx+6}" y2="${vss3y+8}" stroke="${cT}" stroke-width="1"/>`;
+    s+=`<text x="${m3p.sx-18}" y="${vss3y+6}" font-size="8" fill="${cT}" font-family="monospace" text-anchor="end">VSS</text>`;
+    // VSS for M4
+    const vss4y=m4p.sy+8;
+    s+=`<line x1="${m4p.sx}" y1="${m4p.sy}" x2="${m4p.sx}" y2="${vss4y}" stroke="${cL}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m4p.sx-12}" y1="${vss4y}" x2="${m4p.sx+12}" y2="${vss4y}" stroke="${cT}" stroke-width="2"/>`;
+    s+=`<line x1="${m4p.sx-9}" y1="${vss4y+4}" x2="${m4p.sx+9}" y2="${vss4y+4}" stroke="${cT}" stroke-width="1.5"/>`;
+    s+=`<line x1="${m4p.sx-6}" y1="${vss4y+8}" x2="${m4p.sx+6}" y2="${vss4y+8}" stroke="${cT}" stroke-width="1"/>`;
+    s+=`<text x="${m4p.sx+18}" y="${vss4y+6}" font-size="8" fill="${cT}" font-family="monospace">VSS</text>`;
   }
   // 범례 (공통)
   s+=`<rect x="4" y="248" width="55" height="32" rx="3" fill="#fafbfc" stroke="#ddd" stroke-width="1"/>
