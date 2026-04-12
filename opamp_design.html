@@ -1548,15 +1548,20 @@ function drawVid(){
   const useNgVid=(bsimVid && _ngVidData && _ngVidData.length>0);
 
   if(useNgVid){
-    // ngspice 결과
-    ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;ctx.setLineDash([]);
-    ctx.beginPath();let first=true;
-    _ngVidData.forEach(d=>{
-      if(d.Vout===null||!isFinite(d.Vout)){first=true;return;}
-      const x=xc(d.vid),y=yc(d.Vout);
-      first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
-    });
-    ctx.stroke();
+    // ngspice 결과: Vp, Vx, Vout
+    function plotNgVid(getY,color,lw,dash){
+      ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.setLineDash(dash||[]);
+      ctx.beginPath();let first=true;
+      _ngVidData.forEach(d=>{
+        const v=getY(d);if(v===null||!isFinite(v)){first=true;return;}
+        const x=xc(d.vid),y=yc(v);
+        first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+      });
+      ctx.stroke();ctx.setLineDash([]);
+    }
+    plotNgVid(d=>d.Vp,'#2980b9',1.5,[4,3]);   // Vp (파랑, 점선)
+    plotNgVid(d=>d.Vx,'#8e44ad',1.5,[4,3]);    // Vx (보라, 점선)
+    plotNgVid(d=>d.Vout,'#27ae60',2.5,null);    // Vout (초록, 실선)
   } else if(bsimVid){
     // ngspice 로딩 중
     ctx.fillStyle='rgba(0,0,0,0.5)';ctx.font='11px sans-serif';ctx.textAlign='center';
@@ -1576,10 +1581,14 @@ function drawVid(){
   // 범례 (그래프 아래)
   const vidLabel=useNgVid?' (ngspice)':'';
   const vLegends=[
-    {c:'#27ae60',lb:(isSym?'Vout(Vid)':(vidMode==='vp'?'Vout(Vin+)':'Vout(Vin−)'))+vidLabel,dash:[]},
-    {c:'rgba(41,128,185,.7)',lb:'선형 이득 접선',dash:[4,3]},
-    {c:'#e74c3c',lb:'출력 스윙 한계',dash:[3,2]},
+    {c:'#27ae60',lb:'Vout'+vidLabel,dash:[]},
   ];
+  if(useNgVid){
+    vLegends.push({c:'#2980b9',lb:'Vp',dash:[4,3]});
+    vLegends.push({c:'#8e44ad',lb:'Vx',dash:[4,3]});
+  }
+  vLegends.push({c:'rgba(41,128,185,.7)',lb:'선형 접선',dash:[4,3]});
+  vLegends.push({c:'#e74c3c',lb:'스윙 한계',dash:[3,2]});
   const vLegY=my+ch+38;
   let vLegX=mx;
   ctx.font='10px sans-serif';
@@ -1806,7 +1815,7 @@ M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
 .dc Vd ${(-vidMax).toFixed(4)} ${vidMax.toFixed(4)} ${step}
 .control
 run
-wrdata /vid_output.txt V(vout)
+wrdata /vid_output.txt V(vout) V(vp) V(nodea)
 quit
 .endc
 .end`;
@@ -1829,7 +1838,7 @@ M5 vp    vb    0   0   nmos4 W=${W5}u L=${L5}u
 .dc Vsw ${(VSS).toFixed(4)} ${(VDD).toFixed(4)} ${Math.max(vsup/200,0.01).toFixed(4)}
 .control
 run
-wrdata /vid_output.txt V(vout)
+wrdata /vid_output.txt V(vout) V(vp) V(nodea)
 quit
 .endc
 .end`;
@@ -1852,7 +1861,7 @@ M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
 .dc Vd ${(-vidMax).toFixed(4)} ${vidMax.toFixed(4)} ${step}
 .control
 run
-wrdata /vid_output.txt V(vout)
+wrdata /vid_output.txt V(vout) V(vp) V(nodea)
 quit
 .endc
 .end`;
@@ -1874,7 +1883,7 @@ M5 vp    vb    vdd vdd pmos4 W=${W5}u L=${L5}u
 .dc Vsw ${(VSS).toFixed(4)} ${(VDD).toFixed(4)} ${Math.max(vsup/200,0.01).toFixed(4)}
 .control
 run
-wrdata /vid_output.txt V(vout)
+wrdata /vid_output.txt V(vout) V(vp) V(nodea)
 quit
 .endc
 .end`;
@@ -2037,7 +2046,8 @@ self.onmessage=function(e){
       if(rows.length>0){
         // wrdata V(vout) → 2열: sweep_var, V(vout)
         // 또는 ngspice 반복 형식: sweep_var V(vout) → 그대로 2열
-        _ngVidData=rows.map(r=>({vid:r[0],Vout:r[1]}));
+        // wrdata V(vout) V(vp) V(nodea) → [sweep_var, Vout, Vp, Vx]
+        _ngVidData=rows.map(r=>({vid:r[0],Vout:r[1],Vp:r[2]!=null?r[2]:null,Vx:r[3]!=null?r[3]:null}));
         console.log('[ngspice-vid]', rows.length, 'pts');
       } else {
         _ngVidData=null;
