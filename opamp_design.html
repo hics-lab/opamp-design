@@ -1315,7 +1315,7 @@ function drawIcmr(){
       ctx.beginPath();ctx.moveTo(xv,my);ctx.lineTo(xv,my+ch);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle=vthColor;ctx.font='10px sans-serif';
       ctx.textAlign='left';
-      ctx.fillText(vthLabel+'='+(nmos?VSS+vthVal:VDD-vthVal).toFixed(2)+'V',xv+2,my+12);
+      ctx.fillText(vthLabel+'='+(nmos?VSS+vthVal:VDD-vthVal).toFixed(2)+'V',xv+2,my-3);
     }
   }
 
