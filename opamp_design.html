@@ -758,13 +758,7 @@ function drawOtaSvg(nmos){
     <line x1="174" y1="218" x2="186" y2="218" stroke="${cT}" stroke-width="1"/>
     <text x="194" y="216" font-size="8" fill="${cT}" font-family="monospace">VSS</text>`;
   }
-  // 범례 (공통)
-  s+=`<rect x="4" y="248" width="55" height="32" rx="3" fill="#fafbfc" stroke="#ddd" stroke-width="1"/>
-  <rect x="8" y="252" width="8" height="6" rx="1" fill="rgba(125,60,152,.2)" stroke="#7d3c98" stroke-width="1"/>
-  <text x="19" y="258" font-size="8" fill="#7d3c98">PMOS</text>
-  <rect x="8" y="261" width="8" height="6" rx="1" fill="rgba(26,95,168,.2)" stroke="#1a5fa8" stroke-width="1"/>
-  <text x="19" y="267" font-size="8" fill="#1a5fa8">NMOS</text>
-`;
+;
   s+=`</svg>`;
   g('ota-svg').innerHTML=s;
 }
