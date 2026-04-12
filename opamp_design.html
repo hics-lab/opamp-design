@@ -1235,15 +1235,15 @@ function drawAxes(ctx,mx,my,cw,ch,xTicks,yTicks,xlabel,ylabel){
   ctx.strokeStyle='#e0e4ea'; ctx.lineWidth=1;
   yTicks.forEach(({v,label,yf})=>{
     const y=yf(v); ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx+cw,y);ctx.stroke();
-    ctx.fillStyle='#999';ctx.font='8px monospace';ctx.textAlign='right';ctx.fillText(label,mx-3,y+3);
+    ctx.fillStyle='#999';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(label,mx-3,y+4);
   });
   xTicks.forEach(({v,label,xf})=>{
     const x=xf(v); ctx.beginPath();ctx.moveTo(x,my);ctx.lineTo(x,my+ch);ctx.stroke();
-    ctx.fillStyle='#999';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText(label,x,my+ch+10);
+    ctx.fillStyle='#999';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(label,x,my+ch+12);
   });
   ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.strokeRect(mx,my,cw,ch);
-  if(xlabel){ctx.fillStyle='#777';ctx.font='8px sans-serif';ctx.textAlign='center';ctx.fillText(xlabel,mx+cw/2,my+ch+18);}
-  if(ylabel){ctx.save();ctx.translate(8,my+ch/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#777';ctx.font='8px sans-serif';ctx.textAlign='center';ctx.fillText(ylabel,0,0);ctx.restore();}
+  if(xlabel){ctx.fillStyle='#555';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText(xlabel,mx+cw/2,my+ch+24);}
+  if(ylabel){ctx.save();ctx.translate(8,my+ch/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#555';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText(ylabel,0,0);ctx.restore();}
 }
 
 // ── Chart 1: Vicm 스윕 — NR로 계산된 Vp·Vout ──
@@ -1251,7 +1251,7 @@ function drawIcmr(){
   const{VDD,VSS,icmrL,icmrH,icmrData,vov5,nmos,p:pp}=_p;
   if(!icmrData||!icmrData.length) return;
   const{ctx,W,H}=initCanvas('cv-icmr',_chartH);
-  const legH=32, mx=38,my=14,mr=8,mb=22+legH,cw=W-mx-mr,ch=H-my-mb;
+  const legH=36, mx=42,my=14,mr=8,mb=30+legH,cw=W-mx-mr,ch=H-my-mb;
   const vsup=VDD-VSS;
   const xf=v=>mx+(v-VSS)/vsup*cw, yf=v=>my+(1-(v-VSS)/vsup)*ch;
   const xc=v=>clamp(xf(v),mx,mx+cw), yc=v=>clamp(yf(v),my,my+ch);
@@ -1273,7 +1273,7 @@ function drawIcmr(){
     const y=yf(yVal);
     ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([5,3]);
     ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx+cw,y);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=color;ctx.font='7.5px sans-serif';
+    ctx.fillStyle=color;ctx.font='10px sans-serif';
     if(labelSide==='right'){ctx.textAlign='right';ctx.fillText(label,mx+cw-2,y-2);}
     else{ctx.textAlign='left';ctx.fillText(label,mx+2,y-2);}
   };
@@ -1281,7 +1281,7 @@ function drawIcmr(){
     if(xVal<VSS-.1||xVal>VDD+.1) return;
     ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
     ctx.beginPath();ctx.moveTo(xf(xVal),my);ctx.lineTo(xf(xVal),my+ch);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=color;ctx.font='7.5px sans-serif';
+    ctx.fillStyle=color;ctx.font='10px sans-serif';
     ctx.textAlign=anchor==='left'?'left':'right';
     const lx=anchor==='left'?xf(xVal)+2:xf(xVal)-2;
     ctx.fillText(label,lx,my+10);ctx.fillText(xVal.toFixed(2)+'V',lx,my+18);
@@ -1302,7 +1302,7 @@ function drawIcmr(){
   // 레이블: 대각선 중간
   {const mid=icmrData[Math.floor(icmrData.length/2)];
    if(mid){const yv=nmos?mid.vicm-vthIn:mid.vicm+vthIn;
-     if(inRange(yv)){ctx.fillStyle='rgba(142,68,173,0.85)';ctx.font='7.5px sans-serif';
+     if(inRange(yv)){ctx.fillStyle='rgba(142,68,173,0.85)';ctx.font='10px sans-serif';
        ctx.textAlign='left';ctx.fillText(nmos?'Vicm−VTHn':'Vicm+VTHp',xf(mid.vicm)+2,yc(yv)-3);}}}
 
   // ── 2. ICMR_L 수직선 ──
@@ -1319,7 +1319,7 @@ function drawIcmr(){
       const xv=xf(nmos?VSS+vthVal:VDD-vthVal);
       ctx.strokeStyle=vthColor;ctx.lineWidth=1.2;ctx.setLineDash([3,4]);
       ctx.beginPath();ctx.moveTo(xv,my);ctx.lineTo(xv,my+ch);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle=vthColor;ctx.font='7.5px sans-serif';
+      ctx.fillStyle=vthColor;ctx.font='10px sans-serif';
       ctx.textAlign='left';
       ctx.fillText(vthLabel,xv+2,my+ch-14);
       ctx.fillText((nmos?VSS+vthVal:VDD-vthVal).toFixed(2)+'V',xv+2,my+ch-6);
@@ -1374,7 +1374,7 @@ function drawIcmr(){
       plotNg(r=>r[2],'#27ae60',2.2);  // Vout (green)
       const lr=_ngData[_ngData.length-1];
       if(lr){
-        ctx.font='8px sans-serif';ctx.textAlign='right';
+        ctx.font='10px sans-serif';ctx.textAlign='right';
         ctx.fillStyle='#27ae60';ctx.fillText('Vout',xc(lr[0])-1,yc(lr[2])-3);
         ctx.fillStyle='#2980b9';ctx.fillText('Vp',xc(lr[0])-1,yc(lr[1])+10);
       }
@@ -1390,7 +1390,7 @@ function drawIcmr(){
     const lastV=icmrData.filter(d=>d.Vx!==null).slice(-1)[0];
     if(lastV){
       const rx=xc(lastV.vicm);
-      ctx.font='8px sans-serif';ctx.textAlign='right';
+      ctx.font='10px sans-serif';ctx.textAlign='right';
       ctx.fillStyle='#27ae60';ctx.fillText('Vout',rx-1,yc(lastV.Vx)-3);
       ctx.fillStyle='#2980b9';ctx.fillText('Vp',rx-1,yc(lastV.Vtail)+10);
     }
@@ -1416,7 +1416,7 @@ function drawIcmr(){
       ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(xc(markerData.vicm),yc(markerData.Vx),4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
     }
-    ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#e67e22';ctx.font='10px sans-serif';ctx.textAlign='center';
     ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',px,my+ch+10);
   }
 
@@ -1431,7 +1431,7 @@ function drawIcmr(){
   ];
   const legY=my+ch+22;  // x축 라벨 아래
   let legX=mx;
-  ctx.font='7.5px sans-serif';
+  ctx.font='10px sans-serif';
   legends.forEach(({c,lb,dash})=>{
     ctx.strokeStyle=c;ctx.lineWidth=1.8;ctx.setLineDash(dash);
     ctx.beginPath();ctx.moveTo(legX,legY);ctx.lineTo(legX+12,legY);ctx.stroke();ctx.setLineDash([]);
@@ -1445,7 +1445,7 @@ function drawVid(){
   const{VDD,VSS,voutMin,voutMax,vout_bal,vidData,vidMax,Av,vidMode,Vicm_vid}=_p;
   if(!vidData||!vidData.length) return;
   const{ctx,W,H}=initCanvas('cv-vid',_chartH);
-  const legH2=20, mx=36,my=14,mr=6,mb=22+legH2,cw=W-mx-mr,ch=H-my-mb;
+  const legH2=24, mx=42,my=14,mr=6,mb=30+legH2,cw=W-mx-mr,ch=H-my-mb;
   if(!isFinite(voutMin)||!isFinite(voutMax)||voutMax<=voutMin) return;
 
   const isFull=g('vid-full').checked;
@@ -1522,11 +1522,11 @@ function drawVid(){
     // 단일입력: Vicm 수직선 + 라벨
     ctx.strokeStyle='rgba(230,126,34,.6)';ctx.lineWidth=1.2;ctx.setLineDash([4,3]);
     ctx.beginPath();ctx.moveTo(xf(Vicm_vid),my);ctx.lineTo(xf(Vicm_vid),my+ch);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#e67e22';ctx.font='10px sans-serif';ctx.textAlign='center';
     ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',xf(Vicm_vid),my+10);
   }else{
     // 대칭: 차트 우상단에 텍스트
-    ctx.fillStyle='#e67e22';ctx.font='8px sans-serif';ctx.textAlign='right';
+    ctx.fillStyle='#e67e22';ctx.font='10px sans-serif';ctx.textAlign='right';
     ctx.fillText('Vicm='+Vicm_vid.toFixed(2)+'V',mx+cw-2,my+10);
   }
 
@@ -1537,7 +1537,7 @@ function drawVid(){
     ctx.strokeStyle=c;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(mx,py);ctx.lineTo(mx+cw,py);ctx.stroke();
   });
   ctx.setLineDash([]);
-  ctx.fillStyle='#c0392b';ctx.font='7.5px sans-serif';ctx.textAlign='left';
+  ctx.fillStyle='#c0392b';ctx.font='10px sans-serif';ctx.textAlign='left';
   if(yf(voutMax)>=my-1) ctx.fillText('max='+f2(voutMax)+'V',mx+2,yc(voutMax)-2);
   if(yf(voutMin)<=my+ch+1) ctx.fillText('min='+f2(voutMin)+'V',mx+2,yc(voutMin)+9);
 
@@ -1549,7 +1549,7 @@ function drawVid(){
   ctx.moveTo(xc(xCenter-vidLin),yc(vout_bal-Av*vidLin));
   ctx.lineTo(xc(xCenter+vidLin),yc(vout_bal+Av*vidLin));
   ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='rgba(41,128,185,.9)';ctx.font='8px sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='rgba(41,128,185,.9)';ctx.font='10px sans-serif';ctx.textAlign='center';
   ctx.fillText('Av='+f1(Av)+'V/V',xf(xCenter),my+ch-4);
 
   // 전달 곡선 (최상위 레이어)
@@ -1591,7 +1591,7 @@ function drawVid(){
   ];
   const vLegY=my+ch+22;
   let vLegX=mx;
-  ctx.font='7.5px sans-serif';
+  ctx.font='10px sans-serif';
   vLegends.forEach(({c,lb,dash})=>{
     ctx.strokeStyle=c;ctx.lineWidth=1.8;ctx.setLineDash(dash);
     ctx.beginPath();ctx.moveTo(vLegX,vLegY);ctx.lineTo(vLegX+12,vLegY);ctx.stroke();ctx.setLineDash([]);
