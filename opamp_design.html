@@ -146,14 +146,14 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
         <label><input type="radio" name="model" value="1" checked onchange="switchModel()"> Level 1</label>
         <label><input type="radio" name="model" value="49" onchange="switchModel()"> BSIM3v3</label>
       </div>
-      <select id="corner-sel" onchange="calc()" style="font-size:9px;padding:2px 4px;border:1px solid rgba(255,255,255,.35);border-radius:3px;background:rgba(255,255,255,.15);color:white;display:none;">
+      <select id="corner-sel" onchange="calc()" style="font-size:9px;padding:2px 4px;border:1px solid rgba(255,255,255,.35);border-radius:3px;background:rgba(255,255,255,.15);color:white;visibility:hidden;">
         <option value="TT">TT (Typical)</option>
         <option value="SS">SS (Slow)</option>
         <option value="FF">FF (Fast)</option>
         <option value="SF">SF (Slow N/Fast P)</option>
         <option value="FS">FS (Fast N/Slow P)</option>
       </select>
-      <span id="bsim-info" style="font-size:9px;color:rgba(255,255,255,.7);display:none;">ETRI 0.5μm</span>
+      <span id="bsim-info" style="font-size:9px;color:rgba(255,255,255,.7);visibility:hidden;">ETRI 0.5μm</span>
       <span style="color:rgba(255,255,255,.4);font-size:10px;">|</span>
       <div class="rg">
         <label><input type="radio" name="topo" value="nmos" checked onchange="applyTopoDefaults()"> NMOS 입력쌍</label>
@@ -1654,8 +1654,8 @@ function switchModel(){
   _modelLevel=parseInt(lv);
   const isBsim=(_modelLevel===49);
   g('lv1-params').style.display=isBsim?'none':'';
-  g('corner-sel').style.display=isBsim?'':'none';
-  g('bsim-info').style.display=isBsim?'':'none';
+  g('corner-sel').style.visibility=isBsim?'visible':'hidden';
+  g('bsim-info').style.visibility=isBsim?'visible':'hidden';
   g('proc-badge').textContent=isBsim?'📋 ETRI 0.5μm (BSIM3v3)':'📋 Default (Level 1)';
   g('model-badge').textContent=isBsim?'BSIM3v3 (Level 49)':'MOSFET Level 1';
   // BSIM3v3일 때 ETRI 공정 기본값
@@ -1673,8 +1673,8 @@ function resetDefaults(){
   document.querySelector('input[name="model"][value="1"]').checked=true;
   _modelLevel=1;
   g('lv1-params').style.display='';
-  g('corner-sel').style.display='none';
-  g('bsim-info').style.display='none';
+  g('corner-sel').style.visibility='hidden';
+  g('bsim-info').style.visibility='hidden';
   const defs={un_cox:166,up_cox:88,vthn:0.685,vthp:0.956,lam_n:0.1,lam_p:0.2,
     vdd:5.0,vss:0,cl:1};
   Object.entries(defs).forEach(([k,v])=>{g(k).value=v;const s=g('s_'+k);if(s)s.value=v;});
