@@ -177,9 +177,9 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
     </div>
 
     <div class="st">전원 및 바이어스</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px;">
+    <input type="hidden" id="vss" value="0"><input type="hidden" id="s_vss" value="0">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;">
       <div class="if"><label>VDD [V]</label><div class="si-row"><input type="range" id="s_vdd" min="1.0" max="5.0" step="0.1" value="5.0" oninput="syncSlider('vdd',this.value)"><input type="number" id="vdd" value="5.0" step="0.1" oninput="syncNum('s_vdd',this.value);calc()"></div></div>
-      <div class="if"><label>VSS [V]</label><div class="si-row"><input type="range" id="s_vss" min="-2.5" max="1.0" step="0.1" value="0" oninput="syncSlider('vss',this.value)"><input type="number" id="vss" value="0" step="0.1" oninput="syncNum('s_vss',this.value);calc()"></div></div>
       <div class="if"><label>Vb (M5 gate) [V]</label><div class="si-row"><input type="range" id="s_vbias" min="0" max="3.3" step="0.01" value="0.75" oninput="syncSlider('vbias',this.value)"><input type="number" id="vbias" value="0.75" step="0.01" oninput="syncNum('s_vbias',this.value);calc()"></div></div>
       <div class="if"><label>CL [pF]</label><div class="si-row"><input type="range" id="s_cl" min="0.1" max="20" step="0.1" value="1" oninput="syncSlider('cl',this.value)"><input type="number" id="cl" value="1" step="0.1" oninput="syncNum('s_cl',this.value);calc()"></div></div>
     </div>
