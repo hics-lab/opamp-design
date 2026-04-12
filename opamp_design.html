@@ -11,7 +11,7 @@
   --nmos:#1a5fa8; --pmos:#7d3c98;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:var(--bg);color:var(--text);min-height:100vh;overflow-y:auto;}
 
 /* HEADER */
 header{background:var(--primary);color:white;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;height:48px;}
@@ -26,8 +26,8 @@ header h1{font-size:16px;font-weight:700;}
 .proc-badge{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:3px 8px;font-size:11px;color:rgba(255,255,255,.9);}
 
 /* GRID */
-.grid{display:grid;grid-template-columns:255px 1fr 1fr;grid-template-rows:1fr minmax(300px,35vh);gap:10px;padding:10px;height:calc(100vh - 48px);}
-.panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.grid{display:grid;grid-template-columns:255px 1fr;grid-template-rows:auto auto;gap:10px;padding:10px;}
+.panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:visible;}
 .ph{background:var(--primary);color:white;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.4px;flex-shrink:0;}
 .pb{padding:10px;overflow-y:auto;flex:1;}
 
@@ -60,12 +60,12 @@ header h1{font-size:16px;font-weight:700;}
 .rg label:has(input:checked){background:var(--secondary);color:white;border-color:var(--secondary);}
 
 /* METRICS */
-.mg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:4px;}
-.mc{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:5px 7px;}
-.mc .ml{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;}
-.mc .mv{font-size:17px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.2;}
-.mc .mu{font-size:10px;color:var(--muted);}
-.mc .ms{font-size:10px;color:var(--muted);font-family:'Courier New',monospace;}
+.mg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+.mc{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:4px 6px;text-align:center;}
+.mc .ml{font-size:8px;color:var(--muted);font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.mc .mv{font-size:15px;font-weight:700;color:var(--primary);font-family:'Courier New',monospace;line-height:1.3;}
+.mc .mu{font-size:9px;color:var(--muted);}
+.mc .ms{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;}
 
 /* OP TABLE */
 .op-tbl{width:100%;border-collapse:collapse;font-size:10.5px;}
@@ -141,85 +141,78 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
 
 <!-- ============================  CENTER: 파라미터  ============================ -->
 <div class="panel">
-  <div class="ph">⚙️ 설계 파라미터 입력</div>
-  <div class="pb">
-    <div class="st">MOSFET 모델 선택</div>
-    <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+  <div class="ph" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <span>⚙️ 설계 파라미터 입력</span>
+    <div style="display:flex;align-items:center;gap:8px;">
       <div class="rg">
         <label><input type="radio" name="model" value="1" checked onchange="switchModel()"> Level 1</label>
         <label><input type="radio" name="model" value="49" onchange="switchModel()"> BSIM3v3</label>
       </div>
-      <select id="corner-sel" onchange="calc()" style="font-size:9px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;display:none;">
+      <select id="corner-sel" onchange="calc()" style="font-size:9px;padding:2px 4px;border:1px solid rgba(255,255,255,.35);border-radius:3px;background:rgba(255,255,255,.15);color:white;display:none;">
         <option value="TT">TT (Typical)</option>
         <option value="SS">SS (Slow)</option>
         <option value="FF">FF (Fast)</option>
         <option value="SF">SF (Slow N/Fast P)</option>
         <option value="FS">FS (Fast N/Slow P)</option>
       </select>
-      <span id="bsim-info" style="font-size:9px;color:#7f8c8d;display:none;">ETRI 0.5μm</span>
+      <span id="bsim-info" style="font-size:9px;color:rgba(255,255,255,.7);display:none;">ETRI 0.5μm</span>
+      <span style="color:rgba(255,255,255,.4);font-size:10px;">|</span>
+      <div class="rg">
+        <label><input type="radio" name="topo" value="nmos" checked onchange="applyTopoDefaults()"> NMOS 입력쌍</label>
+        <label><input type="radio" name="topo" value="pmos" onchange="applyTopoDefaults()"> PMOS 입력쌍</label>
+      </div>
     </div>
+  </div>
+  <div class="pb">
     <div id="lv1-params">
     <div class="st">공정 파라미터 (Level 1 MOSFET)</div>
-    <div class="ig">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;">
       <div class="if"><label>μₙCₒₓ [μA/V²]</label><div class="si-row"><input type="range" id="s_un_cox" min="50" max="800" step="10" value="166" oninput="syncSlider('un_cox',this.value)"><input type="number" id="un_cox" value="166" step="10" oninput="syncNum('s_un_cox',this.value);calc()"></div></div>
-      <div class="if"><label>μₚCₒₓ [μA/V²]</label><div class="si-row"><input type="range" id="s_up_cox" min="20" max="400" step="5" value="88" oninput="syncSlider('up_cox',this.value)"><input type="number" id="up_cox" value="88" step="10" oninput="syncNum('s_up_cox',this.value);calc()"></div></div>
       <div class="if"><label>VTHₙ [V]</label><div class="si-row"><input type="range" id="s_vthn" min="0.1" max="1.5" step="0.01" value="0.685" oninput="syncSlider('vthn',this.value)"><input type="number" id="vthn" value="0.685" step="0.01" oninput="syncNum('s_vthn',this.value);calc()"></div></div>
-      <div class="if"><label>|VTHₚ| [V]</label><div class="si-row"><input type="range" id="s_vthp" min="0.1" max="1.5" step="0.01" value="0.956" oninput="syncSlider('vthp',this.value)"><input type="number" id="vthp" value="0.956" step="0.01" oninput="syncNum('s_vthp',this.value);calc()"></div></div>
       <div class="if"><label>λₙ [V⁻¹]</label><div class="si-row"><input type="range" id="s_lam_n" min="0" max="0.5" step="0.01" value="0.1" oninput="syncSlider('lam_n',this.value)"><input type="number" id="lam_n" value="0.1" step="0.01" oninput="syncNum('s_lam_n',this.value);calc()"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;">
+      <div class="if"><label>μₚCₒₓ [μA/V²]</label><div class="si-row"><input type="range" id="s_up_cox" min="20" max="400" step="5" value="88" oninput="syncSlider('up_cox',this.value)"><input type="number" id="up_cox" value="88" step="10" oninput="syncNum('s_up_cox',this.value);calc()"></div></div>
+      <div class="if"><label>|VTHₚ| [V]</label><div class="si-row"><input type="range" id="s_vthp" min="0.1" max="1.5" step="0.01" value="0.956" oninput="syncSlider('vthp',this.value)"><input type="number" id="vthp" value="0.956" step="0.01" oninput="syncNum('s_vthp',this.value);calc()"></div></div>
       <div class="if"><label>λₚ [V⁻¹]</label><div class="si-row"><input type="range" id="s_lam_p" min="0" max="0.5" step="0.01" value="0.2" oninput="syncSlider('lam_p',this.value)"><input type="number" id="lam_p" value="0.2" step="0.01" oninput="syncNum('s_lam_p',this.value);calc()"></div></div>
     </div>
     </div>
 
     <div class="st">전원 및 바이어스</div>
-    <div class="ig">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px;">
       <div class="if"><label>VDD [V]</label><div class="si-row"><input type="range" id="s_vdd" min="1.0" max="5.0" step="0.1" value="5.0" oninput="syncSlider('vdd',this.value)"><input type="number" id="vdd" value="5.0" step="0.1" oninput="syncNum('s_vdd',this.value);calc()"></div></div>
       <div class="if"><label>VSS [V]</label><div class="si-row"><input type="range" id="s_vss" min="-2.5" max="1.0" step="0.1" value="0" oninput="syncSlider('vss',this.value)"><input type="number" id="vss" value="0" step="0.1" oninput="syncNum('s_vss',this.value);calc()"></div></div>
       <div class="if"><label>Vb (M5 gate) [V]</label><div class="si-row"><input type="range" id="s_vbias" min="0" max="3.3" step="0.01" value="0.75" oninput="syncSlider('vbias',this.value)"><input type="number" id="vbias" value="0.75" step="0.01" oninput="syncNum('s_vbias',this.value);calc()"></div></div>
       <div class="if"><label>CL [pF]</label><div class="si-row"><input type="range" id="s_cl" min="0.1" max="20" step="0.1" value="1" oninput="syncSlider('cl',this.value)"><input type="number" id="cl" value="1" step="0.1" oninput="syncNum('s_cl',this.value);calc()"></div></div>
     </div>
 
-    <div class="st" style="margin-bottom:5px">입력 차동쌍 타입</div>
-    <div class="rg" style="margin-bottom:8px">
-      <label><input type="radio" name="topo" value="nmos" checked onchange="applyTopoDefaults()"> NMOS 입력쌍</label>
-      <label><input type="radio" name="topo" value="pmos" onchange="applyTopoDefaults()"> PMOS 입력쌍</label>
-    </div>
-
     <div class="st">트랜지스터 W/L 설정</div>
-    <div class="wl-group">
-      <div class="wl-head"><span class="cn" id="t-m1">NMOS</span> <strong>M1/M2</strong> <span style="color:#999;font-size:9px">(매칭)</span> &nbsp; W/L = <span id="wl1" style="font-family:'Courier New',monospace">20.0</span><span id="wl2" style="display:none"></span></div>
-      <div class="ig">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+      <div class="wl-group">
+        <div class="wl-head"><span class="cn" id="t-m1">NMOS</span> <strong>M1/M2</strong> <span style="color:#999;font-size:9px">(매칭)</span><br>W/L = <span id="wl1" style="font-family:'Courier New',monospace">20.0</span><span id="wl2" style="display:none"></span></div>
         <div class="if"><label>W₁ [μm]</label><div class="si-row"><input type="range" id="s_w1" min="1" max="200" step="1" value="20" oninput="syncSlider('w1',this.value);syncM2()"><input type="number" id="w1" value="20" min="0.1" step="1" oninput="syncNum('s_w1',this.value);syncM2();calc()"></div></div>
         <div class="if"><label>L₁ [μm]</label><div class="si-row"><input type="range" id="s_l1" min="0.1" max="10" step="0.1" value="1" oninput="syncSlider('l1',this.value);syncM2()"><input type="number" id="l1" value="1" min="0.1" step="0.1" oninput="syncNum('s_l1',this.value);syncM2();calc()"></div></div>
+        <input type="hidden" id="w2" value="20"><input type="hidden" id="l2" value="1">
+        <span id="t-m2" style="display:none">NMOS</span>
       </div>
-      <input type="hidden" id="w2" value="20"><input type="hidden" id="l2" value="1">
-      <span id="t-m2" style="display:none">NMOS</span>
-    </div>
-    <div class="wl-group">
-      <div class="wl-head"><span class="cp" id="t-m3">PMOS</span> <strong>M3/M4</strong> <span style="color:#999;font-size:9px">(매칭)</span> &nbsp; W/L = <span id="wl3" style="font-family:'Courier New',monospace">10.0</span><span id="wl4" style="display:none"></span></div>
-      <div class="ig">
+      <div class="wl-group">
+        <div class="wl-head"><span class="cp" id="t-m3">PMOS</span> <strong>M3/M4</strong> <span style="color:#999;font-size:9px">(매칭)</span><br>W/L = <span id="wl3" style="font-family:'Courier New',monospace">10.0</span><span id="wl4" style="display:none"></span></div>
         <div class="if"><label>W₃ [μm]</label><div class="si-row"><input type="range" id="s_w3" min="1" max="200" step="1" value="10" oninput="syncSlider('w3',this.value);syncM4()"><input type="number" id="w3" value="10" min="0.1" step="1" oninput="syncNum('s_w3',this.value);syncM4();calc()"></div></div>
         <div class="if"><label>L₃ [μm]</label><div class="si-row"><input type="range" id="s_l3" min="0.1" max="10" step="0.1" value="1" oninput="syncSlider('l3',this.value);syncM4()"><input type="number" id="l3" value="1" min="0.1" step="0.1" oninput="syncNum('s_l3',this.value);syncM4();calc()"></div></div>
+        <input type="hidden" id="w4" value="10"><input type="hidden" id="l4" value="1">
+        <span id="t-m4" style="display:none">PMOS</span>
       </div>
-      <input type="hidden" id="w4" value="10"><input type="hidden" id="l4" value="1">
-      <span id="t-m4" style="display:none">PMOS</span>
-    </div>
-    <div class="wl-group">
-      <div class="wl-head"><span id="t-m5" style="color:#2c3e50;font-weight:600">NMOS</span> <strong>M5</strong> (tail) &nbsp; W/L = <span id="wl5" style="font-family:'Courier New',monospace">40.0</span></div>
-      <div class="ig">
+      <div class="wl-group">
+        <div class="wl-head"><span id="t-m5" style="color:#2c3e50;font-weight:600">NMOS</span> <strong>M5</strong> (tail)<br>W/L = <span id="wl5" style="font-family:'Courier New',monospace">40.0</span></div>
         <div class="if"><label>W₅ [μm]</label><div class="si-row"><input type="range" id="s_w5" min="1" max="200" step="1" value="40" oninput="syncSlider('w5',this.value)"><input type="number" id="w5" value="40" min="0.1" step="1" oninput="syncNum('s_w5',this.value);calc()"></div></div>
         <div class="if"><label>L₅ [μm]</label><div class="si-row"><input type="range" id="s_l5" min="0.1" max="10" step="0.1" value="1" oninput="syncSlider('l5',this.value)"><input type="number" id="l5" value="1" min="0.1" step="0.1" oninput="syncNum('s_l5',this.value);calc()"></div></div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ============================  RIGHT: 결과  ============================ -->
-<div class="panel">
-  <div class="ph">📊 시뮬레이션 결과 (실시간)</div>
-  <div class="pb">
+    <!-- ── 시뮬레이션 결과 (같은 패널 내) ── -->
+    <div class="st" style="margin-top:8px;border-bottom-color:var(--accent);">📊 시뮬레이션 결과</div>
 
-    <!-- 6 key metrics -->
-    <div class="st">성능 지표</div>
+    <!-- 7 key metrics in one row -->
     <div class="mg">
       <div class="mc">
         <div class="ml">전압 이득 |Av|</div>
@@ -259,18 +252,22 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
       </div>
     </div>
 
-    <!-- Operating point table -->
-    <div class="st">트랜지스터 동작점</div>
-    <table class="op-tbl">
-      <thead>
-        <tr><th>소자</th><th>ID[μA]</th><th>VGS[V]</th><th>Vov[V]</th><th>gm[μA/V]</th><th>ro[kΩ]</th><th>영역</th></tr>
-      </thead>
-      <tbody id="op-body"></tbody>
-    </table>
-
-    <!-- Hints -->
-    <div class="st">설계 힌트</div>
-    <div class="hint-box" id="hints"></div>
+    <!-- Operating point table + Hints side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+      <div>
+        <div class="st">트랜지스터 동작점</div>
+        <table class="op-tbl">
+          <thead>
+            <tr><th>소자</th><th>ID[μA]</th><th>VGS[V]</th><th>Vov[V]</th><th>gm[μA/V]</th><th>ro[kΩ]</th><th>영역</th></tr>
+          </thead>
+          <tbody id="op-body"></tbody>
+        </table>
+      </div>
+      <div>
+        <div class="st">설계 힌트</div>
+        <div class="hint-box" id="hints"></div>
+      </div>
+    </div>
 
   </div>
 </div>
@@ -278,7 +275,7 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
 <!-- ============================  BOTTOM: 특성 곡선 (전체 폭)  ============================ -->
 <div class="panel" style="grid-column:1/-1">
   <div class="ph">📈 특성 곡선</div>
-  <div class="pb" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 12px;overflow:hidden;flex:1;min-height:0;">
+  <div class="pb" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 12px;min-height:350px;">
     <div class="chart-wrap">
       <div class="chart-title">Vicm 스윕 — 노드 전압 (Vp, Vout)</div>
       <canvas id="cv-icmr"></canvas>
