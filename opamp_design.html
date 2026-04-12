@@ -11,7 +11,7 @@
   --nmos:#1a5fa8; --pmos:#7d3c98;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:var(--bg);color:var(--text);min-height:100vh;overflow-y:auto;}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
 
 /* HEADER */
 header{background:var(--primary);color:white;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;height:48px;}
@@ -26,7 +26,7 @@ header h1{font-size:16px;font-weight:700;}
 .proc-badge{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:3px 8px;font-size:11px;color:rgba(255,255,255,.9);}
 
 /* GRID */
-.grid{display:grid;grid-template-columns:255px 1fr;grid-template-rows:auto auto;gap:10px;padding:10px;}
+.grid{display:grid;grid-template-columns:255px 1fr 1fr;grid-template-rows:1fr;gap:10px;padding:10px;height:calc(100vh - 48px);}
 .panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:visible;}
 .ph{background:var(--primary);color:white;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.4px;flex-shrink:0;}
 .pb{padding:10px;overflow-y:auto;flex:1;}
@@ -271,10 +271,10 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
   </div>
 </div>
 
-<!-- ============================  BOTTOM: 특성 곡선 (전체 폭)  ============================ -->
-<div class="panel" style="grid-column:1/-1">
+<!-- ============================  RIGHT: 특성 곡선 (위아래)  ============================ -->
+<div class="panel" style="min-height:0;">
   <div class="ph">📈 특성 곡선</div>
-  <div class="pb" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 12px;min-height:350px;">
+  <div class="pb" style="display:flex;flex-direction:column;gap:8px;padding:8px;overflow-y:auto;flex:1;min-height:0;">
     <div class="chart-wrap">
       <div class="chart-title">Vicm 스윕 — 노드 전압 (Vp, Vout)</div>
       <canvas id="cv-icmr"></canvas>
@@ -1216,8 +1216,10 @@ function genHints({Av,AvdB,GBW,icmrL,icmrH,voutMin,voutMax,gm12,ID12,Pwr,chks,VD
 }
 
 // ─── Chart Drawing ───
-const _chartH=280;
+let _chartH=250;
 function drawCharts(){
+  const cvs=g('cv-icmr'), wrap=cvs?.parentElement;
+  if(wrap) _chartH=Math.max(180, Math.floor(wrap.clientWidth*0.55));
   drawIcmr();drawVid();
 }
 
