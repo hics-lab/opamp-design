@@ -179,12 +179,12 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
     <!-- BSIM3v3 모델 주요 파라미터 (BSIM3v3 선택 시만 표시) -->
     <div id="bsim-params" style="display:none;">
       <div class="st">BSIM3v3 모델 주요 파라미터</div>
-      <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;">
         <thead><tr style="background:#eaf2fb;">
-          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;"></th>
-          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;color:#1a5fa8;">NMOS</th>
-          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;color:#7d3c98;">PMOS</th>
-          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--muted);">설명</th>
+          <th style="padding:3px 6px;border:1px solid var(--border);text-align:center;">파라미터</th>
+          <th style="padding:3px 6px;border:1px solid var(--border);text-align:center;color:#1a5fa8;font-weight:700;">NMOS</th>
+          <th style="padding:3px 6px;border:1px solid var(--border);text-align:center;color:#7d3c98;font-weight:700;">PMOS</th>
+          <th style="padding:3px 6px;border:1px solid var(--border);text-align:center;color:#666;">설명</th>
         </tr></thead>
         <tbody id="bsim-param-body" style="font-family:'Courier New',monospace;"></tbody>
       </table>
@@ -1009,19 +1009,17 @@ function calc(){
     const muCoxP=(P.U0*1e-4*CoxP*1e6).toFixed(1);
     const rows=[
       ['VTH0',N.VTH0.toFixed(3),P.VTH0.toFixed(3),'V','문턱전압'],
-      ['K1 (body)',N.K1.toFixed(3),P.K1.toFixed(3),'V<sup>½</sup>','체효과 계수'],
-      ['μ₀',N.U0.toFixed(1),P.U0.toFixed(1),'cm²/Vs','저전계 이동도'],
+      ['K1',N.K1.toFixed(3),P.K1.toFixed(3),'V½','Body Effect 계수'],
+      ['μ₀',N.U0.toFixed(1),P.U0.toFixed(1),'cm²/Vs','이동도'],
       ['μCox',muCoxN,muCoxP,'μA/V²','전류 계수'],
       ['TOX',(N.TOX*1e9).toFixed(1),(P.TOX*1e9).toFixed(1),'nm','산화막 두께'],
-      ['VSAT',(N.VSAT/1e4).toFixed(1),(P.VSAT/1e4).toFixed(1),'×10⁴ m/s','포화 속도'],
-      ['PCLM',N.PCLM.toFixed(2),P.PCLM.toFixed(2),'','CLM 계수 (λ 관련)'],
     ];
     const tb=g('bsim-param-body');
     tb.innerHTML=rows.map(([nm,nv,pv,u,desc])=>
-      `<tr><td style="padding:2px 4px;border:1px solid var(--border);font-weight:700;color:var(--muted);font-size:9px;">${nm}</td>`+
-      `<td style="padding:2px 4px;border:1px solid var(--border);text-align:right;color:#1a5fa8;">${nv}</td>`+
-      `<td style="padding:2px 4px;border:1px solid var(--border);text-align:right;color:#7d3c98;">${pv}</td>`+
-      `<td style="padding:2px 4px;border:1px solid var(--border);font-size:8px;color:var(--muted);font-family:sans-serif;">${desc} <span style="color:#aaa">[${u}]</span></td></tr>`
+      `<tr><td style="padding:3px 6px;border:1px solid var(--border);font-weight:700;color:#444;">${nm}</td>`+
+      `<td style="padding:3px 6px;border:1px solid var(--border);text-align:right;font-weight:700;color:#1a5fa8;">${nv}</td>`+
+      `<td style="padding:3px 6px;border:1px solid var(--border);text-align:right;font-weight:700;color:#7d3c98;">${pv}</td>`+
+      `<td style="padding:3px 6px;border:1px solid var(--border);color:#666;">${desc} [${u}]</td></tr>`
     ).join('');
   }
 
