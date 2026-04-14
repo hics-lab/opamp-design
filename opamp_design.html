@@ -176,6 +176,20 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
     </div>
     </div>
 
+    <!-- BSIM3v3 모델 주요 파라미터 (BSIM3v3 선택 시만 표시) -->
+    <div id="bsim-params" style="display:none;">
+      <div class="st">BSIM3v3 모델 주요 파라미터</div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px;">
+        <thead><tr style="background:#eaf2fb;">
+          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;"></th>
+          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;color:#1a5fa8;">NMOS</th>
+          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;color:#7d3c98;">PMOS</th>
+          <th style="padding:2px 4px;border:1px solid var(--border);text-align:center;font-size:9px;color:var(--muted);">설명</th>
+        </tr></thead>
+        <tbody id="bsim-param-body" style="font-family:'Courier New',monospace;"></tbody>
+      </table>
+    </div>
+
     <div class="st">전원 및 바이어스</div>
     <input type="hidden" id="vss" value="0"><input type="hidden" id="s_vss" value="0">
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;">
@@ -987,6 +1001,30 @@ function calc(){
   g('t-m1').className=nmos?'cn':'cp'; g('t-m2').className=g('t-m1').className;
   g('t-m3').className=nmos?'cp':'cn'; g('t-m4').className=g('t-m3').className;
 
+  // ── BSIM3v3 모델 파라미터 테이블 갱신 ──
+  if(_modelLevel===49){
+    const N=_bsimN, P=_bsimP, eox=3.453e-11;
+    const CoxN=eox/N.TOX, CoxP=eox/P.TOX;
+    const muCoxN=(N.U0*1e-4*CoxN*1e6).toFixed(1);  // μA/V²
+    const muCoxP=(P.U0*1e-4*CoxP*1e6).toFixed(1);
+    const rows=[
+      ['VTH0',N.VTH0.toFixed(3),P.VTH0.toFixed(3),'V','문턱전압'],
+      ['K1 (body)',N.K1.toFixed(3),P.K1.toFixed(3),'V<sup>½</sup>','체효과 계수'],
+      ['μ₀',N.U0.toFixed(1),P.U0.toFixed(1),'cm²/Vs','저전계 이동도'],
+      ['μCox',muCoxN,muCoxP,'μA/V²','전류 계수'],
+      ['TOX',(N.TOX*1e9).toFixed(1),(P.TOX*1e9).toFixed(1),'nm','산화막 두께'],
+      ['VSAT',(N.VSAT/1e4).toFixed(1),(P.VSAT/1e4).toFixed(1),'×10⁴ m/s','포화 속도'],
+      ['PCLM',N.PCLM.toFixed(2),P.PCLM.toFixed(2),'','CLM 계수 (λ 관련)'],
+    ];
+    const tb=g('bsim-param-body');
+    tb.innerHTML=rows.map(([nm,nv,pv,u,desc])=>
+      `<tr><td style="padding:2px 4px;border:1px solid var(--border);font-weight:700;color:var(--muted);font-size:9px;">${nm}</td>`+
+      `<td style="padding:2px 4px;border:1px solid var(--border);text-align:right;color:#1a5fa8;">${nv}</td>`+
+      `<td style="padding:2px 4px;border:1px solid var(--border);text-align:right;color:#7d3c98;">${pv}</td>`+
+      `<td style="padding:2px 4px;border:1px solid var(--border);font-size:8px;color:var(--muted);font-family:sans-serif;">${desc} <span style="color:#aaa">[${u}]</span></td></tr>`
+    ).join('');
+  }
+
   const Vicm_nom=(VDD+VSS)/2;
   const pBase={VDD,VSS,mu12,wl1,vth12,lam12,mu34,wl3,vth34,lam34,mu5,wl5,vth5,lam5,nmos,
                W1,L1,W3,L3,W5,L5};
@@ -1657,6 +1695,7 @@ function switchModel(){
   _modelLevel=parseInt(lv);
   const isBsim=(_modelLevel===49);
   g('lv1-params').style.display=isBsim?'none':'';
+  g('bsim-params').style.display=isBsim?'':'none';
   g('corner-sel').style.visibility=isBsim?'visible':'hidden';
   g('bsim-info').style.visibility=isBsim?'visible':'hidden';
   g('proc-badge').textContent=isBsim?'📋 ETRI 0.5μm (BSIM3v3)':'📋 Default (Level 1)';
@@ -1676,6 +1715,7 @@ function resetDefaults(){
   document.querySelector('input[name="model"][value="1"]').checked=true;
   _modelLevel=1;
   g('lv1-params').style.display='';
+  g('bsim-params').style.display='none';
   g('corner-sel').style.visibility='hidden';
   g('bsim-info').style.visibility='hidden';
   const defs={un_cox:166,up_cox:88,vthn:0.685,vthp:0.956,lam_n:0.1,lam_p:0.2,
