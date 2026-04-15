@@ -29,7 +29,7 @@ header h1{font-size:16px;font-weight:700;}
 .proc-badge{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:3px 8px;font-size:11px;color:rgba(255,255,255,.9);}
 
 /* GRID */
-.grid{display:grid;grid-template-columns:255px 1fr 1fr;grid-template-rows:1fr;gap:10px;padding:10px;height:calc(100vh - 48px);}
+.grid{display:grid;grid-template-columns:220px 1fr 1.4fr;grid-template-rows:1fr;gap:8px;padding:8px;height:calc(100vh - 48px);}
 .panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:visible;}
 .ph{background:var(--primary);color:white;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.4px;flex-shrink:0;}
 .pb{padding:10px;overflow-y:auto;flex:1;}
@@ -142,8 +142,8 @@ canvas{width:100%;display:block;border:1px solid var(--border);border-radius:4px
 
 <!-- ============================  CENTER: 파라미터  ============================ -->
 <div class="panel">
-  <div class="ph" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-    <span>⚙️ 설계 파라미터 입력</span>
+  <div class="ph" style="padding:5px 12px;">
+    <div style="margin-bottom:4px;">⚙️ 설계 파라미터 입력</div>
     <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;">
       <div class="rg">
         <label><input type="radio" name="model" value="1" checked onchange="switchModel()"> Level 1</label>
