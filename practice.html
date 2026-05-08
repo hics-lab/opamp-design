@@ -108,40 +108,33 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .warn-banner{background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:5px;padding:7px 10px;font-size:11.5px;color:#5a4900;margin-bottom:8px;line-height:1.5;}
 .warn-banner b{color:#7a3b00;}
 
-.ac-pair{display:grid;grid-template-rows:1fr 1fr;gap:6px;flex:1;min-height:0;}
-.ac-sub{display:flex;flex-direction:column;min-height:0;}
-.ac-sub .lbl{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:3px;}
-.ac-sub canvas{flex:1;min-height:0;}
+/* VIEW (sub-tab) SYSTEM */
+.views-container{display:flex;flex-direction:column;flex:1;min-height:0;}
+.views-tabs{display:flex;align-items:center;gap:2px;flex-wrap:wrap;padding:6px 0 0 0;border-bottom:1px solid var(--border);flex-shrink:0;}
+.view-tab{display:flex;align-items:center;gap:6px;padding:5px 10px 6px 12px;font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;cursor:pointer;user-select:none;background:#f6f8fb;margin-bottom:-1px;}
+.view-tab:hover{color:var(--primary);background:#eef2f7;}
+.view-tab.active{background:#fff;color:var(--primary);border-bottom:1px solid #fff;}
+.view-tab .view-close{font-size:13px;color:#95a5a6;padding:0 2px;line-height:1;border-radius:2px;}
+.view-tab .view-close:hover{color:var(--danger);background:rgba(192,57,43,.1);}
+.add-view-btn{padding:4px 10px;font-size:11px;border:1px dashed var(--secondary);background:#fff;color:var(--secondary);border-radius:4px;cursor:pointer;margin-left:6px;font-weight:600;}
+.add-view-btn:hover{background:var(--secondary);color:#fff;}
 
-/* CHART CARD (variable list left + chart right) */
-.charts-container{display:flex;flex-direction:column;flex:1;min-height:0;gap:6px;}
-.chart-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;}
-.chart-card{display:grid;grid-template-columns:155px 1fr;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:#fafbfd;min-height:280px;max-height:60vh;flex-shrink:0;}
-.chart-card .card-vars{display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--border);padding-right:8px;min-width:0;min-height:0;}
-.chart-card .card-vars-head{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between;}
-.chart-card .card-close{background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;line-height:1;padding:0 4px;border-radius:3px;}
-.chart-card .card-close:hover{background:rgba(192,57,43,.1);}
-.chart-card .var-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1px;}
-.chart-card .var-list label{display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 4px;border-radius:3px;font-family:'Consolas','Courier New',monospace;font-size:11px;line-height:1.3;}
-.chart-card .var-list label:hover{background:rgba(41,128,185,.08);}
-.chart-card .var-list label .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;flex-shrink:0;}
-.chart-card .var-list label .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.chart-card .var-list .var-group-head{font-size:9px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:.4px;margin:4px 0 1px 0;padding:1px 4px;background:#eef2f7;border-radius:2px;}
-.chart-card .var-list .var-group-head:first-child{margin-top:0;}
-.chart-card .var-list input[type="checkbox"]{cursor:pointer;margin:0;flex-shrink:0;}
-.chart-card .card-allbtns{display:flex;gap:3px;}
-.chart-card .card-allbtns button{flex:1;font-size:10px;padding:2px 0;border:1px solid var(--border);background:#fff;border-radius:3px;cursor:pointer;color:var(--text);}
-.chart-card .card-allbtns button:hover{background:#eef2f7;}
-.chart-card .card-chart{display:flex;flex-direction:column;min-height:0;min-width:0;}
-.chart-card .card-chart.ac-pair{display:grid;grid-template-rows:1fr 1fr;gap:6px;}
-.chart-card .card-chart .ac-sub{display:flex;flex-direction:column;min-height:0;}
-/* canvas-wrap: position:relative + canvas position:absolute → Chart.js responsive 안정화 */
-.chart-card .canvas-wrap{position:relative;flex:1;min-height:0;width:100%;}
-.chart-card .canvas-wrap > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
-
-.add-chart-bar{display:flex;justify-content:center;padding:4px 0;flex-shrink:0;}
-.add-chart-bar button{padding:5px 14px;border:1px dashed var(--secondary);background:#fff;color:var(--secondary);border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:600;}
-.add-chart-bar button:hover{background:var(--secondary);color:#fff;}
+.views-content{flex:1;min-height:0;display:flex;padding:8px 0 0 0;position:relative;}
+.view{display:none;flex:1;min-height:0;gap:8px;}
+.view.active{display:flex;}
+.view .view-vars{width:155px;flex-shrink:0;display:flex;flex-direction:column;gap:5px;padding-right:8px;border-right:1px solid var(--border);min-height:0;}
+.view .view-vars-head{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;}
+.view .var-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1px;padding-right:2px;}
+.view .var-list label{display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 4px;border-radius:3px;font-family:'Consolas','Courier New',monospace;font-size:11px;line-height:1.3;}
+.view .var-list label:hover{background:rgba(41,128,185,.08);}
+.view .var-list label .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.view .var-list label .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.view .var-list input[type="checkbox"]{cursor:pointer;margin:0;flex-shrink:0;}
+.view .view-allbtns{display:flex;gap:3px;}
+.view .view-allbtns button{flex:1;font-size:10px;padding:2px 0;border:1px solid var(--border);background:#fff;border-radius:3px;cursor:pointer;color:var(--text);}
+.view .view-allbtns button:hover{background:#eef2f7;}
+.view .view-chart{flex:1;min-height:0;min-width:0;position:relative;}
+.view .view-chart > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
 
 /* PARAM ROW (per tab) */
 .param-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;font-size:11.5px;flex-shrink:0;}
@@ -272,9 +265,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <button class="apply" onclick="applyParams('tran')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
-        <div class="charts-container" id="cc-tran" hidden>
-          <div class="chart-list" id="charts-tran"></div>
-          <div class="add-chart-bar"><button onclick="addChart('tran')">+ 그래프 추가</button></div>
+        <div class="views-container" id="cc-tran" hidden>
+          <div class="views-tabs" id="views-tabs-tran">
+            <button class="add-view-btn" onclick="addViewFromActive('tran')" title="현재 탭 복제 (다른 변수 조합 비교용)">+ 추가</button>
+          </div>
+          <div class="views-content" id="views-content-tran"></div>
         </div>
       </div>
 
@@ -288,9 +283,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <button class="apply" onclick="applyParams('dc')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
-        <div class="charts-container" id="cc-dc" hidden>
-          <div class="chart-list" id="charts-dc"></div>
-          <div class="add-chart-bar"><button onclick="addChart('dc')">+ 그래프 추가</button></div>
+        <div class="views-container" id="cc-dc" hidden>
+          <div class="views-tabs" id="views-tabs-dc">
+            <button class="add-view-btn" onclick="addViewFromActive('dc')" title="현재 탭 복제">+ 추가</button>
+          </div>
+          <div class="views-content" id="views-content-dc"></div>
         </div>
       </div>
 
@@ -304,9 +301,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <button class="apply" onclick="applyParams('ac')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
-        <div class="charts-container" id="cc-ac" hidden>
-          <div class="chart-list" id="charts-ac"></div>
-          <div class="add-chart-bar"><button onclick="addChart('ac')">+ 그래프 추가</button></div>
+        <div class="views-container" id="cc-ac" hidden>
+          <div class="views-tabs" id="views-tabs-ac">
+            <button class="add-view-btn" onclick="addViewFromActive('ac')" title="현재 탭 복제">+ 추가</button>
+          </div>
+          <div class="views-content" id="views-content-ac"></div>
         </div>
       </div>
 
@@ -326,9 +325,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <button class="apply" onclick="applyParams('noise')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
-        <div class="charts-container" id="cc-noise" hidden>
-          <div class="chart-list" id="charts-noise"></div>
-          <div class="add-chart-bar"><button onclick="addChart('noise')">+ 그래프 추가</button></div>
+        <div class="views-container" id="cc-noise" hidden>
+          <div class="views-tabs" id="views-tabs-noise">
+            <button class="add-view-btn" onclick="addViewFromActive('noise')" title="현재 탭 복제">+ 추가</button>
+          </div>
+          <div class="views-content" id="views-content-noise"></div>
         </div>
       </div>
     </div>
@@ -1435,8 +1436,9 @@ CodeMirror.defineSimpleMode('spice', {
    상태
 ═══════════════════════════════════════════════════════════════════════ */
 let cm;
-let chartCards = {tran: [], dc: [], ac: [], noise: []};
-let cardIdCounter = 0;
+let chartViews = {tran: [], dc: [], ac: [], noise: []};
+let activeViewIdx = {tran: 0, dc: 0, ac: 0, noise: 0};
+let viewIdCounter = 0;
 let lastResults = {tran:null, dc:null, ac:null, noise:null};
 let currentWorker = null;
 let activeTab = 'tran';
@@ -1494,13 +1496,7 @@ function setupSplitterV() {
 
   const refreshCharts = () => {
     if (cm) cm.refresh();
-    chartCards[activeTab].forEach(c => {
-      if (c.chart) c.chart.resize();
-      if (c.chartV) c.chartV.resize();
-      if (c.chartI) c.chartI.resize();
-      if (c.chartMag) c.chartMag.resize();
-      if (c.chartPhase) c.chartPhase.resize();
-    });
+    chartViews[activeTab].forEach(v => { if (v.chart) v.chart.resize(); });
   };
 
   const onDown = (clientX) => {
@@ -1786,15 +1782,9 @@ function switchTab(name) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
   document.getElementById('run-kind').textContent = KIND_LABEL[name];
   readParamsFromNetlist(name);
-  // 활성 탭의 차트 카드 리사이즈
+  // 활성 탭의 차트 리사이즈
   setTimeout(() => {
-    chartCards[name].forEach(card => {
-      if (card.chart) card.chart.resize();
-      if (card.chartV) card.chartV.resize();
-      if (card.chartI) card.chartI.resize();
-      if (card.chartMag) card.chartMag.resize();
-      if (card.chartPhase) card.chartPhase.resize();
-    });
+    chartViews[name].forEach(v => { if (v.chart) v.chart.resize(); });
   }, 30);
   saveToLocalStorage();
 }
@@ -2233,10 +2223,9 @@ function handleResult(kind, data, dt) {
 
   if (parsed.rows.length) {
     lastResults[kind] = parsed;
-    clearCards(kind);
     document.getElementById('empty-' + kind).style.display = 'none';
     document.getElementById('cc-' + kind).hidden = false;
-    createCard(kind);
+    renderResults(kind);
   }
   updateTabCount(kind, parsed.rows.length, true);
 
@@ -2283,81 +2272,81 @@ function getTabLabels(tab, parsed) {
   return getYLabels(parsed, 'y', n);
 }
 
-function makeRealDatasets(parsed, labels) {
-  const datasets = [];
-  for (let k = 0; k < labels.length; k++) {
-    datasets.push({
-      label: labels[k],
-      data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
-      borderColor: COLORS[k % COLORS.length],
-      backgroundColor: COLORS[k % COLORS.length],
-      borderWidth: 1.5, pointRadius: 0, tension: 0
-    });
+/* ════════════════════════════════════════════════════════════════════
+   서브탭(View) 시스템
+   - 각 메인 탭(Tran/DC/AC/Noise) 안에 여러 view(서브탭) 가능
+   - Run 후 데이터 종류에 맞춰 default view들 자동 생성
+   - + 버튼: 활성 view 복제
+   - × : view 닫기
+═══════════════════════════════════════════════════════════════════════ */
+const VIEW_KIND_TITLE = {
+  V: '⚡ Voltage', I: '🔋 Current',
+  mag: '|H(jω)| dB', phase: '∠H(jω) deg',
+  noise: '🌫 Noise'
+};
+
+function clearViews(tab) {
+  for (const v of chartViews[tab]) {
+    if (v.chart) v.chart.destroy();
+    if (v.element && v.element.parentNode) v.element.parentNode.removeChild(v.element);
+    if (v.tabBtn && v.tabBtn.parentNode) v.tabBtn.parentNode.removeChild(v.tabBtn);
   }
-  return datasets;
+  chartViews[tab] = [];
+  activeViewIdx[tab] = 0;
 }
 
-function makeAcDatasets(parsed, labels, key) {
-  // key: 'mag' or 'phase'
-  const datasets = [];
-  for (let k = 0; k < labels.length; k++) {
-    datasets.push({
-      label: labels[k],
-      data: parsed.rows.map(r => ({x: r.freq, y: r.traces[k][key]})),
-      borderColor: COLORS[k % COLORS.length],
-      backgroundColor: COLORS[k % COLORS.length],
-      borderWidth: 1.5, pointRadius: 0, tension: 0
-    });
+function renderResults(tab) {
+  const parsed = lastResults[tab];
+  if (!parsed || !parsed.rows.length) return;
+  clearViews(tab);
+
+  if (tab === 'ac') {
+    addView(tab, 'mag');
+    addView(tab, 'phase');
+  } else if (tab === 'noise') {
+    addView(tab, 'noise');
+  } else {
+    const labels = getTabLabels(tab, parsed);
+    const types = parsed.types || labels.map(() => 'voltage');
+    const hasV = labels.some((_, k) => types[k] !== 'current');
+    const hasI = labels.some((_, k) => types[k] === 'current');
+    if (hasV) addView(tab, 'V');
+    if (hasI) addView(tab, 'I');
+    if (!hasV && !hasI) addView(tab, 'V'); // fallback
   }
-  return datasets;
+  setActiveView(tab, 0);
 }
 
-/* ── 차트 카드 시스템 ── */
-function clearCards(tab) {
-  for (const card of chartCards[tab]) {
-    if (card.chart) card.chart.destroy();
-    if (card.chartV) card.chartV.destroy();
-    if (card.chartI) card.chartI.destroy();
-    if (card.chartMag) card.chartMag.destroy();
-    if (card.chartPhase) card.chartPhase.destroy();
-    if (card.element && card.element.parentNode) card.element.parentNode.removeChild(card.element);
-  }
-  chartCards[tab] = [];
-}
-
-function addChart(tab) {
+function addViewFromActive(tab) {
   if (!lastResults[tab]) {
     alert('먼저 ▶ Run을 눌러 시뮬레이션 결과를 만든 뒤 그래프를 추가해주세요.');
     return;
   }
-  createCard(tab);
+  const cur = chartViews[tab][activeViewIdx[tab]];
+  if (!cur) return;
+  const v = addView(tab, cur.kind, true);
+  setActiveView(tab, chartViews[tab].length - 1);
+  return v;
 }
 
-function createCard(tab) {
-  const parsed = lastResults[tab];
-  if (!parsed) return null;
-  const id = 'card-' + tab + '-' + (++cardIdCounter);
-  const labels = getTabLabels(tab, parsed);
+function addView(tab, kind, isDuplicate) {
+  const id = 'view-' + tab + '-' + (++viewIdCounter);
+  const baseTitle = VIEW_KIND_TITLE[kind] || kind;
+  const sameKind = chartViews[tab].filter(x => x.kind === kind).length;
+  const title = isDuplicate || sameKind > 0 ? baseTitle + ' #' + (sameKind + 1) : baseTitle;
+  const view = { id, kind, title, chart: null, element: null, tabBtn: null, varToDataset: null };
 
-  const card = document.createElement('div');
-  card.className = 'chart-card';
-  card.dataset.cardId = id;
+  // ── view DOM (좌: 변수목록, 우: 차트) ─────────────────────
+  const el = document.createElement('div');
+  el.className = 'view';
+  el.dataset.viewId = id;
 
-  // LEFT: variable list
   const left = document.createElement('div');
-  left.className = 'card-vars';
+  left.className = 'view-vars';
 
   const head = document.createElement('div');
-  head.className = 'card-vars-head';
-  const title = document.createElement('span');
-  title.textContent = '📊 표시 노드';
-  head.appendChild(title);
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'card-close';
-  closeBtn.textContent = '×';
-  closeBtn.title = '이 그래프 제거';
-  closeBtn.onclick = () => removeCard(tab, id);
-  head.appendChild(closeBtn);
+  head.className = 'view-vars-head';
+  head.textContent = baseTitle;
   left.appendChild(head);
 
   const varList = document.createElement('div');
@@ -2365,212 +2354,167 @@ function createCard(tab) {
   left.appendChild(varList);
 
   const allBtns = document.createElement('div');
-  allBtns.className = 'card-allbtns';
+  allBtns.className = 'view-allbtns';
   const allBtn = document.createElement('button');
   allBtn.textContent = 'All';
-  allBtn.onclick = () => setAllInCard(card, true);
+  allBtn.onclick = () => setAllInView(view, true);
   const noneBtn = document.createElement('button');
   noneBtn.textContent = 'None';
-  noneBtn.onclick = () => setAllInCard(card, false);
-  allBtns.appendChild(allBtn);
-  allBtns.appendChild(noneBtn);
+  noneBtn.onclick = () => setAllInView(view, false);
+  allBtns.appendChild(allBtn); allBtns.appendChild(noneBtn);
   left.appendChild(allBtns);
 
-  card.appendChild(left);
+  el.appendChild(left);
 
-  // RIGHT: chart(s)
   const right = document.createElement('div');
-  right.className = 'card-chart';
+  right.className = 'view-chart';
+  const canvas = document.createElement('canvas');
+  right.appendChild(canvas);
+  el.appendChild(right);
 
-  const entry = { id, element: card };
+  document.getElementById('views-content-' + tab).appendChild(el);
 
-  // 레이아웃 결정: AC / V·I split / 단일
-  const types = parsed.types || labels.map(() => 'voltage');
-  const hasV = labels.some((_, k) => types[k] !== 'current');
-  const hasI = labels.some((_, k) => types[k] === 'current');
-  const splitVI = (tab !== 'ac' && tab !== 'noise' && hasV && hasI);
+  // ── 차트 생성 ────────────────────────────────────────
+  buildViewChart(tab, view, canvas);
+  buildViewVarList(tab, view, varList);
 
-  if (tab === 'ac') {
-    right.classList.add('ac-pair');
-    const subM = document.createElement('div'); subM.className = 'ac-sub';
-    const lblM = document.createElement('div'); lblM.className = 'lbl'; lblM.textContent = '|H(jω)| [dB]';
-    const cwM = document.createElement('div'); cwM.className = 'canvas-wrap';
-    const cvM = document.createElement('canvas');
-    cwM.appendChild(cvM);
-    subM.appendChild(lblM); subM.appendChild(cwM);
+  // ── 서브탭 버튼 ──────────────────────────────────────
+  const tabBtn = document.createElement('div');
+  tabBtn.className = 'view-tab';
+  tabBtn.dataset.viewId = id;
+  const ttl = document.createElement('span');
+  ttl.textContent = title;
+  tabBtn.appendChild(ttl);
+  const closeBtn = document.createElement('span');
+  closeBtn.className = 'view-close';
+  closeBtn.textContent = '×';
+  closeBtn.title = '이 그래프 닫기';
+  closeBtn.onclick = (e) => { e.stopPropagation(); removeView(tab, id); };
+  tabBtn.appendChild(closeBtn);
+  tabBtn.onclick = () => setActiveView(tab, chartViews[tab].findIndex(v => v.id === id));
 
-    const subP = document.createElement('div'); subP.className = 'ac-sub';
-    const lblP = document.createElement('div'); lblP.className = 'lbl'; lblP.textContent = '∠H(jω) [deg]';
-    const cwP = document.createElement('div'); cwP.className = 'canvas-wrap';
-    const cvP = document.createElement('canvas');
-    cwP.appendChild(cvP);
-    subP.appendChild(lblP); subP.appendChild(cwP);
+  const tabsBar = document.getElementById('views-tabs-' + tab);
+  const addBtn = tabsBar.querySelector('.add-view-btn');
+  tabsBar.insertBefore(tabBtn, addBtn);
 
-    right.appendChild(subM); right.appendChild(subP);
-    card.appendChild(right);
+  view.element = el;
+  view.tabBtn = tabBtn;
+  chartViews[tab].push(view);
+  return view;
+}
 
-    document.getElementById('charts-' + tab).appendChild(card);
+function buildViewChart(tab, view, canvas) {
+  const parsed = lastResults[tab];
+  const labels = getTabLabels(tab, parsed);
+  const kind = view.kind;
+  let datasets = [];
+  view.varToDataset = []; // varIdx -> dsIdx (or -1)
 
-    entry.chartMag = new Chart(cvM.getContext('2d'), {
-      type: 'line',
-      data: { datasets: makeAcDatasets(parsed, labels, 'mag') },
-      options: chartOpts('frequency [Hz]', '|H| [dB]', true, false)
-    });
-    entry.chartPhase = new Chart(cvP.getContext('2d'), {
-      type: 'line',
-      data: { datasets: makeAcDatasets(parsed, labels, 'phase') },
-      options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
-    });
-  } else if (splitVI) {
-    // 전압 / 전류 분리: 위 = V, 아래 = I
-    right.classList.add('ac-pair');
-    const subV = document.createElement('div'); subV.className = 'ac-sub';
-    const lblV = document.createElement('div'); lblV.className = 'lbl'; lblV.textContent = '⚡ Voltage [V]';
-    const cwV = document.createElement('div'); cwV.className = 'canvas-wrap';
-    const cvV = document.createElement('canvas');
-    cwV.appendChild(cvV);
-    subV.appendChild(lblV); subV.appendChild(cwV);
-
-    const subI = document.createElement('div'); subI.className = 'ac-sub';
-    const lblI = document.createElement('div'); lblI.className = 'lbl'; lblI.textContent = '🔋 Current [A]';
-    const cwI = document.createElement('div'); cwI.className = 'canvas-wrap';
-    const cvI = document.createElement('canvas');
-    cwI.appendChild(cvI);
-    subI.appendChild(lblI); subI.appendChild(cwI);
-
-    right.appendChild(subV); right.appendChild(subI);
-    card.appendChild(right);
-
-    document.getElementById('charts-' + tab).appendChild(card);
-
-    // 변수별로 V chart / I chart에 분배 + 매핑 저장
-    const dsV = [], dsI = [];
-    entry.varMap = []; // varMap[idx] = {chart:'V'|'I', dsIdx:number}
+  if (kind === 'mag' || kind === 'phase') {
+    // AC: each variable has mag/phase; show one aspect
     labels.forEach((name, k) => {
-      const ds = {
+      view.varToDataset[k] = datasets.length;
+      datasets.push({
+        label: name,
+        data: parsed.rows.map(r => ({x: r.freq, y: r.traces[k][kind]})),
+        borderColor: COLORS[k % COLORS.length],
+        backgroundColor: COLORS[k % COLORS.length],
+        borderWidth: 1.6, pointRadius: 0, tension: 0
+      });
+    });
+    const xlab = 'frequency [Hz]';
+    const ylab = (kind === 'mag') ? '|H| [dB]' : '∠H [deg]';
+    view.chart = new Chart(canvas.getContext('2d'), {
+      type: 'line', data: { datasets },
+      options: chartOpts(xlab, ylab, true, false)
+    });
+    return;
+  }
+
+  // Real value charts (Tran/DC/Noise)
+  const types = parsed.types || labels.map(() => 'voltage');
+  labels.forEach((name, k) => {
+    const isI = (types[k] === 'current');
+    let include = false;
+    if (kind === 'noise') include = true;
+    else if (kind === 'V') include = !isI;
+    else if (kind === 'I') include = isI;
+
+    if (include) {
+      view.varToDataset[k] = datasets.length;
+      datasets.push({
         label: name,
         data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
         borderColor: COLORS[k % COLORS.length],
         backgroundColor: COLORS[k % COLORS.length],
-        borderWidth: 1.5, pointRadius: 0, tension: 0
-      };
-      if (types[k] === 'current') {
-        entry.varMap[k] = {chart: 'I', dsIdx: dsI.length};
-        dsI.push(ds);
-      } else {
-        entry.varMap[k] = {chart: 'V', dsIdx: dsV.length};
-        dsV.push(ds);
-      }
-    });
+        borderWidth: 1.6, pointRadius: 0, tension: 0
+      });
+    } else {
+      view.varToDataset[k] = -1;
+    }
+  });
 
-    let xlab = 'time [s]';
-    if (tab === 'dc') xlab = (parsed.headers && parsed.headers[0]) || 'sweep';
+  let xlab = 'time [s]';
+  if (tab === 'dc') xlab = (parsed.headers && parsed.headers[0]) || 'sweep';
+  else if (tab === 'noise') xlab = 'frequency [Hz]';
 
-    entry.chartV = new Chart(cvV.getContext('2d'), {
-      type: 'line', data: { datasets: dsV },
-      options: chartOpts(xlab, 'Voltage [V]', false, false)
-    });
-    entry.chartI = new Chart(cvI.getContext('2d'), {
-      type: 'line', data: { datasets: dsI },
-      options: chartOpts(xlab, 'Current [A]', false, false)
-    });
-  } else {
-    const cw = document.createElement('div'); cw.className = 'canvas-wrap';
-    const cv = document.createElement('canvas');
-    cw.appendChild(cv);
-    right.appendChild(cw);
-    card.appendChild(right);
+  let ylab = 'Voltage [V]';
+  if (kind === 'I') ylab = 'Current [A]';
+  else if (kind === 'noise') ylab = '√(V²/Hz) or A²/Hz';
 
-    document.getElementById('charts-' + tab).appendChild(card);
+  const xLog = (tab === 'noise');
+  const yLog = (tab === 'noise');
 
-    let xlab, ylab, xLog = false, yLog = false;
-    if (tab === 'tran')  { xlab = 'time [s]';        ylab = hasI && !hasV ? 'Current [A]' : 'Voltage [V]'; }
-    else if (tab === 'dc') { xlab = (parsed.headers && parsed.headers[0]) || 'sweep'; ylab = hasI && !hasV ? 'Current [A]' : 'Voltage [V]'; }
-    else if (tab === 'noise') { xlab = 'frequency [Hz]'; ylab = '√(V²/Hz) or A²/Hz'; xLog = true; yLog = true; }
+  view.chart = new Chart(canvas.getContext('2d'), {
+    type: 'line', data: { datasets },
+    options: chartOpts(xlab, ylab, xLog, yLog)
+  });
+}
 
-    entry.chart = new Chart(cv.getContext('2d'), {
-      type: 'line',
-      data: { datasets: makeRealDatasets(parsed, labels) },
-      options: chartOpts(xlab, ylab, xLog, yLog)
-    });
-  }
+function buildViewVarList(tab, view, listEl) {
+  const parsed = lastResults[tab];
+  const labels = getTabLabels(tab, parsed);
+  const types = parsed.types || labels.map(() => 'voltage');
+  const kind = view.kind;
 
-  // Build checkboxes — splitVI일 때 V를 먼저 모두, 다음에 I를 모두 표시
-  const appendCheckbox = (idx) => {
+  labels.forEach((name, k) => {
+    const isI = (types[k] === 'current');
+    let include = false;
+    if (kind === 'mag' || kind === 'phase' || kind === 'noise') include = true;
+    else if (kind === 'V' && !isI) include = true;
+    else if (kind === 'I' && isI) include = true;
+    if (!include) return;
+
     const lbl = document.createElement('label');
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = true;
-    cb.dataset.idx = String(idx);
-    cb.addEventListener('change', () => toggleCardVar(entry, idx, cb.checked));
+    cb.dataset.idx = String(k);
+    cb.addEventListener('change', () => toggleViewVar(view, k, cb.checked));
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
-    swatch.style.background = COLORS[idx % COLORS.length];
+    swatch.style.background = COLORS[k % COLORS.length];
     const nm = document.createElement('span');
     nm.className = 'nm';
-    nm.textContent = labels[idx];
-    nm.title = labels[idx];
-    lbl.appendChild(cb);
-    lbl.appendChild(swatch);
-    lbl.appendChild(nm);
-    varList.appendChild(lbl);
-  };
-  const appendHead = (text) => {
-    const sep = document.createElement('div');
-    sep.className = 'var-group-head';
-    sep.textContent = text;
-    varList.appendChild(sep);
-  };
-
-  if (splitVI) {
-    const vIdxs = [], iIdxs = [];
-    labels.forEach((_, k) => {
-      if (types[k] === 'current') iIdxs.push(k);
-      else vIdxs.push(k);
-    });
-    if (vIdxs.length) {
-      appendHead('⚡ Voltage');
-      vIdxs.forEach(appendCheckbox);
-    }
-    if (iIdxs.length) {
-      appendHead('🔋 Current');
-      iIdxs.forEach(appendCheckbox);
-    }
-  } else {
-    labels.forEach((_, idx) => appendCheckbox(idx));
-  }
-
-  chartCards[tab].push(entry);
-  return entry;
+    nm.textContent = name;
+    nm.title = name;
+    lbl.appendChild(cb); lbl.appendChild(swatch); lbl.appendChild(nm);
+    listEl.appendChild(lbl);
+  });
 }
 
-function toggleCardVar(entry, idx, visible) {
-  if (entry.varMap && entry.varMap[idx]) {
-    // V/I split: 매핑 사용
-    const m = entry.varMap[idx];
-    const c = (m.chart === 'V') ? entry.chartV : entry.chartI;
-    if (c && c.data.datasets[m.dsIdx]) {
-      c.data.datasets[m.dsIdx].hidden = !visible;
-      c.update('none');
-    }
-    return;
-  }
-  if (entry.chart && entry.chart.data.datasets[idx]) {
-    entry.chart.data.datasets[idx].hidden = !visible;
-    entry.chart.update('none');
-  }
-  if (entry.chartMag && entry.chartMag.data.datasets[idx]) {
-    entry.chartMag.data.datasets[idx].hidden = !visible;
-    entry.chartMag.update('none');
-  }
-  if (entry.chartPhase && entry.chartPhase.data.datasets[idx]) {
-    entry.chartPhase.data.datasets[idx].hidden = !visible;
-    entry.chartPhase.update('none');
+function toggleViewVar(view, varIdx, visible) {
+  const dsIdx = view.varToDataset ? view.varToDataset[varIdx] : -1;
+  if (dsIdx < 0) return;
+  if (view.chart && view.chart.data.datasets[dsIdx]) {
+    view.chart.data.datasets[dsIdx].hidden = !visible;
+    view.chart.update('none');
   }
 }
 
-function setAllInCard(cardEl, on) {
-  cardEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+function setAllInView(view, on) {
+  if (!view.element) return;
+  view.element.querySelectorAll('input[type="checkbox"]').forEach(cb => {
     if (cb.checked !== on) {
       cb.checked = on;
       cb.dispatchEvent(new Event('change'));
@@ -2578,21 +2522,34 @@ function setAllInCard(cardEl, on) {
   });
 }
 
-function removeCard(tab, id) {
-  const idx = chartCards[tab].findIndex(c => c.id === id);
-  if (idx === -1) return;
-  if (chartCards[tab].length <= 1) {
-    alert('최소 1개의 그래프는 유지됩니다. 다른 그래프를 먼저 추가하세요.');
+function setActiveView(tab, idx) {
+  if (idx < 0 || idx >= chartViews[tab].length) return;
+  activeViewIdx[tab] = idx;
+  chartViews[tab].forEach((v, i) => {
+    v.element.classList.toggle('active', i === idx);
+    v.tabBtn.classList.toggle('active', i === idx);
+  });
+  // 차트 리사이즈 (display none → flex 전환 후)
+  setTimeout(() => {
+    const v = chartViews[tab][idx];
+    if (v && v.chart) v.chart.resize();
+  }, 30);
+}
+
+function removeView(tab, id) {
+  if (chartViews[tab].length <= 1) {
+    alert('최소 1개의 그래프는 유지됩니다.');
     return;
   }
-  const card = chartCards[tab][idx];
-  if (card.chart) card.chart.destroy();
-  if (card.chartV) card.chartV.destroy();
-  if (card.chartI) card.chartI.destroy();
-  if (card.chartMag) card.chartMag.destroy();
-  if (card.chartPhase) card.chartPhase.destroy();
-  if (card.element && card.element.parentNode) card.element.parentNode.removeChild(card.element);
-  chartCards[tab].splice(idx, 1);
+  const idx = chartViews[tab].findIndex(v => v.id === id);
+  if (idx === -1) return;
+  const view = chartViews[tab][idx];
+  if (view.chart) view.chart.destroy();
+  if (view.element && view.element.parentNode) view.element.parentNode.removeChild(view.element);
+  if (view.tabBtn && view.tabBtn.parentNode) view.tabBtn.parentNode.removeChild(view.tabBtn);
+  chartViews[tab].splice(idx, 1);
+  if (activeViewIdx[tab] >= chartViews[tab].length) activeViewIdx[tab] = chartViews[tab].length - 1;
+  setActiveView(tab, activeViewIdx[tab]);
 }
 
 function chartOpts(xlab, ylab, xLog, yLog) {
