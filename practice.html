@@ -49,8 +49,12 @@ header h1{font-size:16px;font-weight:700;}
 select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(45deg,transparent 50%,#fff 50%),linear-gradient(135deg,#fff 50%,transparent 50%);background-position:calc(100% - 11px) 50%,calc(100% - 7px) 50%;background-size:4px 4px;background-repeat:no-repeat;}
 
 /* GRID */
-.grid{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding:8px;height:calc(100vh - 48px);}
+.grid{display:grid;grid-template-columns:1fr 7px 1.4fr;gap:0 4px;padding:8px;height:calc(100vh - 48px);}
 .panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.resizer-v{cursor:col-resize;background:#dfe6e9;border-radius:3px;align-self:stretch;transition:background .15s;position:relative;flex-shrink:0;}
+.resizer-v:hover,.resizer-v.dragging{background:var(--secondary);}
+.resizer-v::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:36px;background:#95a5a6;border-radius:1px;}
+.resizer-v:hover::before,.resizer-v.dragging::before{background:#fff;}
 
 /* LEFT */
 .left{display:grid;grid-template-rows:auto 1fr auto auto;gap:6px;padding:10px;}
@@ -122,6 +126,8 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .chart-card .var-list label:hover{background:rgba(41,128,185,.08);}
 .chart-card .var-list label .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;flex-shrink:0;}
 .chart-card .var-list label .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chart-card .var-list .var-group-head{font-size:9px;font-weight:700;color:var(--secondary);text-transform:uppercase;letter-spacing:.4px;margin:4px 0 1px 0;padding:1px 4px;background:#eef2f7;border-radius:2px;}
+.chart-card .var-list .var-group-head:first-child{margin-top:0;}
 .chart-card .var-list input[type="checkbox"]{cursor:pointer;margin:0;flex-shrink:0;}
 .chart-card .card-allbtns{display:flex;gap:3px;}
 .chart-card .card-allbtns button{flex:1;font-size:10px;padding:2px 0;border:1px solid var(--border);background:#fff;border-radius:3px;cursor:pointer;color:var(--text);}
@@ -238,6 +244,8 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
       <pre class="log-body empty" id="log-body">(아직 실행되지 않았습니다. 우측 탭의 Run 버튼을 눌러주세요.)</pre>
     </div>
   </section>
+
+  <div class="resizer-v" id="splitter-v" title="드래그해서 좌/우 너비 조절"></div>
 
   <!-- RIGHT -->
   <section class="panel right">
@@ -674,7 +682,21 @@ const GALLERY = [
   {
     cat: 'passive', title: '저항 분배기', tag: 'DC', stars: 1,
     desc: '두 저항이 입력 전압을 분배. R1=R2이면 출력은 입력의 절반.',
-    netlist: `* 저항 분배기 — Vmid = Vin · R2/(R1+R2)
+    netlist: `* ============================================================
+* 저항 분배기 (Voltage Divider)
+* ============================================================
+* 회로: V1 -> R1 -> mid -> R2 -> GND
+*
+* 동작: KVL과 옴의 법칙으로,
+*   Vmid = Vin · R2 / (R1 + R2)
+*
+* 본 예제: R1 = R2 = 1kΩ → Vmid = Vin/2 (정확히 절반)
+*
+* 학습 포인트:
+*   - 직렬 저항에서 전압 분배 비율의 선형성
+*   - .dc sweep: V1을 0~10V 변화시키며 입출력 관계 관찰
+*   - 표시 노드: V(in)=입력, V(mid)=출력, I(V1)=흐르는 전류
+* ============================================================
 V1  in 0 DC 5
 R1  in mid 1k
 R2  mid 0 1k
@@ -685,7 +707,30 @@ R2  mid 0 1k
   {
     cat: 'passive', title: 'RC 저역통과 필터', tag: 'Tran + AC', stars: 1,
     desc: 'fc = 1/(2πRC). 시간 응답 (계단 입력) + 주파수 응답.',
-    netlist: `* RC LPF — fc ≈ 1.59 kHz (R=1k, C=100n)
+    netlist: `* ============================================================
+* RC 저역통과 필터 (RC Low-Pass Filter)
+* ============================================================
+* 회로: V1 -> R1 -> out -> C1 -> GND
+*
+* 차단 주파수: fc = 1 / (2π·R·C)
+*   R=1kΩ, C=100nF -> fc ≈ 1.59 kHz
+* 시간 상수: τ = R·C = 100μs
+*
+* 입력 V1: PULSE 0V → 1V (100μs 시점에 step), 주기 1ms
+*
+* 시간 응답 (.tran):
+*   step 입력 후 V(out)이 1 - exp(-t/τ) 곡선으로 충전
+*   τ ≈ 100μs 후 약 63% 도달, 5τ ≈ 500μs 후 99%
+*
+* 주파수 응답 (.ac):
+*   |H(jω)| = 1 / sqrt(1 + (ω/ωc)²)
+*   fc 미만: 평탄, fc 이상: -20 dB/decade 감쇠
+*   위상: 0° → -90° (fc에서 -45°)
+*
+* 학습 포인트:
+*   - 1차 시스템의 시간/주파수 영역 동등성
+*   - 차단 주파수와 시간 상수의 관계: τ = 1/(2π·fc)
+* ============================================================
 V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
 R1 in out 1k
 C1 out 0 100n
@@ -697,7 +742,31 @@ C1 out 0 100n
   {
     cat: 'passive', title: 'RC 고역통과 필터', tag: 'Tran + AC', stars: 1,
     desc: 'C가 직렬, R이 병렬. DC 차단, 고주파 통과.',
-    netlist: `* RC HPF — fc ≈ 1.59 kHz (R=1k, C=100n)
+    netlist: `* ============================================================
+* RC 고역통과 필터 (RC High-Pass Filter)
+* ============================================================
+* 회로: V1 -> C1 -> out -> R1 -> GND
+*   (LPF와 R/C 위치가 바뀜: C가 직렬, R이 출력에 병렬)
+*
+* 차단 주파수: fc = 1 / (2π·R·C) ≈ 1.59 kHz
+*
+* 동작 원리:
+*   - 저주파/DC: C 임피던스 1/jωC가 매우 큼 → 신호 막힘
+*   - 고주파:    C 임피던스 작음 → 신호 통과
+*
+* 시간 응답 (.tran):
+*   step 입력 (0→1V) 직후 V(out)이 즉시 1V로 점프
+*   이후 τ=RC로 0V까지 지수 감쇠 (RC 미분기 동작)
+*
+* 주파수 응답 (.ac):
+*   |H(jω)| = ω/ωc / sqrt(1 + (ω/ωc)²)
+*   fc 미만: +20 dB/decade 상승, fc 이상: 평탄 (gain=1)
+*   위상: +90° → 0° (fc에서 +45°)
+*
+* 학습 포인트:
+*   - LPF/HPF의 쌍대성 (R, C 자리만 바뀜)
+*   - DC 차단 캐패시터 (AC 결합 회로의 기초)
+* ============================================================
 V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
 C1 in out 100n
 R1 out 0 1k
@@ -709,7 +778,35 @@ R1 out 0 1k
   {
     cat: 'passive', title: 'RLC 직렬 공진기', tag: 'AC', stars: 2,
     desc: 'L=1mH, C=1μF → f0 ≈ 5kHz. R로 Q-factor 조절.',
-    netlist: `* 직렬 RLC 공진기 — f0 = 1/(2π√LC) ≈ 5 kHz
+    netlist: `* ============================================================
+* RLC 직렬 공진기 (Series RLC Resonator)
+* ============================================================
+* 회로: V1 -> L1 -> n1 -> C1 -> out -> R1 -> GND
+*
+* 핵심 공식:
+*   공진 주파수:  f0 = 1 / (2π·sqrt(L·C))
+*   Q-factor:    Q = (1/R) · sqrt(L/C)
+*   대역폭:      BW = f0 / Q = R / (2π·L)
+*
+* 본 예제: L=1mH, C=1μF, R=10Ω
+*   f0 ≈ 5.03 kHz
+*   Q  ≈ 3.16   (특성 임피던스 sqrt(L/C) ≈ 31.6Ω)
+*   BW ≈ 1.59 kHz
+*
+* 동작:
+*   - f << f0: L 임피던스 작음, C 임피던스 큼 → 출력 작음
+*   - f = f0:  L과 C 임피던스 상쇄 → 임피던스 = R (최소) → 출력 최대
+*   - f >> f0: L 임피던스 큼 → 출력 작음
+*   결과: f0에서 피크를 가진 band-pass 응답
+*
+* 실험 아이디어:
+*   - R을 1Ω으로 줄이면 Q가 31.6으로 증가 → 더 좁고 뾰족한 피크
+*   - R을 100Ω으로 키우면 Q가 0.316 (over-damped) → 피크 사라짐
+*
+* 학습 포인트:
+*   - 2차 시스템의 공진, Q-factor, 댐핑 조정
+*   - 진동 회로의 시간 응답 (위 공진/under-damped 영역)
+* ============================================================
 V1 in 0 AC 1
 L1 in n1 1m
 C1 n1 out 1u
@@ -723,7 +820,35 @@ R1 out 0 10
   {
     cat: 'mos', title: 'NMOS 출력특성 (Id–Vds)', tag: 'DC', stars: 1,
     desc: 'Vgs=2V 고정, Vds 변화 → 트라이오드/포화 영역 관찰.',
-    netlist: `* NMOS Id vs Vds (Vgs=2V) — output characteristic
+    netlist: `* ============================================================
+* NMOS 출력 특성 (Output Characteristics, Id vs Vds)
+* ============================================================
+* 회로: NMOS의 Vds를 sweep, Vgs는 고정 (2V)
+*   M1: drain=d, gate=g, source=0, bulk=0
+*   W=20μm, L=1μm (ETRI 0.5μm BSIM3v3)
+*
+* ETRI nmos4: Vth ≈ 0.69V → Vov = Vgs - Vth = 2 - 0.69 = 1.31V
+*
+* 두 동작 영역:
+*   1) 트라이오드 (Vds < Vov):
+*      Id = μn·Cox·(W/L)·[(Vgs-Vth)·Vds - Vds²/2]
+*      Vds 작을 때: Id ∝ Vds (저항처럼 동작)
+*
+*   2) 포화 (Vds ≥ Vov):
+*      Id = (1/2)·μn·Cox·(W/L)·(Vgs-Vth)² · (1 + λ·Vds)
+*      Vds 의존성 약함 (λ로 인한 채널 길이 단축 효과)
+*
+* 본 예제 결과:
+*   - Vds 0V→1.3V: 거의 직선 (트라이오드)
+*   - Vds 1.3V→5V: 거의 평평 (포화), 살짝 우상향 (1/ro 효과)
+*   - 전이점 Vds = Vov = 1.31V
+*
+* 표시 노드: V(d), V(g), I(VDS) (드레인 전류)
+*
+* 학습 포인트:
+*   - MOSFET 두 동작 영역 구분, Vov로 영역 결정
+*   - 출력 임피던스 ro = 1/(λ·Id) (포화 영역 기울기로 추정)
+* ============================================================
 .lib "/model.lib" MOS
 VDS d 0 DC 0
 VGS g 0 DC 2
@@ -735,7 +860,31 @@ M1 d g 0 0 nmos4 W=20u L=1u
   {
     cat: 'mos', title: 'NMOS 전이특성 (Id–Vgs)', tag: 'DC', stars: 1,
     desc: 'Vds=2V 고정, Vgs 변화. ETRI nmos4 Vth ≈ 0.69V.',
-    netlist: `* NMOS Id vs Vgs (Vds=2V) — transfer characteristic
+    netlist: `* ============================================================
+* NMOS 전이 특성 (Transfer Characteristics, Id vs Vgs)
+* ============================================================
+* 회로: NMOS의 Vgs를 sweep, Vds는 포화 보장 위해 2V 고정
+*   W=20μm, L=1μm
+*
+* 세 동작 영역 (Vgs 증가에 따라):
+*   1) 차단 (Vgs < Vth):    Id ≈ 0 (이상적), 실제 누설 nA
+*   2) 약반전 (Vgs ≈ Vth):  Id ∝ exp(Vgs/nVT)  (지수)
+*   3) 강반전 (Vgs > Vth):  Id ∝ (Vgs - Vth)²  (제곱 법칙)
+*
+* ETRI nmos4: Vth ≈ 0.69V (모델 파라미터 VTH0)
+*
+* Vth 추출법 (강반전 외삽):
+*   강반전 영역에서 sqrt(Id) vs Vgs 그리면 직선
+*   x절편 = Vth, 기울기 = sqrt((1/2)·μn·Cox·W/L)
+*   → 기울기에서 K = μn·Cox·W/L 추출 가능
+*
+* 학습 포인트:
+*   - Vth 정의와 추출 방법
+*   - 약반전/강반전 구분 (실제 회로에서 영역 선택)
+*   - log scale로 그리면 약반전 지수 영역이 명확히 보임
+*
+* 실험: Vds=0.1V (선형 영역)으로 바꿔 비교 (Id 더 작음)
+* ============================================================
 .lib "/model.lib" MOS
 VDS d 0 DC 2
 VGS g 0 DC 0
@@ -747,7 +896,42 @@ M1 d g 0 0 nmos4 W=20u L=1u
   {
     cat: 'mos', title: 'NMOS 공통소스 (R load)', tag: 'DC + AC', stars: 2,
     desc: '소신호 게인 ≈ −gm·RD. DC 전이커브 + AC 게인.',
-    netlist: `* NMOS 공통소스 — Av ≈ -gm·RD
+    netlist: `* ============================================================
+* NMOS 공통소스 증폭기 (Common-Source Amplifier, R load)
+* ============================================================
+* 회로:
+*   VDD = 5V
+*   RL=10kΩ: VDD → out (drain pull-up)
+*   M1: drain=out, gate=in, source=0, bulk=0  (W=20μm, L=1μm)
+*
+* DC 동작점 (Vin = 1V 부근, Vov ≈ 0.3V):
+*   Id ≈ (1/2)·k·Vov² → 출력 V(out)이 VDD - Id·RL로 결정
+*
+* 소신호 게인:
+*   Av = -gm · (RL || ro)
+*   ro = 1/(λ·Id) 보통 RL과 비슷한 차수
+*   → 본 예제 게인은 약 -10 ~ -30 V/V 범위
+*
+* 부호: 음의 게인
+*   Vin ↑ → Id ↑ → V(out) = VDD - Id·RL ↓
+*   (입력과 출력이 반대 방향, 180° 위상)
+*
+* DC sweep (.dc Vin 0..5V):
+*   - Vin < Vth (~0.69V): cutoff, V(out) ≈ VDD = 5V
+*   - Vin = 0.7~1.5V: 트라이오드/포화 전이, 가파른 기울기 (큰 게인)
+*   - Vin > 1.5V: M1 트라이오드, V(out) 거의 0V
+*   → 가운데 가파른 영역이 active region (linear amp 동작점)
+*
+* AC sweep (.ac dec 20 1 100Meg):
+*   - 저주파: 평탄 (DC 게인)
+*   - 고주파: -3dB pole = 1 / (2π·(RL||ro)·CL_total)
+*   - CL_total ≈ Cgd + Cdb + 부하 캡 (Miller로 Cgd 효과↑)
+*
+* 학습 포인트:
+*   - DC bias point 설정과 active region 선택
+*   - Av = -gm·RD 식의 직관 (gm = ∂Id/∂Vgs)
+*   - Miller capacitance 효과 (Cgd가 입력에서 (1+|Av|)배 증폭)
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vin in 0 DC 1.0 AC 1
@@ -761,7 +945,39 @@ M1  out in 0 0 nmos4 W=20u L=1u
   {
     cat: 'mos', title: 'NMOS 소스폴로워', tag: 'DC + AC', stars: 2,
     desc: '게인 ≈ +1, 낮은 출력 임피던스 (버퍼).',
-    netlist: `* NMOS 소스폴로워 (common-drain) — Av ≈ 1
+    netlist: `* ============================================================
+* NMOS 소스폴로워 (Source Follower / Common-Drain)
+* ============================================================
+* 회로:
+*   M1: drain=VDD, gate=in, source=out, bulk=0
+*   RL=10kΩ: out → GND  (소스에 부하)
+*
+* 별칭 "Common-Drain": drain이 (소신호) 공통 단자 (VDD에 묶임)
+*
+* 소신호 게인:
+*   Av = gm·(RL || ro) / (1 + gm·(RL || ro) + gmb·(RL||ro))
+*      ≈ 1 / (1 + 1/(gm·RL) + gmb/gm)    (RL ≈ ro 가정)
+*      ≈ 0.7 ~ 0.95 V/V (positive, near unity)
+*
+* 출력 임피던스: Zout = 1/gm || ro || RL ≈ 1/gm  (낮음, 좋은 버퍼)
+* 입력 임피던스: Zin = ∞ (gate 절연)
+*
+* 동작 (Vin sweep):
+*   V(out) ≈ V(in) - Vgs(on) ≈ V(in) - 1V (offset)
+*   Vin 너무 낮으면: M1 cutoff, out=0V
+*   Vin 너무 높으면: M1 트라이오드, out 따라가지 못함
+*
+* AC: 광대역 (Miller 캡 효과 적음, drain 공통이라 입출력 분리)
+*
+* 본 예제 W를 50μm로 키운 이유:
+*   gm = sqrt(2·k·W/L·Id) → W↑ 하면 gm↑ → Av가 1에 더 가까워짐
+*   또한 출력 임피던스 1/gm 더 낮아짐
+*
+* 학습 포인트:
+*   - 임피던스 변환 (Hi-Z 입력 → Lo-Z 출력)
+*   - 버퍼 회로의 역할 (단 게인은 < 1)
+*   - bulk effect (gmb 항)이 gain을 줄임 — bulk-to-source tied 회로 비교
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vin g 0 DC 2.5 AC 1
@@ -777,7 +993,44 @@ RL out 0 10k
   {
     cat: 'amp', title: 'NMOS 전류미러', tag: 'DC', stars: 2,
     desc: 'Iref=100μA 기준, M2가 동일 전류 복제. Vd 변화 시 동작 확인.',
-    netlist: `* NMOS 전류미러 — W:W = 1:1, Iref=100μA
+    netlist: `* ============================================================
+* NMOS 전류미러 (Current Mirror)
+* ============================================================
+* 회로:
+*   Iref = 100μA: VDD → ref 노드 (이상 전류원)
+*   M1 (diode-connected): drain=gate=ref, source=0  → Iref 흐름이 Vgs 결정
+*   M2 (mirror): gate=ref (M1과 공유), drain=vout, source=0
+*   Vd: 출력 노드 vout을 sweep해서 Iout 거동 관찰
+*
+* 동작 원리:
+*   M1, M2가 같은 Vgs를 보고 같은 W/L이면 → Id1 = Id2
+*   본 예제: W1=W2=20μm → 1:1 mirror (Iout = Iref = 100μA)
+*
+* W ratio로 전류 스케일 가능:
+*   W2/W1 = 2 → Iout = 2·Iref (양배율)
+*   W2/W1 = 0.5 → Iout = Iref/2
+*
+* DC sweep (Vd 0~5V):
+*   - Vd < Vov (≈0.3V): M2 트라이오드, Iout < Iref
+*   - Vd > Vov: M2 포화, Iout ≈ Iref (이상에 근접)
+*   - Vd 더 커지면: 채널 길이 단축 효과로 Iout 살짝 증가
+*     (출력 임피던스 ro = 1/(λ·Iref)로 결정, 약 100kΩ급)
+*
+* 출력 임피던스 측정:
+*   포화 영역에서 ΔIout/ΔVd 의 역수 = Rout
+*   ro 작을수록 (L 작을수록, λ↑) 미러 정확도 ↓
+*   → cascode mirror로 Rout 증가 가능 (folded cascode 예제 참고)
+*
+* 표시 노드:
+*   V(ref): M1의 게이트=드레인, Vgs(on) ≈ 1V
+*   V(vout): 출력 노드 (sweep)
+*   I(Vd): 출력 전류 (Iout, 음수로 측정됨)
+*
+* 학습 포인트:
+*   - 동일 Vgs → 동일 Id (W ratio로 스케일)
+*   - Vds_min = Vov = Vgs - Vth (미러가 정확하려면 이상)
+*   - Output impedance, ro의 역할
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Iref vdd ref DC 100u
@@ -791,7 +1044,37 @@ M2 vout ref 0 0 nmos4 W=20u L=1u
   {
     cat: 'amp', title: 'PMOS 공통소스 (R load)', tag: 'DC + AC', stars: 2,
     desc: 'PMOS 입력, R 부하. 음의 소신호 게인.',
-    netlist: `* PMOS 공통소스 증폭기
+    netlist: `* ============================================================
+* PMOS 공통소스 증폭기 (PMOS Common-Source)
+* ============================================================
+* 회로:
+*   M1 (PMOS): drain=out, gate=in, source=VDD, bulk=VDD  (W=50μm, L=1μm)
+*   RL=10kΩ: out → GND  (drain pull-down)
+*
+* PMOS 동작점 조건:
+*   Vsg = VDD - Vin > |Vth_p|  (ETRI pmos4 |Vth| ≈ 0.96V)
+*   Vsd > Vsg - |Vth| (포화)
+*   본 예제 Vin=4.0V → Vsg = 1.0V, Vov = 0.04V (약함, 약반전 가까움)
+*   더 강한 동작점: Vin=3.5V → Vsg=1.5V, Vov=0.54V
+*
+* 게인:
+*   Av = -gm_p · (RL || ro_p)
+*   PMOS는 NMOS 대비 mobility(μp) 약 1/3 → 같은 W/L에서 gm 작음
+*   → 같은 게인 위해 W를 약 3배 (NMOS W=20μm vs PMOS W=50μm)
+*
+* DC sweep:
+*   - Vin 작을 때 (Vsg 큼): M1 강하게 켜짐, 큰 Id, V(out) ≈ VDD
+*   - Vin 적당: active region, 가파른 음의 게인
+*   - Vin 큼 (Vsg < |Vth|): cutoff, V(out) ≈ 0V
+*   → NMOS 공통소스의 transfer curve를 좌우 반전한 모양
+*
+* AC 응답: NMOS와 유사 (mid-band gain, 고주파 pole, Miller 효과)
+*
+* 학습 포인트:
+*   - PMOS의 동작 조건 (Vsg, Vsd 양수)
+*   - NMOS와의 대칭성과 차이 (mobility, Vth 부호)
+*   - 같은 회로의 PMOS 입력 / NMOS 입력 비교
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vin g 0 DC 4.0 AC 1
@@ -805,7 +1088,37 @@ M1  out g vdd vdd pmos4 W=50u L=1u
   {
     cat: 'amp', title: '차동쌍 Vid sweep', tag: 'DC', stars: 2,
     desc: 'Vcm 고정, Vid 변화 → 차동 전이 곡선. 5T OTA 입력단.',
-    netlist: `* 차동쌍 Vid sweep (Vcm=1.65V 고정)
+    netlist: `* ============================================================
+* 차동쌍 Vid sweep (Differential Pair, V_id transfer)
+* ============================================================
+* 회로 = 5T OTA의 입력단:
+*   M1, M2: NMOS 차동쌍 (각각 W=20μm/L=1μm)
+*   M3 (diode-connected), M4 (mirror): PMOS 부하 미러
+*   M5: NMOS tail current source (W=40μm/L=1μm), Vb=0.93V로 바이어스
+*
+* 차동 입력 분리 (E-element / VCVS 사용):
+*   ip = Vcm + Vid/2,   in = Vcm - Vid/2
+*   본 예제 Vcm=1.65V, Vid를 -1V ~ +1V로 sweep
+*
+* 동작:
+*   - Vid = 0: M1, M2 균형 → Id1 = Id2 = Iss/2 → V(vout) 평형점
+*   - Vid > 0: M1 더 켜짐, M2 덜 켜짐
+*     → Id1 ↑, M3-M4 미러로 출력 PMOS도 같이 끌어올림
+*     → 동시에 M2 (출력 NMOS) 약해져 V(vout) 상승
+*   - Vid < 0: 반대 → V(vout) 하강
+*
+* 단조롭게 전이가 일어나는 영역:
+*   Iss = Id1 + Id2 = 100μA (대략)
+*   |Vid| < sqrt(2·Iss/k) ≈ 0.4V 이내가 선형 영역
+*   그 너머는 한쪽 트랜지스터 cutoff → 포화
+*
+* 5T OTA의 차동 게인 = ΔV(vout)/ΔVid 의 가운데 영역 기울기 ≈ 50~100
+*
+* 학습 포인트:
+*   - 차동 회로의 대칭성과 common-mode 거부 (CMRR)
+*   - tail current source의 역할 (gain, swing 결정)
+*   - 차동 입력의 small-signal 영역 (≈ Vov 이내)
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vb  vb  0 DC 0.93
@@ -825,7 +1138,43 @@ M5 vp    vb    0   0   nmos4 W=40u L=1u
   {
     cat: 'amp', title: '5T OTA 전체 스윕', tag: 'DC + AC', stars: 3,
     desc: '5-트랜지스터 OTA. Vcm DC sweep + Vid AC 게인/대역폭.',
-    netlist: `* 5T OTA — DC + AC
+    netlist: `* ============================================================
+* 5T OTA (5-Transistor Operational Trans-conductance Amp)
+* ============================================================
+* 가장 단순한 OTA 토폴로지 — 단일단 차동 증폭기:
+*   M1, M2: NMOS 차동쌍 (gm 입력 변환)        W=20μm/L=1μm 각
+*   M3:    PMOS diode-connected load          W=10μm/L=1μm
+*   M4:    PMOS current mirror output         W=10μm/L=1μm
+*   M5:    NMOS tail current source            W=40μm/L=1μm
+*
+* 차동 게인:
+*   Av = gm1 · (ro2 || ro4)
+*   ETRI 공정 기준 약 30~80 V/V (≈ 30~38 dB)
+*
+* 출력 임피던스: Rout = ro2 || ro4 ≈ 100~200 kΩ급
+*
+* 단일 dominant pole:
+*   fp = 1 / (2π · Rout · CL)  (CL = 부하 캡)
+*   CL=1pF 가정 시 fp ≈ 1 MHz 부근
+*   GBW = gm1 / (2π · CL) ≈ Av · fp
+*
+* 본 예제의 두 분석:
+*   1) .dc Vcm 0..5V (DC sweep):
+*      - common-mode 입력 범위 (ICMR) 확인
+*      - Vcm 너무 낮음: M1/M2 cutoff 또는 M5 cutoff
+*      - Vcm 너무 높음: M1/M2 트라이오드 진입
+*      - 정상 ICMR: Vcm = 약 1V ~ 4V 사이
+*
+*   2) .ac dec 20 1 100Meg (Vid AC sweep):
+*      - 차동 입력 → 출력의 게인-주파수 응답 (Bode plot)
+*      - DC 게인 평탄 → fp 이후 -20dB/dec 감쇠
+*      - GBW에서 게인 1 (0 dB) 교차
+*
+* 학습 포인트:
+*   - 단일단 OTA의 게인-대역폭 trade-off (Av·BW = gm/CL = const)
+*   - ICMR과 swing의 한계
+*   - 다음 단계: 2-stage OTA (게인↑) / Folded cascode (Rout↑)
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vb  vb  0 DC 0.93
@@ -846,7 +1195,47 @@ M5 vp    vb    0   0   nmos4 W=40u L=1u
   {
     cat: 'amp', title: '2단 OTA (Miller 보상)', tag: 'DC + AC', stars: 3,
     desc: '5T OTA + PMOS 공통소스 2단. Cc + nulling Rz로 Miller 보상. 단일단보다 높은 게인.',
-    netlist: `* 2단 OTA — Stage 1 (5T OTA) + Stage 2 (PMOS CS) + Miller 보상
+    netlist: `* ============================================================
+* 2단 CMOS OTA (Two-stage with Miller compensation)
+* ============================================================
+* 단일단 한계 극복: 게인 ↑↑, 출력 swing 확장
+*
+* Stage 1 = 5T OTA core (M1~M5):
+*   vid → 차동 변환 → Vo1 (M2 drain = M4 drain)
+*   Stage 1 게인: A1 = gm1·(ro2||ro4) ≈ 50
+*
+* Stage 2 = PMOS 공통소스 (M6) + NMOS 전류원 부하 (M7):
+*   M6: drain=vout, gate=vo1, source=VDD  (W=10μm/L=1μm)
+*   M7: drain=vout, gate=Vb,  source=0     (W=20μm/L=1μm) — 능동 부하
+*   Stage 2 게인: A2 = gm6·(ro6||ro7) ≈ 30
+*
+* 총 게인:
+*   Av = A1 · A2 ≈ 1500 (≈ 63 dB)
+*
+* Miller 보상 (Cc + nulling Rz, vo1 ↔ vout 사이):
+*   Cc=2pF, Rz=2kΩ
+*   - Dominant pole 분리: fp1 ≈ 1/(2π·A2·R1·Cc)  ← 매우 낮음
+*   - Output pole 밀어냄: fp2 ≈ gm6/(2π·CL)
+*   - GBW = gm1 / (2π·Cc)
+*   - 위상 마진 (PM) 60° 이상 위해 fp2 > 2.2·GBW 권장
+*
+*   Nulling Rz 역할:
+*     Cc 만으로는 RHP zero z = gm6/Cc → PM 악화
+*     Rz를 직렬로 두면 zero를 LHP로 보내거나 무한대 (Rz=1/gm6)
+*     본 예제 Rz=2kΩ ≈ 1/gm6 부근으로 zero 무한대 근처
+*
+* 부하 캡 CL = 1pF (실 회로의 다음단 입력 또는 측정 프로브)
+*
+* 분석:
+*   .dc Vid -0.3..0.3V: 차동 전이 곡선 (출력 vout swing 거의 rail-to-rail)
+*   .ac:                Bode plot — 단일 dominant pole, ~63 dB DC gain
+*
+* 학습 포인트:
+*   - 다단 증폭기 게인 누적 (단일단의 한계 극복)
+*   - Miller 효과 (Cc가 입력에서 (1+|A2|)배 증폭됨)
+*   - 안정성 (PM): 보상 안 하면 발진
+*   - Pole splitting: 보상 전 fp1 ≈ fp2 → 보상 후 분리됨
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vb  vb  0 DC 0.93
@@ -876,15 +1265,65 @@ CL vout 0 1p
   {
     cat: 'amp', title: 'Folded Cascode OTA', tag: 'DC + AC', stars: 3,
     desc: 'NMOS 입력쌍 + PMOS top current source. 캐스코드로 출력 임피던스↑ → 고이득. Wide ICMR.',
-    netlist: `* Folded Cascode OTA (NMOS 입력)
-* 모든 바이어스는 학습용으로 voltage source 사용
+    netlist: `* ============================================================
+* Folded Cascode OTA
+* ============================================================
+* 단일단이지만 캐스코딩으로 출력 임피던스 매우 높임 → 고이득
+*
+* 핵심 아이디어:
+*   - NMOS 입력쌍의 drain 전류를 PMOS 영역으로 "fold"
+*   - 출력 단에 cascode 쌓아 Rout = gm·ro·ro (≈ 100배 향상)
+*
+* 회로 구조:
+*   M1, M2  NMOS 입력쌍 (drain → nA, nB)
+*   M0      NMOS tail (Vbt 바이어스)
+*   M3, M4  PMOS top current sources (각 branch에 충분한 전류 공급)
+*           → I3 - I1 = I_fold가 cascode로 흐름
+*   M5, M6  PMOS cascodes (drains nC, vout)
+*   M7, M8  NMOS cascodes (sources nD, nE)
+*   M9      NMOS bottom diode (mirror reference)
+*   M10     NMOS bottom mirror (M9 게이트 공유)
+*
+* 출력 임피던스:
+*   Rout = (gm6·ro6·ro4) || (gm8·ro8·ro10)
+*        ≈ 단순 5T OTA의 100배 (수십 MΩ급)
+*
+* 게인:
+*   Av = gm1 · Rout ≈ 70~80 dB (단일단 OTA로는 매우 높음)
+*
+* 장점 (5T OTA 대비):
+*   1. 더 높은 게인 (Rout ↑↑)
+*   2. 더 넓은 ICMR (입력 source가 GND 가까이까지 가능):
+*      - NMOS 입력 + PMOS top source → 입력 common-mode가 낮아질 수 있음
+*   3. 단일 dominant pole (fp = Rout·CL) → 보상이 단순
+*   4. 좋은 슬류율 (정전류 출력)
+*
+* 단점:
+*   - 트랜지스터 더 많음 (전류 소비도 더 큼)
+*   - 바이어스 회로 복잡 (4개 voltage 필요 — 본 예제는 voltage source로 단순화)
+*
+* 바이어스 (학습용 voltage source):
+*   Vbt = 0.93V  → tail M0의 Vgs (Iss ~100μA)
+*   Vbp = 3.7V   → PMOS top: Vsg = VDD - 3.7 = 1.3V
+*   Vbpc = 2.5V  → PMOS cascode bias
+*   Vbnc = 2.0V  → NMOS cascode bias
+*
+* 분석:
+*   .dc Vid -0.3..0.3: 차동 전이 곡선 (높은 게인으로 매우 가파름)
+*   .ac:               Bode plot — 70+ dB DC, 단일 pole 응답
+*
+* 학습 포인트:
+*   - 캐스코드로 출력 임피던스 강화 원리 (gm·ro 한 번 더 곱)
+*   - 단일단 vs 다단의 장단점 (folded cascode = 단일단인데 게인↑)
+*   - ICMR 확장 (folding의 핵심 이점)
+* ============================================================
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 * 바이어스
-Vbt  vbt  0 DC 0.93   ; tail
-Vbp  vbp  0 DC 3.7    ; PMOS top current source
-Vbpc vbpc 0 DC 2.5    ; PMOS cascode
-Vbnc vbnc 0 DC 2.0    ; NMOS cascode
+Vbt  vbt  0 DC 0.93
+Vbp  vbp  0 DC 3.7
+Vbpc vbpc 0 DC 2.5
+Vbnc vbnc 0 DC 2.0
 * 차동입력
 Vcm vcm 0 DC 1.65
 Vid vid 0 DC 0 AC 1
@@ -1032,10 +1471,69 @@ window.addEventListener('DOMContentLoaded', () => {
 
   setupShortcuts();
   setupSplitter();
+  setupSplitterV();
 
   // 마지막으로: 이전 세션 상태 복원 (있으면 위 default들을 덮어씀)
   loadFromLocalStorage();
 });
+
+/* ── 좌/우 패널 폭 splitter ── */
+function setupSplitterV() {
+  const r = document.getElementById('splitter-v');
+  const grid = document.querySelector('.grid');
+  if (!r || !grid) return;
+
+  let dragging = false, startX = 0, startW = 0;
+
+  const apply = (newLeft) => {
+    const total = grid.clientWidth;
+    const minW = 280, maxW = total - 380;
+    newLeft = Math.max(minW, Math.min(maxW, newLeft));
+    grid.style.gridTemplateColumns = newLeft + 'px 7px 1fr';
+  };
+
+  const refreshCharts = () => {
+    if (cm) cm.refresh();
+    chartCards[activeTab].forEach(c => {
+      if (c.chart) c.chart.resize();
+      if (c.chartV) c.chartV.resize();
+      if (c.chartI) c.chartI.resize();
+      if (c.chartMag) c.chartMag.resize();
+      if (c.chartPhase) c.chartPhase.resize();
+    });
+  };
+
+  const onDown = (clientX) => {
+    dragging = true;
+    startX = clientX;
+    startW = document.querySelector('.left').offsetWidth;
+    r.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+  const onMove = (clientX) => {
+    if (!dragging) return;
+    apply(startW + (clientX - startX));
+    refreshCharts();
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    r.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    refreshCharts();
+    saveToLocalStorage();
+  };
+
+  r.addEventListener('mousedown', (e) => { onDown(e.clientX); e.preventDefault(); });
+  document.addEventListener('mousemove', (e) => onMove(e.clientX));
+  document.addEventListener('mouseup', onUp);
+
+  r.addEventListener('touchstart', (e) => { onDown(e.touches[0].clientX); e.preventDefault(); }, {passive:false});
+  document.addEventListener('touchmove', (e) => { if (dragging) { onMove(e.touches[0].clientX); e.preventDefault(); } }, {passive:false});
+  document.addEventListener('touchend', onUp);
+}
 
 /* ════════════════════════════════════════════════════════════════════
    상태 저장/복원 (localStorage + Export/Import)
@@ -1049,6 +1547,7 @@ function serializeState() {
     return el ? el.value : '';
   };
   const log = document.getElementById('log-wrap');
+  const leftPanel = document.querySelector('.left');
   return {
     version: STATE_VERSION,
     savedAt: new Date().toISOString(),
@@ -1061,7 +1560,8 @@ function serializeState() {
       noise: { out: v('p-noise-out'), src: v('p-noise-src'), type: v('p-noise-type'),
                n: v('p-noise-n'), fstart: v('p-noise-fstart'), fstop: v('p-noise-fstop') }
     },
-    logHeight: log ? log.offsetHeight : 240
+    logHeight: log ? log.offsetHeight : 240,
+    leftWidth: leftPanel ? leftPanel.offsetWidth : null
   };
 }
 
@@ -1108,6 +1608,11 @@ function applyState(state) {
   if (state.logHeight && state.logHeight > 60) {
     const log = document.getElementById('log-wrap');
     if (log) log.style.height = state.logHeight + 'px';
+  }
+  // 3-2. left/right pane width
+  if (state.leftWidth && state.leftWidth > 280) {
+    const grid = document.querySelector('.grid');
+    if (grid) grid.style.gridTemplateColumns = state.leftWidth + 'px 7px 1fr';
   }
   // 4. active tab — switchTab을 직접 호출하면 readParamsFromNetlist가 위에서 설정한 값을 덮어쓸 수 있으므로 inline으로 처리
   if (state.activeTab && ['tran','dc','ac','noise'].indexOf(state.activeTab) >= 0) {
@@ -1285,6 +1790,8 @@ function switchTab(name) {
   setTimeout(() => {
     chartCards[name].forEach(card => {
       if (card.chart) card.chart.resize();
+      if (card.chartV) card.chartV.resize();
+      if (card.chartI) card.chartI.resize();
       if (card.chartMag) card.chartMag.resize();
       if (card.chartPhase) card.chartPhase.resize();
     });
@@ -1485,26 +1992,28 @@ function buildWrapper(kind) {
   return lines.join('\n');
 }
 
-// stdout/stderr에서 display 출력 블록을 찾아 변수 이름 추출
+// stdout/stderr에서 display 출력 블록을 찾아 변수 이름과 타입(voltage/current) 추출
 function parseVectorNamesFromLog(log) {
   if (!log) return null;
   const m = log.match(/==NGSP_VECTORS_BEGIN==([\s\S]*?)==NGSP_VECTORS_END==/);
   if (!m) return null;
   const block = m[1];
-  const ys = [];
-  let xName = null;
-  // display 출력 라인: "    v(out)              : voltage, real, 100 long"
-  // 또는 default scale: "    time               : time, real, 100 long [default scale]"
+  const ys = []; // [{name, type}]
+  let xName = null, xType = null;
+  // display 출력 라인 예: "    v(out)              : voltage, real, 100 long"
+  //                     "    time               : time, real, 100 long [default scale]"
+  //                     "    v1#branch          : current, real, 100 long"
   for (const ln of block.split('\n')) {
-    const mm = ln.match(/^\s*(\S+)\s*:\s*[\w\s,]*\b(real|complex)\b/i);
+    const mm = ln.match(/^\s*(\S+)\s*:\s*([a-z]+),\s*(real|complex)\b/i);
     if (mm) {
       const name = mm[1];
-      if (/\[default\s+scale\]/i.test(ln)) xName = name;
-      else ys.push(name);
+      const type = mm[2].toLowerCase();
+      if (/\[default\s+scale\]/i.test(ln)) { xName = name; xType = type; }
+      else ys.push({name, type});
     }
   }
   if (ys.length === 0) return null;
-  return { xName, yNames: ys };
+  return { xName, xType, yNames: ys };
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1706,16 +2215,19 @@ function handleResult(kind, data, dt) {
   if (kind === 'ac') {
     parsed = parseAcWrdata(data.data);
     if (vecInfo && vecInfo.yNames.length > 0) {
-      parsed.headers = [vecInfo.xName || 'frequency', ...vecInfo.yNames];
+      parsed.headers = [vecInfo.xName || 'frequency', ...vecInfo.yNames.map(y => y.name)];
+      parsed.types = vecInfo.yNames.map(y => y.type);
     }
   } else if (kind === 'noise') {
     parsed = parseRealWrdata(data.data);
     parsed.headers = ['frequency', 'inoise_spectrum', 'onoise_spectrum'];
+    parsed.types = ['voltage', 'voltage']; // noise 는 분리 안 함
   } else {
     parsed = parseRealWrdata(data.data);
     if (vecInfo && vecInfo.yNames.length > 0) {
       const xfb = kind === 'tran' ? 'time' : 'sweep';
-      parsed.headers = [vecInfo.xName || xfb, ...vecInfo.yNames];
+      parsed.headers = [vecInfo.xName || xfb, ...vecInfo.yNames.map(y => y.name)];
+      parsed.types = vecInfo.yNames.map(y => y.type);
     }
   }
 
@@ -1804,6 +2316,8 @@ function makeAcDatasets(parsed, labels, key) {
 function clearCards(tab) {
   for (const card of chartCards[tab]) {
     if (card.chart) card.chart.destroy();
+    if (card.chartV) card.chartV.destroy();
+    if (card.chartI) card.chartI.destroy();
     if (card.chartMag) card.chartMag.destroy();
     if (card.chartPhase) card.chartPhase.destroy();
     if (card.element && card.element.parentNode) card.element.parentNode.removeChild(card.element);
@@ -1870,6 +2384,12 @@ function createCard(tab) {
 
   const entry = { id, element: card };
 
+  // 레이아웃 결정: AC / V·I split / 단일
+  const types = parsed.types || labels.map(() => 'voltage');
+  const hasV = labels.some((_, k) => types[k] !== 'current');
+  const hasI = labels.some((_, k) => types[k] === 'current');
+  const splitVI = (tab !== 'ac' && tab !== 'noise' && hasV && hasI);
+
   if (tab === 'ac') {
     right.classList.add('ac-pair');
     const subM = document.createElement('div'); subM.className = 'ac-sub';
@@ -1889,7 +2409,6 @@ function createCard(tab) {
     right.appendChild(subM); right.appendChild(subP);
     card.appendChild(right);
 
-    // 컨테이너에 먼저 attach (canvas 사이즈 측정 위해)
     document.getElementById('charts-' + tab).appendChild(card);
 
     entry.chartMag = new Chart(cvM.getContext('2d'), {
@@ -1902,6 +2421,59 @@ function createCard(tab) {
       data: { datasets: makeAcDatasets(parsed, labels, 'phase') },
       options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
     });
+  } else if (splitVI) {
+    // 전압 / 전류 분리: 위 = V, 아래 = I
+    right.classList.add('ac-pair');
+    const subV = document.createElement('div'); subV.className = 'ac-sub';
+    const lblV = document.createElement('div'); lblV.className = 'lbl'; lblV.textContent = '⚡ Voltage [V]';
+    const cwV = document.createElement('div'); cwV.className = 'canvas-wrap';
+    const cvV = document.createElement('canvas');
+    cwV.appendChild(cvV);
+    subV.appendChild(lblV); subV.appendChild(cwV);
+
+    const subI = document.createElement('div'); subI.className = 'ac-sub';
+    const lblI = document.createElement('div'); lblI.className = 'lbl'; lblI.textContent = '🔋 Current [A]';
+    const cwI = document.createElement('div'); cwI.className = 'canvas-wrap';
+    const cvI = document.createElement('canvas');
+    cwI.appendChild(cvI);
+    subI.appendChild(lblI); subI.appendChild(cwI);
+
+    right.appendChild(subV); right.appendChild(subI);
+    card.appendChild(right);
+
+    document.getElementById('charts-' + tab).appendChild(card);
+
+    // 변수별로 V chart / I chart에 분배 + 매핑 저장
+    const dsV = [], dsI = [];
+    entry.varMap = []; // varMap[idx] = {chart:'V'|'I', dsIdx:number}
+    labels.forEach((name, k) => {
+      const ds = {
+        label: name,
+        data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
+        borderColor: COLORS[k % COLORS.length],
+        backgroundColor: COLORS[k % COLORS.length],
+        borderWidth: 1.5, pointRadius: 0, tension: 0
+      };
+      if (types[k] === 'current') {
+        entry.varMap[k] = {chart: 'I', dsIdx: dsI.length};
+        dsI.push(ds);
+      } else {
+        entry.varMap[k] = {chart: 'V', dsIdx: dsV.length};
+        dsV.push(ds);
+      }
+    });
+
+    let xlab = 'time [s]';
+    if (tab === 'dc') xlab = (parsed.headers && parsed.headers[0]) || 'sweep';
+
+    entry.chartV = new Chart(cvV.getContext('2d'), {
+      type: 'line', data: { datasets: dsV },
+      options: chartOpts(xlab, 'Voltage [V]', false, false)
+    });
+    entry.chartI = new Chart(cvI.getContext('2d'), {
+      type: 'line', data: { datasets: dsI },
+      options: chartOpts(xlab, 'Current [A]', false, false)
+    });
   } else {
     const cw = document.createElement('div'); cw.className = 'canvas-wrap';
     const cv = document.createElement('canvas');
@@ -1912,8 +2484,8 @@ function createCard(tab) {
     document.getElementById('charts-' + tab).appendChild(card);
 
     let xlab, ylab, xLog = false, yLog = false;
-    if (tab === 'tran')  { xlab = 'time [s]';        ylab = 'V / I'; }
-    else if (tab === 'dc') { xlab = (parsed.headers && parsed.headers[0]) || 'sweep'; ylab = 'V / I'; }
+    if (tab === 'tran')  { xlab = 'time [s]';        ylab = hasI && !hasV ? 'Current [A]' : 'Voltage [V]'; }
+    else if (tab === 'dc') { xlab = (parsed.headers && parsed.headers[0]) || 'sweep'; ylab = hasI && !hasV ? 'Current [A]' : 'Voltage [V]'; }
     else if (tab === 'noise') { xlab = 'frequency [Hz]'; ylab = '√(V²/Hz) or A²/Hz'; xLog = true; yLog = true; }
 
     entry.chart = new Chart(cv.getContext('2d'), {
@@ -1923,8 +2495,19 @@ function createCard(tab) {
     });
   }
 
-  // Build checkboxes
+  // Build checkboxes (전체 변수 표시; V/I 그룹 헤더로 시각적 구분)
+  let lastGroup = null;
   labels.forEach((name, idx) => {
+    if (splitVI) {
+      const grp = (types[idx] === 'current') ? 'I' : 'V';
+      if (grp !== lastGroup) {
+        const sep = document.createElement('div');
+        sep.className = 'var-group-head';
+        sep.textContent = (grp === 'V' ? '⚡ V' : '🔋 I');
+        varList.appendChild(sep);
+        lastGroup = grp;
+      }
+    }
     const lbl = document.createElement('label');
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -1949,6 +2532,16 @@ function createCard(tab) {
 }
 
 function toggleCardVar(entry, idx, visible) {
+  if (entry.varMap && entry.varMap[idx]) {
+    // V/I split: 매핑 사용
+    const m = entry.varMap[idx];
+    const c = (m.chart === 'V') ? entry.chartV : entry.chartI;
+    if (c && c.data.datasets[m.dsIdx]) {
+      c.data.datasets[m.dsIdx].hidden = !visible;
+      c.update('none');
+    }
+    return;
+  }
   if (entry.chart && entry.chart.data.datasets[idx]) {
     entry.chart.data.datasets[idx].hidden = !visible;
     entry.chart.update('none');
@@ -1981,6 +2574,8 @@ function removeCard(tab, id) {
   }
   const card = chartCards[tab][idx];
   if (card.chart) card.chart.destroy();
+  if (card.chartV) card.chartV.destroy();
+  if (card.chartI) card.chartI.destroy();
   if (card.chartMag) card.chartMag.destroy();
   if (card.chartPhase) card.chartPhase.destroy();
   if (card.element && card.element.parentNode) card.element.parentNode.removeChild(card.element);
