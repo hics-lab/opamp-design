@@ -39,6 +39,7 @@ header h1{font-size:16px;font-weight:700;}
 .btn-pri{background:var(--accent);color:#fff;} .btn-pri:hover{background:#1f9b54;}
 .btn-pri:disabled{background:#9ec0a8;cursor:not-allowed;}
 .btn-warn{background:#e67e22;color:#fff;} .btn-warn:hover{background:#d35400;}
+.btn-warn:disabled{background:#f1c894;cursor:not-allowed;}
 .btn-rst{background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.35);}
 .btn-rst:hover{background:rgba(255,255,255,.25);}
 .btn-sec{background:#ecf0f1;color:var(--text);border:1px solid var(--border);}
@@ -51,31 +52,41 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 
 /* LEFT */
 .left{display:grid;grid-template-rows:auto 1fr auto;gap:8px;padding:10px;}
-.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.toolbar .status{margin-left:auto;font-size:11px;color:var(--muted);font-family:'Courier New',monospace;}
-.toolbar .status.ok{color:var(--accent);} .toolbar .status.run{color:var(--secondary);} .toolbar .status.err{color:var(--danger);}
+.left-toolbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
+.left-toolbar .label{font-weight:700;color:var(--primary);font-size:12px;}
+.left-toolbar .spacer{flex:1;}
+
 .editor-wrap{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;overflow:hidden;min-height:0;}
 .editor-wrap .CodeMirror{flex:1;height:auto;font-family:'Consolas','Courier New',monospace;font-size:12.5px;line-height:1.45;}
 .cm-spice-comment{color:#7f8c8d;font-style:italic;}
 .cm-spice-dot{color:#8e44ad;font-weight:700;}
 .cm-spice-num{color:#2980b9;}
-.cm-spice-dev{color:#16a085;font-weight:700;}
 
-.log-wrap{border:1px solid var(--border);border-radius:6px;background:#fafbfd;}
-.log-head{padding:5px 10px;background:#eef2f7;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:11px;font-weight:600;color:var(--primary);}
-.log-head .arrow{transition:transform .15s;}
-.log-head.collapsed .arrow{transform:rotate(-90deg);}
-.log-body{padding:8px 10px;max-height:140px;overflow:auto;font-family:'Consolas','Courier New',monospace;font-size:11px;color:#34495e;white-space:pre-wrap;word-break:break-all;}
-.log-head.collapsed + .log-body{display:none;}
+/* LOG (left panel, below editor) */
+.log-wrap{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:#1e272e;height:240px;flex-shrink:0;}
+.log-head{padding:5px 10px;background:#2d3940;border-bottom:1px solid #1a242a;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;color:#dcdde1;}
+.log-head .meta{font-weight:400;font-size:10px;color:#95a5a6;}
+.log-head button{background:rgba(255,255,255,.1);color:#dcdde1;border:1px solid rgba(255,255,255,.2);padding:2px 8px;border-radius:3px;cursor:pointer;font-size:10px;}
+.log-head button:hover{background:rgba(255,255,255,.18);}
+.log-body{flex:1;padding:8px 10px;overflow:auto;font-family:'Consolas','Courier New',monospace;font-size:11px;color:#dcdde1;white-space:pre-wrap;word-break:break-all;line-height:1.45;}
+.log-body.empty{color:#7f8c8d;font-style:italic;}
 
 /* RIGHT */
-.right{display:grid;grid-template-rows:auto 1fr auto;gap:0;}
+.right{display:grid;grid-template-rows:auto auto 1fr auto;gap:0;}
 .tabs{display:flex;border-bottom:1px solid var(--border);background:#f6f8fb;border-radius:8px 8px 0 0;}
 .tab{flex:0 0 auto;padding:9px 18px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-right:1px solid var(--border);user-select:none;}
 .tab:hover{background:#eef2f7;color:var(--primary);}
 .tab.active{background:#fff;color:var(--primary);border-bottom:2px solid var(--secondary);margin-bottom:-1px;}
 .tab .count{display:inline-block;margin-left:6px;font-size:10px;background:var(--secondary);color:#fff;padding:1px 6px;border-radius:8px;}
 .tab.empty .count{background:#bdc3c7;}
+.tab.detected .count{background:var(--accent);}
+
+.tab-toolbar{padding:8px 12px;background:#fafbfd;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.tab-toolbar .status{margin-left:auto;font-size:11px;color:var(--muted);font-family:'Courier New',monospace;}
+.tab-toolbar .status.ok{color:var(--accent);}
+.tab-toolbar .status.run{color:var(--secondary);}
+.tab-toolbar .status.err{color:var(--danger);}
+
 .tab-area{position:relative;padding:10px;overflow:hidden;}
 .tab-pane{position:absolute;inset:10px;display:none;flex-direction:column;}
 .tab-pane.active{display:flex;}
@@ -91,8 +102,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .ac-sub{display:flex;flex-direction:column;min-height:0;}
 .ac-sub .lbl{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:3px;}
 .ac-sub canvas{flex:1;}
-
-#log-pane pre{flex:1;background:#1e272e;color:#dcdde1;padding:10px;border-radius:5px;font-family:'Consolas','Courier New',monospace;font-size:11.5px;line-height:1.45;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:0;}
 
 .bottom-bar{padding:8px 12px;border-top:1px solid var(--border);background:#f6f8fb;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
 .bottom-bar .spacer{flex:1;}
@@ -112,6 +121,8 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 ::-webkit-scrollbar{width:7px;height:7px;}
 ::-webkit-scrollbar-track{background:#f1f1f1;}
 ::-webkit-scrollbar-thumb{background:#bdc3c7;border-radius:3px;}
+.log-body::-webkit-scrollbar-track{background:#1e272e;}
+.log-body::-webkit-scrollbar-thumb{background:#4d5b66;}
 </style>
 </head>
 <body>
@@ -135,11 +146,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 
   <!-- LEFT -->
   <section class="panel left">
-    <div class="toolbar">
-      <button id="btn-run" class="btn btn-pri" onclick="runSim()">▶ Run</button>
-      <button id="btn-stop" class="btn btn-warn" onclick="stopSim()" disabled>■ Stop</button>
+    <div class="left-toolbar">
+      <span class="label">📝 Netlist</span>
+      <span id="detected-summary">—</span>
+      <span class="spacer"></span>
       <button class="btn btn-sec" onclick="clearEditor()">Clear</button>
-      <span id="status" class="status">idle</span>
     </div>
 
     <div class="editor-wrap">
@@ -147,11 +158,12 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
     </div>
 
     <div class="log-wrap">
-      <div id="log-head" class="log-head" onclick="toggleLog()">
-        <span><span class="arrow">▼</span> stdout / stderr</span>
-        <span style="font-weight:400;font-size:10px;color:var(--muted);" id="log-meta"></span>
+      <div class="log-head">
+        <span>📜 ngspice 로그</span>
+        <span class="meta" id="log-meta">대기 중</span>
+        <button onclick="clearLog()">Clear</button>
       </div>
-      <pre class="log-body" id="log-mini"></pre>
+      <pre class="log-body empty" id="log-body">(아직 실행되지 않았습니다. 우측 탭의 Run 버튼을 눌러주세요.)</pre>
     </div>
   </section>
 
@@ -162,22 +174,27 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
       <div class="tab" data-tab="dc">DC <span class="count">—</span></div>
       <div class="tab" data-tab="ac">AC <span class="count">—</span></div>
       <div class="tab" data-tab="noise">Noise <span class="count">—</span></div>
-      <div class="tab" data-tab="log">Log</div>
+    </div>
+
+    <div class="tab-toolbar">
+      <button id="btn-run" class="btn btn-pri" onclick="runActiveTab()">▶ Run <span id="run-kind">.tran</span></button>
+      <button id="btn-stop" class="btn btn-warn" onclick="stopSim()" disabled>■ Stop</button>
+      <span id="status" class="status">idle</span>
     </div>
 
     <div class="tab-area">
       <div class="tab-pane active" id="pane-tran">
-        <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가하고 Run 하세요.</div>
+        <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
         <div class="chart-box" id="box-tran" hidden><canvas id="chart-tran"></canvas></div>
       </div>
 
       <div class="tab-pane" id="pane-dc">
-        <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가하고 Run 하세요.</div>
+        <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
         <div class="chart-box" id="box-dc" hidden><canvas id="chart-dc"></canvas></div>
       </div>
 
       <div class="tab-pane" id="pane-ac">
-        <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가하고 Run 하세요.</div>
+        <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
         <div class="ac-pair" id="box-ac" hidden>
           <div class="ac-sub"><div class="lbl">|H(jω)| [dB]</div><canvas id="chart-ac-mag"></canvas></div>
           <div class="ac-sub"><div class="lbl">∠H(jω) [deg]</div><canvas id="chart-ac-phase"></canvas></div>
@@ -189,17 +206,13 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <b>⚠ Noise 결과 신뢰도 주의:</b> ETRI 0.5μm 모델은 <b>1/f noise 파라미터(NOIA/NOIB/NOIC/KF/AF)를 포함하지 않습니다.</b>
           본 결과는 <b>thermal noise만</b> 반영하며, 저주파 input-referred noise는 실제값보다 수십~수백 배 낮게 출력됩니다.
         </div>
-        <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가하고 Run 하세요.</div>
+        <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
         <div class="chart-box" id="box-noise" hidden><canvas id="chart-noise"></canvas></div>
-      </div>
-
-      <div class="tab-pane" id="pane-log">
-        <pre id="log-full">(아직 실행되지 않았습니다)</pre>
       </div>
     </div>
 
     <div class="bottom-bar">
-      <span id="run-meta">대기 중…</span>
+      <span id="run-meta">탭을 선택하고 ▶ Run 버튼을 누르세요.</span>
       <span class="spacer"></span>
       <button class="btn btn-sec" onclick="exportCSV()">⤓ CSV export</button>
     </div>
@@ -217,21 +230,26 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
     <h3>1. 기본 사용</h3>
     <ul>
       <li>왼쪽 editor에 netlist를 작성합니다. 모델은 자동으로 <code>/model.lib</code>에 로드되니 <code>.lib "/model.lib" MOS</code>로 참조합니다.</li>
-      <li>지원 해석: <code>.tran</code>, <code>.dc</code>, <code>.ac</code>, <code>.noise</code>. 한 netlist에 여러 개 가능.</li>
-      <li><b>▶ Run</b> 클릭 시 ngspice가 1회 실행되어 모든 해석을 순차 수행하고, 각 결과가 해당 탭에 표시됩니다.</li>
+      <li>지원 해석: <code>.tran</code>, <code>.dc</code>, <code>.ac</code>, <code>.noise</code>. 한 netlist에 여러 개 작성 가능.</li>
+      <li>오른쪽 탭(Tran/DC/AC/Noise)을 선택하고 <b>▶ Run</b>을 누르면 <b>해당 해석만</b> ngspice로 실행됩니다.</li>
     </ul>
 
-    <h3>2. 자동 wrapper</h3>
-    <p><code>.control</code> 블록을 직접 쓰지 않으면, 검출된 해석에 따라 다음이 자동 추가됩니다:</p>
-<pre>.control
+    <h3>2. 탭별 독립 실행</h3>
+    <p>각 Run 버튼은 ngspice를 별도 세션으로 호출합니다:</p>
+    <ul>
+      <li>현재 탭의 해석 line만 남기고 다른 <code>.tran/.dc/.ac/.noise</code>는 일시 제거</li>
+      <li>학생의 <code>.control...endc</code> 블록도 일시 제거 (자동 wrapper로 대체)</li>
+      <li>자동 wrapper로 결과를 <code>/&lt;analysis&gt;.txt</code>에 dump</li>
+    </ul>
+    <p>예: Tran 탭의 Run 버튼 동작:</p>
+<pre>* (.dc / .ac / .noise / .control 제거)
+.tran &lt;학생이 쓴 시간 파라미터&gt;
+.control
 run
-setplot tran1   ; wrdata /tran.txt all   (.tran 있을 때)
-setplot dc1     ; wrdata /dc.txt all     (.dc 있을 때)
-setplot ac1     ; wrdata /ac.txt all     (.ac 있을 때)
-setplot noise1  ; wrdata /noise.txt inoise_spectrum onoise_spectrum   (.noise 있을 때)
+wrdata /tran.txt all
 quit
-.endc</pre>
-    <p>직접 <code>.control</code>을 쓸 경우, 결과를 위 경로로 <code>wrdata</code> 해야 차트에 나타납니다.</p>
+.endc
+.end</pre>
 
     <h3>3. 해석별 표시</h3>
     <ul>
@@ -239,16 +257,19 @@ quit
       <li><b>DC</b>: sweep 변수 vs V/I (linear)</li>
       <li><b>AC</b>: 주파수(log) vs |H| dB &amp; ∠H deg (Bode plot 2단)</li>
       <li><b>Noise</b>: 주파수(log) vs noise spectral density (log-log) — <b>1/f noise 미포함</b></li>
-      <li><b>Log</b>: ngspice stdout/stderr 전체</li>
     </ul>
 
-    <h3>4. 예제</h3>
+    <h3>4. ngspice 로그</h3>
+    <p>ngspice의 stdout/stderr 전체가 좌측 하단 <b>📜 ngspice 로그</b>에 표시됩니다. 디버깅 시 참고하세요.</p>
+
+    <h3>5. 예제</h3>
     <p>헤더의 <b>예제 로드</b> 드롭다운에서 4종 예제를 즉시 로드할 수 있습니다.</p>
 
-    <h3>5. 제한</h3>
+    <h3>6. 제한</h3>
     <ul>
       <li>실행은 30초 timeout. AC sweep을 너무 광대역으로 잡으면 중단될 수 있습니다.</li>
-      <li>nested <code>.dc</code> sweep은 1차 sweep만 표시됩니다 (후순위 개선).</li>
+      <li>nested <code>.dc</code> sweep은 1차 sweep만 표시됩니다.</li>
+      <li>한 번에 하나의 ngspice 세션만 실행됩니다 (Stop 버튼으로 중단 가능).</li>
     </ul>
   </div>
 </div>
@@ -355,7 +376,7 @@ M5 vp    vb    0   0   nmos4 W=40u L=1u
 ];
 
 /* ════════════════════════════════════════════════════════════════════
-   CodeMirror SPICE mode (간단 highlighting)
+   CodeMirror SPICE mode
 ═══════════════════════════════════════════════════════════════════════ */
 CodeMirror.defineSimpleMode('spice', {
   start: [
@@ -370,13 +391,14 @@ CodeMirror.defineSimpleMode('spice', {
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   초기화
+   상태
 ═══════════════════════════════════════════════════════════════════════ */
 let cm;
 let charts = {tran:null, dc:null, ac_mag:null, ac_phase:null, noise:null};
 let lastResults = {tran:null, dc:null, ac:null, noise:null};
 let currentWorker = null;
-let runStartTime = 0;
+let activeTab = 'tran';
+const KIND_LABEL = {tran: '.tran', dc: '.dc', ac: '.ac', noise: '.noise'};
 
 window.addEventListener('DOMContentLoaded', () => {
   cm = CodeMirror.fromTextArea(document.getElementById('editor'), {
@@ -389,8 +411,9 @@ window.addEventListener('DOMContentLoaded', () => {
     lineWrapping: false
   });
   cm.setValue(EXAMPLES[0].netlist);
+  cm.on('change', refreshDetected);
+  refreshDetected();
 
-  // 예제 드롭다운
   const sel = document.getElementById('ex-select');
   EXAMPLES.forEach((e, i) => {
     const opt = document.createElement('option');
@@ -405,31 +428,32 @@ window.addEventListener('DOMContentLoaded', () => {
     sel.value = '';
   });
 
-  // 탭 클릭
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => switchTab(t.dataset.tab));
   });
 });
 
 function switchTab(name) {
+  activeTab = name;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
-  // Chart.js 리사이즈 트리거
-  setTimeout(() => {
-    Object.values(charts).forEach(c => c && c.resize());
-  }, 30);
+  document.getElementById('run-kind').textContent = KIND_LABEL[name];
+  setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 30);
 }
 
 function clearEditor() {
   if (confirm('editor 내용을 지울까요?')) cm.setValue('');
 }
 
+function clearLog() {
+  const el = document.getElementById('log-body');
+  el.textContent = '(로그 비움)';
+  el.classList.add('empty');
+  document.getElementById('log-meta').textContent = '비움';
+}
+
 function showHelp() { document.getElementById('help-modal').hidden = false; }
 function hideHelp() { document.getElementById('help-modal').hidden = true; }
-
-function toggleLog() {
-  document.getElementById('log-head').classList.toggle('collapsed');
-}
 
 function setStatus(text, cls) {
   const s = document.getElementById('status');
@@ -442,7 +466,7 @@ function setRunMeta(text) {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   해석 검출 + 자동 wrapper
+   Netlist 분석
 ═══════════════════════════════════════════════════════════════════════ */
 function detectAnalyses(src) {
   const out = {tran:false, dc:false, ac:false, noise:false};
@@ -457,34 +481,66 @@ function detectAnalyses(src) {
   return out;
 }
 
-function hasControlBlock(src) {
-  return /^\s*\.control\b/im.test(src);
+function refreshDetected() {
+  const ana = detectAnalyses(cm.getValue());
+  const list = [];
+  ['tran','dc','ac','noise'].forEach(k => {
+    const tabEl = document.querySelector('.tab[data-tab="' + k + '"]');
+    if (ana[k]) {
+      tabEl.classList.add('detected');
+      list.push('.' + k);
+    } else {
+      tabEl.classList.remove('detected');
+    }
+  });
+  document.getElementById('detected-summary').textContent = list.length
+    ? '검출됨: ' + list.join(', ')
+    : '검출된 해석 없음';
 }
 
-function autoWrap(src, ana) {
-  if (hasControlBlock(src)) return src; // 학생이 직접 작성 → 그대로
-  const lines = [];
-  lines.push('.control');
-  lines.push('run');
-  if (ana.tran)  { lines.push('setplot tran1');  lines.push('wrdata /tran.txt all'); }
-  if (ana.dc)    { lines.push('setplot dc1');    lines.push('wrdata /dc.txt all'); }
-  if (ana.ac)    { lines.push('setplot ac1');    lines.push('wrdata /ac.txt all'); }
-  if (ana.noise) { lines.push('setplot noise1'); lines.push('wrdata /noise.txt inoise_spectrum onoise_spectrum'); }
+// 한 종류의 해석 line만 추출 (학생 netlist 그대로)
+function extractAnalysisLine(src, kind) {
+  const re = new RegExp('^\\s*\\.' + kind + '\\b.*$', 'im');
+  const m = src.match(re);
+  return m ? m[0] : null;
+}
+
+// 다른 모든 .tran/.dc/.ac/.noise 라인과 .control...endc 블록 제거
+function buildSingleAnalysisNetlist(src, kind) {
+  const myLine = extractAnalysisLine(src, kind);
+  if (!myLine) return null;
+
+  // .control ... .endc 블록 제거
+  let s = src.replace(/^\s*\.control\b[\s\S]*?^\s*\.endc\s*$/gim, '');
+  // 다른 .tran/.dc/.ac/.noise 모두 제거
+  s = s.replace(/^\s*\.(tran|dc|ac|noise)\b.*$/gim, '');
+
+  // .end 앞에 (또는 끝에) myLine + auto-wrapper 삽입
+  const wrapper = buildWrapper(kind);
+
+  if (/^\s*\.end\s*$/im.test(s)) {
+    s = s.replace(/^\s*\.end\s*$/im, myLine + '\n' + wrapper + '\n.end');
+  } else {
+    s = s + '\n' + myLine + '\n' + wrapper + '\n.end';
+  }
+  return s;
+}
+
+function buildWrapper(kind) {
+  const lines = ['.control', 'run'];
+  if (kind === 'noise') {
+    lines.push('wrdata /noise.txt inoise_spectrum onoise_spectrum');
+  } else {
+    lines.push('wrdata /' + kind + '.txt all');
+  }
   lines.push('quit');
   lines.push('.endc');
-  const wrapper = lines.join('\n');
-
-  // .end 앞에 삽입, 없으면 끝에 추가
-  if (/^\s*\.end\s*$/im.test(src)) {
-    return src.replace(/^\s*\.end\s*$/im, wrapper + '\n.end');
-  }
-  return src + '\n' + wrapper + '\n.end';
+  return lines.join('\n');
 }
 
 /* ════════════════════════════════════════════════════════════════════
    wrdata 파싱
 ═══════════════════════════════════════════════════════════════════════ */
-// 실수 wrdata: 변수 N개 → 2N열 (x y1 x y2 ... x yN)
 function parseRealWrdata(txt) {
   const rows = [];
   for (const ln of txt.split('\n')) {
@@ -500,12 +556,8 @@ function parseRealWrdata(txt) {
   return rows;
 }
 
-// AC complex wrdata: 각 변수마다 (x, real, imag) → 변수 N개 → 1+3N? 실제로는 (x re x im) 반복
-// ngspice wrdata for complex: x re x im x re x im ...
-// → 2K 형식과 동일하게 파싱한 뒤, 2개씩 묶어 (re, im)으로 처리
 function parseAcWrdata(txt) {
   const reals = parseRealWrdata(txt);
-  // reals[i] = [freq, v0, v1, v2, v3, ...] where v0=re_var0, v1=im_var0, v2=re_var1, ...
   const out = [];
   for (const row of reals) {
     const freq = row[0];
@@ -525,29 +577,46 @@ function parseAcWrdata(txt) {
 /* ════════════════════════════════════════════════════════════════════
    실행
 ═══════════════════════════════════════════════════════════════════════ */
-function runSim() {
+function runActiveTab() {
+  runKind(activeTab);
+}
+
+function runKind(kind) {
   if (currentWorker) return;
 
   const src = cm.getValue();
   if (!src.trim()) { setStatus('netlist 비어있음', 'err'); return; }
 
   const ana = detectAnalyses(src);
-  const finalSrc = autoWrap(src, ana);
+  if (!ana[kind]) {
+    setStatus('netlist에 .' + kind + ' 없음', 'err');
+    setRunMeta('netlist에 ' + KIND_LABEL[kind] + ' 라인을 추가한 뒤 다시 시도하세요.');
+    return;
+  }
 
-  setStatus('running…', 'run');
-  setRunMeta('시뮬레이션 시작 — ngspice WASM 로드 중…');
+  const finalSrc = buildSingleAnalysisNetlist(src, kind);
+  if (!finalSrc) {
+    setStatus('netlist 빌드 실패', 'err');
+    return;
+  }
+
+  setStatus('running ' + KIND_LABEL[kind] + '…', 'run');
+  setRunMeta(KIND_LABEL[kind] + ' 시뮬레이션 — ngspice WASM 로드 중…');
   document.getElementById('btn-run').disabled = true;
   document.getElementById('btn-stop').disabled = false;
-  runStartTime = performance.now();
+  appendLog('━━━ ' + KIND_LABEL[kind] + ' 실행 시작 ━━━\n');
+  const t0 = performance.now();
 
   const baseUrl = (() => {
     const href = window.location.href;
     return href.substring(0, href.lastIndexOf('/') + 1);
   })();
 
+  const outFile = '/' + kind + '.txt';
+
   const workerCode = `
 self.onmessage = function(e) {
-  var netlist = e.data.netlist, model = e.data.model;
+  var netlist = e.data.netlist, model = e.data.model, outFile = e.data.outFile;
   var stdout = '', stderr = '';
   self.Module = {
     locateFile: function(p) { return '${baseUrl}' + p; },
@@ -559,11 +628,9 @@ self.onmessage = function(e) {
     print: function(t) { stdout += t + '\\n'; },
     printErr: function(t) { stderr += t + '\\n'; },
     postRun: [function() {
-      var out = {};
-      ['/tran.txt','/dc.txt','/ac.txt','/noise.txt'].forEach(function(p) {
-        try { out[p] = FS.readFile(p, {encoding: 'utf8'}); } catch(err) {}
-      });
-      self.postMessage({type: 'done', files: out, stdout: stdout, stderr: stderr});
+      var data = '';
+      try { data = FS.readFile(outFile, {encoding: 'utf8'}); } catch(err) {}
+      self.postMessage({type: 'done', data: data, stdout: stdout, stderr: stderr});
     }]
   };
   try {
@@ -577,13 +644,13 @@ self.onmessage = function(e) {
   const worker = new Worker(URL.createObjectURL(blob));
   currentWorker = worker;
 
-  // 30s timeout
   const timeoutId = setTimeout(() => {
     if (currentWorker === worker) {
       worker.terminate();
       currentWorker = null;
       setStatus('timeout (30s)', 'err');
       setRunMeta('30초 초과 — 실행 중단됨');
+      appendLog('[timeout 30s — 실행 중단]\n');
       document.getElementById('btn-run').disabled = false;
       document.getElementById('btn-stop').disabled = true;
     }
@@ -594,14 +661,15 @@ self.onmessage = function(e) {
       clearTimeout(timeoutId);
       worker.terminate();
       currentWorker = null;
-      const dt = (performance.now() - runStartTime).toFixed(0);
-      handleResults(e.data, ana, dt);
+      const dt = (performance.now() - t0).toFixed(0);
+      handleResult(kind, e.data, dt);
     } else if (e.data.type === 'error') {
       clearTimeout(timeoutId);
       worker.terminate();
       currentWorker = null;
       setStatus('worker error', 'err');
       setRunMeta('오류: ' + e.data.message);
+      appendLog('[worker error] ' + e.data.message + '\n');
       document.getElementById('btn-run').disabled = false;
       document.getElementById('btn-stop').disabled = true;
     }
@@ -612,11 +680,12 @@ self.onmessage = function(e) {
     currentWorker = null;
     setStatus('worker error', 'err');
     setRunMeta('worker 오류: ' + (err.message || 'unknown'));
+    appendLog('[worker error] ' + (err.message || 'unknown') + '\n');
     document.getElementById('btn-run').disabled = false;
     document.getElementById('btn-stop').disabled = true;
   };
 
-  worker.postMessage({netlist: finalSrc, model: ETRI_LIB});
+  worker.postMessage({netlist: finalSrc, model: ETRI_LIB, outFile: outFile});
 }
 
 function stopSim() {
@@ -625,50 +694,58 @@ function stopSim() {
     currentWorker = null;
     setStatus('stopped', 'err');
     setRunMeta('사용자 중단');
+    appendLog('[사용자 중단]\n');
     document.getElementById('btn-run').disabled = false;
     document.getElementById('btn-stop').disabled = true;
   }
 }
 
-function handleResults(data, ana, dt) {
-  // 로그
+function appendLog(text) {
+  const el = document.getElementById('log-body');
+  if (el.classList.contains('empty')) {
+    el.textContent = '';
+    el.classList.remove('empty');
+  }
+  el.textContent += text;
+  el.scrollTop = el.scrollHeight;
+  document.getElementById('log-meta').textContent = el.textContent.length + ' chars';
+}
+
+function handleResult(kind, data, dt) {
   const log = (data.stdout || '') + (data.stderr ? '\n--- stderr ---\n' + data.stderr : '');
-  document.getElementById('log-full').textContent = log || '(출력 없음)';
-  document.getElementById('log-mini').textContent = log.split('\n').slice(-30).join('\n') || '(출력 없음)';
-  document.getElementById('log-meta').textContent = log.length + ' chars';
+  appendLog(log + '\n');
 
-  // 파싱 + 렌더
-  lastResults = {tran:null, dc:null, ac:null, noise:null};
-  if (data.files['/tran.txt']) {
-    const rows = parseRealWrdata(data.files['/tran.txt']);
-    if (rows.length) { lastResults.tran = rows; renderReal('tran', rows, 'time [s]', 'V / I'); }
+  if (!data.data || !data.data.trim()) {
+    setStatus(KIND_LABEL[kind] + ' — 데이터 없음', 'err');
+    setRunMeta('출력 파일 비어있음. Log를 확인하세요. (' + dt + ' ms)');
+    document.getElementById('btn-run').disabled = false;
+    document.getElementById('btn-stop').disabled = true;
+    updateTabCount(kind, 0, true);
+    return;
   }
-  if (data.files['/dc.txt']) {
-    const rows = parseRealWrdata(data.files['/dc.txt']);
-    if (rows.length) { lastResults.dc = rows; renderReal('dc', rows, 'sweep var', 'V / I'); }
-  }
-  if (data.files['/ac.txt']) {
-    const rows = parseAcWrdata(data.files['/ac.txt']);
+
+  if (kind === 'ac') {
+    const rows = parseAcWrdata(data.data);
     if (rows.length) { lastResults.ac = rows; renderAC(rows); }
-  }
-  if (data.files['/noise.txt']) {
-    const rows = parseRealWrdata(data.files['/noise.txt']);
+    updateTabCount('ac', rows.length, true);
+  } else if (kind === 'noise') {
+    const rows = parseRealWrdata(data.data);
     if (rows.length) { lastResults.noise = rows; renderNoise(rows); }
+    updateTabCount('noise', rows.length, true);
+  } else {
+    const rows = parseRealWrdata(data.data);
+    if (rows.length) {
+      lastResults[kind] = rows;
+      const xlab = kind === 'tran' ? 'time [s]' : 'sweep var';
+      renderReal(kind, rows, xlab, 'V / I');
+    }
+    updateTabCount(kind, rows.length, true);
   }
-
-  // 탭 카운트 업데이트
-  updateTabCount('tran', lastResults.tran ? lastResults.tran.length : 0, ana.tran);
-  updateTabCount('dc',   lastResults.dc   ? lastResults.dc.length   : 0, ana.dc);
-  updateTabCount('ac',   lastResults.ac   ? lastResults.ac.length   : 0, ana.ac);
-  updateTabCount('noise',lastResults.noise? lastResults.noise.length: 0, ana.noise);
 
   setStatus('done (' + dt + ' ms)', 'ok');
-  const summary = [];
-  if (ana.tran) summary.push('.tran ' + (lastResults.tran ? lastResults.tran.length+'pts' : 'no data'));
-  if (ana.dc) summary.push('.dc ' + (lastResults.dc ? lastResults.dc.length+'pts' : 'no data'));
-  if (ana.ac) summary.push('.ac ' + (lastResults.ac ? lastResults.ac.length+'pts' : 'no data'));
-  if (ana.noise) summary.push('.noise ' + (lastResults.noise ? lastResults.noise.length+'pts' : 'no data'));
-  setRunMeta(summary.length ? summary.join(' | ') + '  —  ' + dt + ' ms' : '검출된 해석 없음 — Log 탭 확인');
+  const r = lastResults[kind];
+  const npts = kind === 'ac' ? (r ? r.length : 0) : (r ? r.length : 0);
+  setRunMeta(KIND_LABEL[kind] + ' 완료 — ' + npts + ' pts, ' + dt + ' ms');
 
   document.getElementById('btn-run').disabled = false;
   document.getElementById('btn-stop').disabled = true;
@@ -692,19 +769,15 @@ function updateTabCount(name, n, requested) {
 const COLORS = ['#2980b9','#e67e22','#27ae60','#c0392b','#8e44ad','#16a085','#f39c12','#34495e'];
 
 function buildDatasets(rows, labelPrefix) {
-  // rows[i] = [x, y0, y1, ...]
   const nTraces = rows[0].length - 1;
   const datasets = [];
   for (let k = 0; k < nTraces; k++) {
-    const data = rows.map(r => ({x: r[0], y: r[k+1]}));
     datasets.push({
       label: labelPrefix + (k+1),
-      data,
+      data: rows.map(r => ({x: r[0], y: r[k+1]})),
       borderColor: COLORS[k % COLORS.length],
       backgroundColor: COLORS[k % COLORS.length],
-      borderWidth: 1.5,
-      pointRadius: 0,
-      tension: 0
+      borderWidth: 1.5, pointRadius: 0, tension: 0
     });
   }
   return datasets;
@@ -725,7 +798,6 @@ function renderReal(tab, rows, xlab, ylab) {
 function renderAC(acRows) {
   document.getElementById('empty-ac').style.display = 'none';
   document.getElementById('box-ac').hidden = false;
-  // acRows[i] = {freq, traces:[{mag,phase},...]}
   const nTraces = acRows[0].traces.length;
   const magDS = [], phaseDS = [];
   for (let k = 0; k < nTraces; k++) {
@@ -747,13 +819,11 @@ function renderAC(acRows) {
   if (charts.ac_mag) charts.ac_mag.destroy();
   if (charts.ac_phase) charts.ac_phase.destroy();
   charts.ac_mag = new Chart(document.getElementById('chart-ac-mag').getContext('2d'), {
-    type: 'line',
-    data: { datasets: magDS },
+    type: 'line', data: { datasets: magDS },
     options: chartOpts('frequency [Hz]', '|H| [dB]', true, false)
   });
   charts.ac_phase = new Chart(document.getElementById('chart-ac-phase').getContext('2d'), {
-    type: 'line',
-    data: { datasets: phaseDS },
+    type: 'line', data: { datasets: phaseDS },
     options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
   });
 }
@@ -762,7 +832,6 @@ function renderNoise(rows) {
   document.getElementById('empty-noise').style.display = 'none';
   document.getElementById('box-noise').hidden = false;
   if (charts.noise) { charts.noise.destroy(); charts.noise = null; }
-  // rows[i] = [freq, inoise, onoise]
   const nTraces = rows[0].length - 1;
   const labels = ['inoise', 'onoise', 'n3', 'n4'];
   const datasets = [];
@@ -776,8 +845,7 @@ function renderNoise(rows) {
     });
   }
   charts.noise = new Chart(document.getElementById('chart-noise').getContext('2d'), {
-    type: 'line',
-    data: { datasets },
+    type: 'line', data: { datasets },
     options: chartOpts('frequency [Hz]', '√(V²/Hz) or A²/Hz', true, true)
   });
 }
@@ -789,16 +857,12 @@ function chartOpts(xlab, ylab, xLog, yLog) {
     animation: false,
     interaction: { mode: 'nearest', intersect: false, axis: 'x' },
     scales: {
-      x: {
-        type: xLog ? 'logarithmic' : 'linear',
-        title: { display: true, text: xlab, font: { size: 11 } },
-        ticks: { font: { size: 10 } }
-      },
-      y: {
-        type: yLog ? 'logarithmic' : 'linear',
-        title: { display: true, text: ylab, font: { size: 11 } },
-        ticks: { font: { size: 10 } }
-      }
+      x: { type: xLog ? 'logarithmic' : 'linear',
+           title: { display: true, text: xlab, font: { size: 11 } },
+           ticks: { font: { size: 10 } } },
+      y: { type: yLog ? 'logarithmic' : 'linear',
+           title: { display: true, text: ylab, font: { size: 11 } },
+           ticks: { font: { size: 10 } } }
     },
     plugins: {
       legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } },
@@ -816,13 +880,8 @@ function chartOpts(xlab, ylab, xLog, yLog) {
    CSV export — 현재 활성 탭의 결과
 ═══════════════════════════════════════════════════════════════════════ */
 function exportCSV() {
-  const active = document.querySelector('.tab.active').dataset.tab;
-  let csv = '', filename = active + '.csv';
-  if (active === 'tran' && lastResults.tran) {
-    csv = toCSV(lastResults.tran, ['time'].concat(seriesLabels(lastResults.tran[0].length-1, 'y')));
-  } else if (active === 'dc' && lastResults.dc) {
-    csv = toCSV(lastResults.dc, ['sweep'].concat(seriesLabels(lastResults.dc[0].length-1, 'y')));
-  } else if (active === 'ac' && lastResults.ac) {
+  let csv = '', filename = activeTab + '.csv';
+  if (activeTab === 'ac' && lastResults.ac) {
     const n = lastResults.ac[0].traces.length;
     const headers = ['freq'];
     for (let k = 0; k < n; k++) { headers.push('H'+(k+1)+'_mag_dB'); headers.push('H'+(k+1)+'_phase_deg'); }
@@ -832,8 +891,14 @@ function exportCSV() {
       return row;
     });
     csv = toCSV(rows, headers);
-  } else if (active === 'noise' && lastResults.noise) {
-    csv = toCSV(lastResults.noise, ['freq'].concat(['inoise','onoise'].slice(0, lastResults.noise[0].length-1)));
+  } else if (lastResults[activeTab]) {
+    const rows = lastResults[activeTab];
+    let xlab = 'x';
+    if (activeTab === 'tran') xlab = 'time';
+    else if (activeTab === 'dc') xlab = 'sweep';
+    else if (activeTab === 'noise') xlab = 'freq';
+    const headers = [xlab].concat(seriesLabels(rows[0].length-1, activeTab === 'noise' ? null : 'y'));
+    csv = toCSV(rows, headers);
   } else {
     alert('내보낼 데이터가 없습니다 (현재 탭에 결과 없음).');
     return;
@@ -846,8 +911,9 @@ function exportCSV() {
 }
 
 function seriesLabels(n, prefix) {
+  const noiseNames = ['inoise', 'onoise', 'n3', 'n4'];
   const out = [];
-  for (let k = 0; k < n; k++) out.push(prefix + (k+1));
+  for (let k = 0; k < n; k++) out.push(prefix ? (prefix + (k+1)) : (noiseNames[k] || ('y'+(k+1))));
   return out;
 }
 
