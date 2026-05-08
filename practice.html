@@ -116,8 +116,9 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .view-tab.active{background:#fff;color:var(--primary);border-bottom:1px solid #fff;}
 .view-tab .view-close{font-size:13px;color:#95a5a6;padding:0 2px;line-height:1;border-radius:2px;}
 .view-tab .view-close:hover{color:var(--danger);background:rgba(192,57,43,.1);}
-.add-view-btn{padding:4px 10px;font-size:11px;border:1px dashed var(--secondary);background:#fff;color:var(--secondary);border-radius:4px;cursor:pointer;margin-left:6px;font-weight:600;}
+.add-view-btn{padding:4px 9px;font-size:11px;border:1px dashed var(--secondary);background:#fff;color:var(--secondary);border-radius:4px;cursor:pointer;margin-left:4px;font-weight:600;white-space:nowrap;}
 .add-view-btn:hover{background:var(--secondary);color:#fff;}
+.view-tab + .add-view-btn{margin-left:12px;}
 
 .views-content{flex:1;min-height:0;display:flex;padding:8px 0 0 0;position:relative;}
 .view{display:none;flex:1;min-height:0;gap:8px;}
@@ -178,7 +179,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .gal-intro{font-size:12px;color:var(--muted);margin-bottom:8px;}
 .gal-cat{margin:14px 0;}
 .gal-cat h3{font-size:13px;color:var(--secondary);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
-.gal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;}
 .gal-item{padding:9px 11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s, background .12s, box-shadow .12s, transform .12s;background:#fff;}
 .gal-item:hover{border-color:var(--secondary);background:rgba(41,128,185,.05);box-shadow:0 2px 6px rgba(0,0,0,.06);transform:translateY(-1px);}
 .gal-title{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
@@ -266,9 +267,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
         </div>
         <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
         <div class="views-container" id="cc-tran" hidden>
-          <div class="views-tabs" id="views-tabs-tran">
-            <button class="add-view-btn" onclick="addViewFromActive('tran')" title="현재 탭 복제 (다른 변수 조합 비교용)">+ 추가</button>
-          </div>
+          <div class="views-tabs" id="views-tabs-tran"></div>
           <div class="views-content" id="views-content-tran"></div>
         </div>
       </div>
@@ -284,9 +283,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
         </div>
         <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
         <div class="views-container" id="cc-dc" hidden>
-          <div class="views-tabs" id="views-tabs-dc">
-            <button class="add-view-btn" onclick="addViewFromActive('dc')" title="현재 탭 복제">+ 추가</button>
-          </div>
+          <div class="views-tabs" id="views-tabs-dc"></div>
           <div class="views-content" id="views-content-dc"></div>
         </div>
       </div>
@@ -302,9 +299,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
         </div>
         <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
         <div class="views-container" id="cc-ac" hidden>
-          <div class="views-tabs" id="views-tabs-ac">
-            <button class="add-view-btn" onclick="addViewFromActive('ac')" title="현재 탭 복제">+ 추가</button>
-          </div>
+          <div class="views-tabs" id="views-tabs-ac"></div>
           <div class="views-content" id="views-content-ac"></div>
         </div>
       </div>
@@ -326,9 +321,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
         </div>
         <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
         <div class="views-container" id="cc-noise" hidden>
-          <div class="views-tabs" id="views-tabs-noise">
-            <button class="add-view-btn" onclick="addViewFromActive('noise')" title="현재 탭 복제">+ 추가</button>
-          </div>
+          <div class="views-tabs" id="views-tabs-noise"></div>
           <div class="views-content" id="views-content-noise"></div>
         </div>
       </div>
@@ -676,6 +669,7 @@ const GALLERY_CATEGORIES = [
   { id: 'passive', label: '🔌 수동 회로 (R / C / L)' },
   { id: 'mos',     label: '🔬 MOSFET 단일 트랜지스터' },
   { id: 'amp',     label: '⚡ 증폭기 회로 블록' },
+  { id: 'bias',    label: '📐 바이어스 / 기준 회로' },
 ];
 
 const GALLERY = [
@@ -1350,6 +1344,108 @@ M10 nE nD 0 0 nmos4 W=20u L=1u
 CL vout 0 1p
 .dc Vid -0.3 0.3 0.005
 .ac dec 30 1 100Meg
+.end
+`
+  },
+
+  // ────── 바이어스 / 기준 회로 ──────
+  {
+    cat: 'bias', title: 'Bandgap reference (PTAT)', tag: 'DC TEMP', stars: 3,
+    desc: 'PNP 면적비 1:8 → ΔVbe = VT·ln(8) ≈ 54mV @ 27°C. 온도에 비례 (PTAT).',
+    netlist: `* ============================================================
+* Bandgap Reference — PTAT 빌딩 블록
+* ============================================================
+* Bandgap의 핵심: PTAT (Proportional To Absolute Temp) 전압 생성
+* 두 PNP의 emitter area 비를 N=8로 두고 같은 전류 I 흘리면:
+*   ΔVbe = Vbe1 - Vbe2 = VT · ln(N) = VT · ln(8) ≈ 54 mV @ 27°C
+*   ΔVbe ∝ T (절대온도에 비례)
+*
+* 본 회로:
+*   - PMOS current mirror (M_DB / M_M1 / M_M2): 두 branch 50μA 동일
+*   - Iref ref→0 으로 50μA 강제하여 mirror reference 결정
+*   - Q1: pnp10 (1× area)
+*   - Q2: pnp10 area=8 (8× scaled Is)
+*
+* TEMP sweep (-25 ~ 100°C) → V(e1), V(e2), ΔVbe 거동 확인
+*   - 각 Vbe는 -2 mV/°C 정도로 감소 (CTAT)
+*   - 차이 ΔVbe는 T에 비례 증가 (PTAT)
+*
+* 완성 bandgap 회로 = ΔVbe(PTAT)·k + Vbe(CTAT) ≈ 1.2V (T 무관)
+* 본 예제는 PTAT 부분만 시연, k 게인 단계와 합산은 다음 단계 학습.
+*
+* 학습 포인트:
+*   - VT = kT/q ≈ 25.85 mV @ 27°C
+*   - 같은 I, 다른 area → ΔVbe = VT·ln(N) 식 도출
+*   - PTAT vs CTAT의 합으로 온도 무관 기준 전압 만들기
+* ============================================================
+.lib "/model.lib" MOS
+.lib "/model.lib" BJT
+VDD vdd 0 DC 5
+* PMOS current mirror
+Iref ref 0 DC 50u
+M_DB ref ref vdd vdd pmos4 W=20u L=2u
+M_M1 e1  ref vdd vdd pmos4 W=20u L=2u
+M_M2 e2  ref vdd vdd pmos4 W=20u L=2u
+* PNP BJT, area 1:8
+Q1 0 0 e1 pnp10
+Q2 0 0 e2 pnp10 area=8
+.dc TEMP -25 100 5
+.end
+`
+  },
+  {
+    cat: 'bias', title: 'Constant-gm bias', tag: 'DC TEMP', stars: 3,
+    desc: 'K=4, Rs=2k → gm = 2(√K-1)/Rs = 1 mA/V. process/온도 무관 gm.',
+    netlist: `* ============================================================
+* Constant-gm Bias Circuit (Razavi §11.2)
+* ============================================================
+* 목적: process / 온도 변동과 무관하게 NMOS gm을 일정하게 유지
+*
+* 토폴로지:
+*   M3, M4: PMOS current mirror (1:1) — 두 branch 동일 I 강제
+*   M1: NMOS small (W=10μ), gate=d2, source=GND
+*   M2: NMOS large K배 (W=40μ, K=4), gate=drain=d2 (diode), source=src
+*   Rs = 2kΩ: src → GND
+*
+* 평형 조건 도출 (강반전):
+*   같은 I, (W/L)2 = K·(W/L)1
+*   I = (1/2)k'(W/L)Vov² → Vov1 = √K · Vov2
+*   M2 source가 I·Rs 만큼 들림 → Vgs1 - Vgs2 = I·Rs
+*   ⇒ Vov1 - Vov2 = I·Rs
+*   ⇒ Vov2·(√K - 1) = I·Rs
+*
+*   ⇒ gm of M2 = 2I/Vov2 = 2(√K - 1) / Rs
+*
+* 본 예제: K=4, Rs=2kΩ → gm = 2·(2-1)/2k = 1 mA/V
+*   ★ k', Vth, T에 의존하지 않음 — Rs와 K만 결정
+*
+* startup 주의:
+*   두 평형점 존재 — ① 전류 0 (회피해야 함), ② 활성 (목표)
+*   실회로엔 startup 회로 (한순간만 d2 끌어올려 ②로 잡기)
+*   본 예제는 .NODESET hint로 ② 유도
+*
+* TEMP sweep으로 gm의 안정성 확인:
+*   - mobility μn은 T 증가에 따라 감소 (1/T^1.5)
+*   - 그러나 gm = 2/Rs (Rs는 정밀 저항으로 가정) → 거의 평탄
+*   - 회로 전체 전류는 변하지만 gm은 유지
+*
+* 학습 포인트:
+*   - process/온도 무관 gm 만드는 원리
+*   - 정밀 저항(Rs)과 면적비(K)에만 의존하는 회로
+*   - startup 회로의 필요성 (실 회로 설계 issue)
+* ============================================================
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+* PMOS current mirror (top)
+M3 d1 d1 vdd vdd pmos4 W=20u L=2u
+M4 d2 d1 vdd vdd pmos4 W=20u L=2u
+* NMOS pair (W2/W1 = K = 4)
+M1 d1 d2 0 0 nmos4 W=10u L=1u
+M2 d2 d2 src 0 nmos4 W=40u L=1u
+Rs src 0 2k
+* startup hint — 활성 평형점 유도 (degenerate zero state 회피)
+.NODESET V(d1)=3.5 V(d2)=1.2 V(src)=0.05
+.dc TEMP -25 100 5
 .end
 `
   },
@@ -2293,6 +2389,9 @@ function clearViews(tab) {
   }
   chartViews[tab] = [];
   activeViewIdx[tab] = 0;
+  // 동적 + 버튼들도 제거 (재빌드)
+  const tabsBar = document.getElementById('views-tabs-' + tab);
+  if (tabsBar) tabsBar.querySelectorAll('.add-view-btn').forEach(b => b.remove());
 }
 
 function renderResults(tab) {
@@ -2314,19 +2413,46 @@ function renderResults(tab) {
     if (hasI) addView(tab, 'I');
     if (!hasV && !hasI) addView(tab, 'V'); // fallback
   }
+  rebuildAddButtons(tab);
   setActiveView(tab, 0);
 }
 
-function addViewFromActive(tab) {
-  if (!lastResults[tab]) {
-    alert('먼저 ▶ Run을 눌러 시뮬레이션 결과를 만든 뒤 그래프를 추가해주세요.');
-    return;
+// 가용한 데이터 종류에 따라 + V / + I / + Mag / + Phase / + Noise 버튼을 만든다
+function rebuildAddButtons(tab) {
+  const tabsBar = document.getElementById('views-tabs-' + tab);
+  if (!tabsBar) return;
+  // 기존 + 버튼 제거
+  tabsBar.querySelectorAll('.add-view-btn').forEach(b => b.remove());
+
+  const parsed = lastResults[tab];
+  if (!parsed) return;
+
+  const choices = []; // [{kind, label, title}]
+  if (tab === 'ac') {
+    choices.push({kind: 'mag',   label: '+ |H| dB',   title: 'Magnitude 그래프 추가'});
+    choices.push({kind: 'phase', label: '+ ∠H deg',   title: 'Phase 그래프 추가'});
+  } else if (tab === 'noise') {
+    choices.push({kind: 'noise', label: '+ Noise',    title: 'Noise 그래프 추가'});
+  } else {
+    const labels = getTabLabels(tab, parsed);
+    const types  = parsed.types || labels.map(() => 'voltage');
+    const hasV = labels.some((_, k) => types[k] !== 'current');
+    const hasI = labels.some((_, k) => types[k] === 'current');
+    if (hasV) choices.push({kind: 'V', label: '+ ⚡ V',  title: 'Voltage 그래프 추가'});
+    if (hasI) choices.push({kind: 'I', label: '+ 🔋 I',  title: 'Current 그래프 추가'});
   }
-  const cur = chartViews[tab][activeViewIdx[tab]];
-  if (!cur) return;
-  const v = addView(tab, cur.kind, true);
-  setActiveView(tab, chartViews[tab].length - 1);
-  return v;
+
+  choices.forEach(({kind, label, title}) => {
+    const btn = document.createElement('button');
+    btn.className = 'add-view-btn';
+    btn.textContent = label;
+    btn.title = title;
+    btn.onclick = () => {
+      addView(tab, kind, true);
+      setActiveView(tab, chartViews[tab].length - 1);
+    };
+    tabsBar.appendChild(btn);
+  });
 }
 
 function addView(tab, kind, isDuplicate) {
