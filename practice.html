@@ -168,6 +168,19 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .modal-body ul{padding-left:22px;margin:4px 0;}
 .modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;}
 
+/* GALLERY */
+.gal-intro{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.gal-cat{margin:14px 0;}
+.gal-cat h3{font-size:13px;color:var(--secondary);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;}
+.gal-item{padding:9px 11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s, background .12s, box-shadow .12s, transform .12s;background:#fff;}
+.gal-item:hover{border-color:var(--secondary);background:rgba(41,128,185,.05);box-shadow:0 2px 6px rgba(0,0,0,.06);transform:translateY(-1px);}
+.gal-title{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.gal-title .ttl{flex:1;min-width:0;}
+.gal-tag{font-size:9px;padding:1px 6px;background:var(--accent);color:#fff;border-radius:3px;font-weight:600;flex-shrink:0;letter-spacing:.3px;}
+.gal-stars{color:#f39c12;font-size:11px;flex-shrink:0;letter-spacing:1px;}
+.gal-desc{font-size:11px;color:#5a6370;line-height:1.45;}
+
 ::-webkit-scrollbar{width:7px;height:7px;}
 ::-webkit-scrollbar-track{background:#f1f1f1;}
 ::-webkit-scrollbar-thumb{background:#bdc3c7;border-radius:3px;}
@@ -187,6 +200,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
     <select id="ex-select" class="btn btn-sec" title="예제 로드">
       <option value="">예제 로드…</option>
     </select>
+    <button class="btn btn-rst" onclick="showGallery()">📚 갤러리</button>
     <button class="btn btn-rst" onclick="showHelp()">❓ 도움말</button>
   </div>
 </header>
@@ -308,6 +322,16 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
       <button class="btn btn-sec" onclick="exportCSV()">⤓ CSV export</button>
     </div>
   </section>
+</div>
+
+<!-- GALLERY MODAL -->
+<div id="gallery-modal" class="modal" hidden>
+  <div class="modal-body" style="max-width:880px;">
+    <button class="modal-close" onclick="hideGallery()">×</button>
+    <h2>📚 예제 갤러리</h2>
+    <p class="gal-intro">회로를 클릭하면 editor에 즉시 로드됩니다. 모든 예제는 ETRI 0.5μm BSIM3v3 모델로 바로 시뮬레이션 가능합니다.</p>
+    <div id="gallery-content"></div>
+  </div>
 </div>
 
 <!-- HELP MODAL -->
@@ -465,6 +489,252 @@ M5 vp    vb    0   0   nmos4 W=40u L=1u
 `
   }
 ];
+
+/* ════════════════════════════════════════════════════════════════════
+   예제 갤러리 (카테고리별)
+═══════════════════════════════════════════════════════════════════════ */
+const GALLERY_CATEGORIES = [
+  { id: 'passive', label: '🔌 수동 회로 (R / C / L)' },
+  { id: 'mos',     label: '🔬 MOSFET 단일 트랜지스터' },
+  { id: 'amp',     label: '⚡ 증폭기 회로 블록' },
+];
+
+const GALLERY = [
+  // ────── 수동 회로 ──────
+  {
+    cat: 'passive', title: '저항 분배기', tag: 'DC', stars: 1,
+    desc: '두 저항이 입력 전압을 분배. R1=R2이면 출력은 입력의 절반.',
+    netlist: `* 저항 분배기 — Vmid = Vin · R2/(R1+R2)
+V1  in 0 DC 5
+R1  in mid 1k
+R2  mid 0 1k
+.dc V1 0 10 0.1
+.end
+`
+  },
+  {
+    cat: 'passive', title: 'RC 저역통과 필터', tag: 'Tran + AC', stars: 1,
+    desc: 'fc = 1/(2πRC). 시간 응답 (계단 입력) + 주파수 응답.',
+    netlist: `* RC LPF — fc ≈ 1.59 kHz (R=1k, C=100n)
+V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
+R1 in out 1k
+C1 out 0 100n
+.tran 1u 3m
+.ac dec 20 1 1Meg
+.end
+`
+  },
+  {
+    cat: 'passive', title: 'RC 고역통과 필터', tag: 'Tran + AC', stars: 1,
+    desc: 'C가 직렬, R이 병렬. DC 차단, 고주파 통과.',
+    netlist: `* RC HPF — fc ≈ 1.59 kHz (R=1k, C=100n)
+V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
+C1 in out 100n
+R1 out 0 1k
+.tran 1u 3m
+.ac dec 20 1 1Meg
+.end
+`
+  },
+  {
+    cat: 'passive', title: 'RLC 직렬 공진기', tag: 'AC', stars: 2,
+    desc: 'L=1mH, C=1μF → f0 ≈ 5kHz. R로 Q-factor 조절.',
+    netlist: `* 직렬 RLC 공진기 — f0 = 1/(2π√LC) ≈ 5 kHz
+V1 in 0 AC 1
+L1 in n1 1m
+C1 n1 out 1u
+R1 out 0 10
+.ac dec 100 100 100k
+.end
+`
+  },
+
+  // ────── MOSFET 단일 ──────
+  {
+    cat: 'mos', title: 'NMOS 출력특성 (Id–Vds)', tag: 'DC', stars: 1,
+    desc: 'Vgs=2V 고정, Vds 변화 → 트라이오드/포화 영역 관찰.',
+    netlist: `* NMOS Id vs Vds (Vgs=2V) — output characteristic
+.lib "/model.lib" MOS
+VDS d 0 DC 0
+VGS g 0 DC 2
+M1 d g 0 0 nmos4 W=20u L=1u
+.dc VDS 0 5 0.02
+.end
+`
+  },
+  {
+    cat: 'mos', title: 'NMOS 전이특성 (Id–Vgs)', tag: 'DC', stars: 1,
+    desc: 'Vds=2V 고정, Vgs 변화. ETRI nmos4 Vth ≈ 0.69V.',
+    netlist: `* NMOS Id vs Vgs (Vds=2V) — transfer characteristic
+.lib "/model.lib" MOS
+VDS d 0 DC 2
+VGS g 0 DC 0
+M1 d g 0 0 nmos4 W=20u L=1u
+.dc VGS 0 3 0.005
+.end
+`
+  },
+  {
+    cat: 'mos', title: 'NMOS 공통소스 (R load)', tag: 'DC + AC', stars: 2,
+    desc: '소신호 게인 ≈ −gm·RD. DC 전이커브 + AC 게인.',
+    netlist: `* NMOS 공통소스 — Av ≈ -gm·RD
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Vin in 0 DC 1.0 AC 1
+RL  vdd out 10k
+M1  out in 0 0 nmos4 W=20u L=1u
+.dc Vin 0 5 0.01
+.ac dec 20 1 100Meg
+.end
+`
+  },
+  {
+    cat: 'mos', title: 'NMOS 소스폴로워', tag: 'DC + AC', stars: 2,
+    desc: '게인 ≈ +1, 낮은 출력 임피던스 (버퍼).',
+    netlist: `* NMOS 소스폴로워 (common-drain) — Av ≈ 1
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Vin g 0 DC 2.5 AC 1
+M1 vdd g out 0 nmos4 W=50u L=1u
+RL out 0 10k
+.dc Vin 0 5 0.01
+.ac dec 20 1 100Meg
+.end
+`
+  },
+
+  // ────── 증폭기 회로 ──────
+  {
+    cat: 'amp', title: 'NMOS 전류미러', tag: 'DC', stars: 2,
+    desc: 'Iref=100μA 기준, M2가 동일 전류 복제. Vd 변화 시 동작 확인.',
+    netlist: `* NMOS 전류미러 — W:W = 1:1, Iref=100μA
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Iref vdd ref DC 100u
+Vd  vout 0 DC 1
+M1 ref ref 0 0 nmos4 W=20u L=1u
+M2 vout ref 0 0 nmos4 W=20u L=1u
+.dc Vd 0 5 0.01
+.end
+`
+  },
+  {
+    cat: 'amp', title: 'PMOS 공통소스 (R load)', tag: 'DC + AC', stars: 2,
+    desc: 'PMOS 입력, R 부하. 음의 소신호 게인.',
+    netlist: `* PMOS 공통소스 증폭기
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Vin g 0 DC 4.0 AC 1
+RL  out 0 10k
+M1  out g vdd vdd pmos4 W=50u L=1u
+.dc Vin 0 5 0.01
+.ac dec 20 1 100Meg
+.end
+`
+  },
+  {
+    cat: 'amp', title: '차동쌍 Vid sweep', tag: 'DC', stars: 2,
+    desc: 'Vcm 고정, Vid 변화 → 차동 전이 곡선. 5T OTA 입력단.',
+    netlist: `* 차동쌍 Vid sweep (Vcm=1.65V 고정)
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Vb  vb  0 DC 0.93
+Vid vid 0 DC 0
+Vcm vcm 0 DC 1.65
+Eip ip 0 vcm vid 0.5
+Ein in 0 vcm vid -0.5
+M1 nodea ip vp 0   nmos4 W=20u L=1u
+M2 vout  in vp 0   nmos4 W=20u L=1u
+M3 nodea nodea vdd vdd pmos4 W=10u L=1u
+M4 vout  nodea vdd vdd pmos4 W=10u L=1u
+M5 vp    vb    0   0   nmos4 W=40u L=1u
+.dc Vid -1 1 0.005
+.end
+`
+  },
+  {
+    cat: 'amp', title: '5T OTA 전체 스윕', tag: 'DC + AC', stars: 3,
+    desc: '5-트랜지스터 OTA. Vcm DC sweep + Vid AC 게인/대역폭.',
+    netlist: `* 5T OTA — DC + AC
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Vb  vb  0 DC 0.93
+Vcm vcm 0 DC 1.65
+Vid vid 0 DC 0 AC 1
+Eip ip 0 vcm vid 0.5
+Ein in 0 vcm vid -0.5
+M1 nodea ip vp 0   nmos4 W=20u L=1u
+M2 vout  in vp 0   nmos4 W=20u L=1u
+M3 nodea nodea vdd vdd pmos4 W=10u L=1u
+M4 vout  nodea vdd vdd pmos4 W=10u L=1u
+M5 vp    vb    0   0   nmos4 W=40u L=1u
+.dc Vcm 0 5 0.01
+.ac dec 20 1 100Meg
+.end
+`
+  },
+];
+
+function showGallery() {
+  buildGalleryContent();
+  document.getElementById('gallery-modal').hidden = false;
+}
+function hideGallery() {
+  document.getElementById('gallery-modal').hidden = true;
+}
+
+function buildGalleryContent() {
+  const root = document.getElementById('gallery-content');
+  root.textContent = '';
+  GALLERY_CATEGORIES.forEach(cat => {
+    const items = GALLERY.filter(g => g.cat === cat.id);
+    if (!items.length) return;
+    const sect = document.createElement('div');
+    sect.className = 'gal-cat';
+    const h3 = document.createElement('h3');
+    h3.textContent = cat.label;
+    sect.appendChild(h3);
+    const grid = document.createElement('div');
+    grid.className = 'gal-grid';
+    items.forEach(ex => {
+      const idx = GALLERY.indexOf(ex);
+      const item = document.createElement('div');
+      item.className = 'gal-item';
+      item.onclick = () => loadGalleryExample(idx);
+      const title = document.createElement('div');
+      title.className = 'gal-title';
+      const ttl = document.createElement('span');
+      ttl.className = 'ttl';
+      ttl.textContent = ex.title;
+      title.appendChild(ttl);
+      const tag = document.createElement('span');
+      tag.className = 'gal-tag';
+      tag.textContent = ex.tag;
+      title.appendChild(tag);
+      const stars = document.createElement('span');
+      stars.className = 'gal-stars';
+      stars.textContent = '★'.repeat(ex.stars);
+      title.appendChild(stars);
+      item.appendChild(title);
+      const desc = document.createElement('div');
+      desc.className = 'gal-desc';
+      desc.textContent = ex.desc;
+      item.appendChild(desc);
+      grid.appendChild(item);
+    });
+    sect.appendChild(grid);
+    root.appendChild(sect);
+  });
+}
+
+function loadGalleryExample(idx) {
+  const ex = GALLERY[idx];
+  if (!ex) return;
+  cm.setValue(ex.netlist);
+  refreshAllParams();
+  refreshDetected();
+  hideGallery();
+}
 
 /* ════════════════════════════════════════════════════════════════════
    CodeMirror SPICE mode
