@@ -1119,8 +1119,9 @@ VDD vdd 0 DC 5
 Vb  vb  0 DC 0.93
 Vid vid 0 DC 0
 Vcm vcm 0 DC 1.65
-Eip ip 0 vcm vid 0.5
-Ein in 0 vcm vid -0.5
+* 차동입력 분리: ip = Vcm + Vid/2, in = Vcm - Vid/2  (B-source 사용)
+Bip ip 0 V = V(vcm) + 0.5*V(vid)
+Bin in 0 V = V(vcm) - 0.5*V(vid)
 M1 nodea ip vp 0   nmos4 W=20u L=1u
 M2 vout  in vp 0   nmos4 W=20u L=1u
 M3 nodea nodea vdd vdd pmos4 W=10u L=1u
@@ -1175,8 +1176,9 @@ VDD vdd 0 DC 5
 Vb  vb  0 DC 0.93
 Vcm vcm 0 DC 1.65
 Vid vid 0 DC 0 AC 1
-Eip ip 0 vcm vid 0.5
-Ein in 0 vcm vid -0.5
+* 차동입력 분리: ip = Vcm + Vid/2, in = Vcm - Vid/2  (B-source 사용)
+Bip ip 0 V = V(vcm) + 0.5*V(vid)
+Bin in 0 V = V(vcm) - 0.5*V(vid)
 M1 nodea ip vp 0   nmos4 W=20u L=1u
 M2 vout  in vp 0   nmos4 W=20u L=1u
 M3 nodea nodea vdd vdd pmos4 W=10u L=1u
@@ -1236,8 +1238,9 @@ VDD vdd 0 DC 5
 Vb  vb  0 DC 0.93
 Vcm vcm 0 DC 1.65
 Vid vid 0 DC 0 AC 1
-Eip ip 0 vcm vid 0.5
-Ein in 0 vcm vid -0.5
+* 차동입력 분리: ip = Vcm + Vid/2, in = Vcm - Vid/2  (B-source 사용)
+Bip ip 0 V = V(vcm) + 0.5*V(vid)
+Bin in 0 V = V(vcm) - 0.5*V(vid)
 * Stage 1: 5T OTA core
 M1 nodea ip vp 0   nmos4 W=20u L=1u
 M2 vo1   in vp 0   nmos4 W=20u L=1u
@@ -1322,8 +1325,9 @@ Vbnc vbnc 0 DC 2.0
 * 차동입력
 Vcm vcm 0 DC 1.65
 Vid vid 0 DC 0 AC 1
-Eip ip 0 vcm vid 0.5
-Ein in 0 vcm vid -0.5
+* 차동입력 분리: ip = Vcm + Vid/2, in = Vcm - Vid/2  (B-source 사용)
+Bip ip 0 V = V(vcm) + 0.5*V(vid)
+Bin in 0 V = V(vcm) - 0.5*V(vid)
 * NMOS 입력쌍 + tail
 M0 vt vbt 0 0 nmos4 W=40u L=1u
 M1 nA ip vt 0 nmos4 W=20u L=1u
@@ -2062,12 +2066,14 @@ function buildSingleAnalysisNetlist(src, kind) {
 }
 
 function buildWrapper(kind) {
-  const lines = ['.control', 'run'];
+  // wr_vecnames: wrdata 첫 줄에 헤더(컬럼 이름) 추가 → 컬럼 매핑이 명확해짐
+  // wr_singlescale: x를 매 변수마다 반복하지 않고 행 시작에 1번만 → 깔끔한 (x, y0, y1, ...) 형식
+  const lines = ['.control', 'set wr_vecnames', 'set wr_singlescale', 'run'];
   if (kind === 'noise') {
-    // noise는 변수 이름이 고정 (inoise_spectrum, onoise_spectrum)
     lines.push('wrdata /noise.txt inoise_spectrum onoise_spectrum');
   } else {
-    // tran/dc/ac: display 출력을 stdout 마커 사이에 끼워서 변수 이름 추출
+    // display는 type(voltage/current/...) 정보를 주지만 wrdata 컬럼 순서와 다를 수 있음.
+    // 두 정보를 NAME으로 매칭해 사용.
     lines.push('echo "==NGSP_VECTORS_BEGIN=="');
     lines.push('display');
     lines.push('echo "==NGSP_VECTORS_END=="');
@@ -2078,66 +2084,158 @@ function buildWrapper(kind) {
   return lines.join('\n');
 }
 
-// stdout/stderr에서 display 출력 블록을 찾아 변수 이름과 타입(voltage/current) 추출
+// stdout/stderr에서 display 출력 블록을 찾아 모든 vector 정보 추출
+// 중요: ngspice의 `wrdata all`은 default-scale (x축) 변수까지 포함해서 dump하고,
+// 각 변수의 real/complex 여부에 따라 wrdata 컬럼 수가 다르다 (real=1 slot, complex=2 slot).
+// 컬럼 매핑이 어긋나지 않으려면 display의 모든 vector를 그대로 보존해야 한다.
 function parseVectorNamesFromLog(log) {
   if (!log) return null;
   const m = log.match(/==NGSP_VECTORS_BEGIN==([\s\S]*?)==NGSP_VECTORS_END==/);
   if (!m) return null;
   const block = m[1];
-  const ys = []; // [{name, type}]
-  let xName = null, xType = null;
-  // display 출력 라인 예: "    v(out)              : voltage, real, 100 long"
-  //                     "    time               : time, real, 100 long [default scale]"
-  //                     "    v1#branch          : current, real, 100 long"
+  const all = []; // {name, type, valueType, isDefault} — display 순 = wrdata 컬럼 순
   for (const ln of block.split('\n')) {
     const mm = ln.match(/^\s*(\S+)\s*:\s*([a-z]+),\s*(real|complex)\b/i);
     if (mm) {
-      const name = mm[1];
-      const type = mm[2].toLowerCase();
-      if (/\[default\s+scale\]/i.test(ln)) { xName = name; xType = type; }
-      else ys.push({name, type});
+      all.push({
+        name: mm[1],
+        type: mm[2].toLowerCase(),       // 의미 타입: voltage, current, frequency, time...
+        valueType: mm[3].toLowerCase(),  // 값 종류: real 또는 complex
+        isDefault: /\[default\s+scale\]/i.test(ln)
+      });
     }
   }
-  if (ys.length === 0) return null;
-  return { xName, xType, yNames: ys };
+  if (all.length === 0) return null;
+  const x = all.find(v => v.isDefault);
+  return {
+    xName: x ? x.name : null,
+    xType: x ? x.type : null,
+    all
+  };
 }
 
 /* ════════════════════════════════════════════════════════════════════
    wrdata 파싱
 ═══════════════════════════════════════════════════════════════════════ */
-// wrdata 데이터 파싱 — N개 변수마다 (x,y) 쌍이 반복됨 → 2N열
-// (변수 이름은 wrdata 자체에 안 적히는 빌드가 있어, display 마커로 별도 취득)
-function parseRealWrdata(txt) {
-  const out = { headers: null, rows: [] };
-  for (const ln of txt.split('\n')) {
-    const t = ln.trim();
-    if (!t || t.startsWith('*')) continue;
-    const nums = t.split(/\s+/).map(Number);
-    if (!nums.every(Number.isFinite)) continue;
-    if (nums.length < 2 || nums.length % 2 !== 0) continue;
-    const row = [nums[0]];
-    for (let i = 1; i < nums.length; i += 2) row.push(nums[i]);
-    out.rows.push(row);
+// wrdata 파싱 (set wr_vecnames + set wr_singlescale 형식)
+//
+// 헤더 라인 형식:
+//   real (DC/Tran/Noise): "x_name y0_name y1_name ..."
+//   complex (AC):         "x_name v0_name v0_name v1_name v1_name ..." (각 complex var의 name이 두번)
+//
+// 데이터 라인 형식:
+//   real:    "x_val y0_val y1_val ..."
+//   complex: "x_val v0_re v0_im v1_re v1_im ..."
+function parseWrdataWithHeader(txt, complexMode) {
+  const lines = txt.split('\n').filter(l => l.trim() && !l.trim().startsWith('*'));
+  if (lines.length === 0) return null;
+
+  // 헤더는 첫 비숫자 라인
+  let headerTokens = null;
+  let dataStart = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const tokens = lines[i].trim().split(/\s+/);
+    const allNum = tokens.every(t => Number.isFinite(Number(t)));
+    if (allNum) { dataStart = i; break; }
+    headerTokens = tokens;
   }
-  return out;
+  if (!headerTokens || headerTokens.length < 2) return null;
+
+  // 변수 매핑: 첫 토큰은 x, 나머지는 y들
+  const xName = headerTokens[0];
+  const vars = []; // {name, isComplex, dataIdx | dataIdxRe, dataIdxIm}
+  let i = 1;
+  while (i < headerTokens.length) {
+    const name = headerTokens[i];
+    if (complexMode && i + 1 < headerTokens.length && headerTokens[i + 1] === name) {
+      vars.push({name, isComplex: true, dataIdxRe: i, dataIdxIm: i + 1});
+      i += 2;
+    } else {
+      vars.push({name, isComplex: false, dataIdx: i});
+      i += 1;
+    }
+  }
+
+  // 데이터 행 파싱
+  const dataRows = [];
+  for (let li = dataStart; li < lines.length; li++) {
+    const nums = lines[li].trim().split(/\s+/).map(Number);
+    if (!nums.every(Number.isFinite)) continue;
+    dataRows.push(nums);
+  }
+
+  return { xName, vars, dataRows };
 }
 
-function parseAcWrdata(txt) {
-  const real = parseRealWrdata(txt);
-  const rows = [];
-  for (const row of real.rows) {
-    const freq = row[0];
-    const traces = [];
-    for (let i = 1; i + 1 < row.length; i += 2) {
-      const re = row[i], im = row[i+1];
+// vecInfo 활용해 변수 타입(voltage/current/...) 매핑
+function annotateTypesByName(vars, vecInfo) {
+  if (!vecInfo || !vecInfo.all) return vars;
+  const typeMap = {};
+  vecInfo.all.forEach(v => { typeMap[v.name] = v.type; });
+  vars.forEach(v => { v.type = typeMap[v.name] || 'voltage'; });
+  return vars;
+}
+
+// Real 분석 결과 → {headers, types, rows} (rows = [[x, y0, y1, ...], ...])
+function buildRealParsed(txt, vecInfo, xfb) {
+  const parsed = parseWrdataWithHeader(txt, false);
+  if (!parsed) return { headers: null, types: null, rows: [] };
+  // default-scale (이름이 xName과 같은 y) 제거
+  const keep = parsed.vars.filter(v => v.name !== parsed.xName);
+  annotateTypesByName(keep, vecInfo);
+  const rows = parsed.dataRows.map(r => {
+    const out = [r[0]];
+    for (const v of keep) out.push(r[v.dataIdx]);
+    return out;
+  });
+  return {
+    headers: [parsed.xName || xfb, ...keep.map(v => v.name)],
+    types:   keep.map(v => v.type || 'voltage'),
+    rows
+  };
+}
+
+// AC 분석 결과 → {headers, types, rows} (rows = [{freq, traces:[{mag, phase}, ...]}, ...])
+function buildAcParsed(txt, vecInfo) {
+  const parsed = parseWrdataWithHeader(txt, true);
+  if (!parsed) return { headers: null, types: null, rows: [] };
+  // default-scale (이름이 xName과 같은) 제거
+  const keep = parsed.vars.filter(v => v.name !== parsed.xName);
+  annotateTypesByName(keep, vecInfo);
+  const rows = parsed.dataRows.map(r => ({
+    freq: r[0],
+    traces: keep.map(v => {
+      const re = v.isComplex ? r[v.dataIdxRe] : r[v.dataIdx];
+      const im = v.isComplex ? r[v.dataIdxIm] : 0;
       const mag = Math.sqrt(re*re + im*im);
-      const magDb = 20 * Math.log10(Math.max(mag, 1e-30));
-      const ph = Math.atan2(im, re) * 180 / Math.PI;
-      traces.push({mag: magDb, phase: ph});
-    }
-    rows.push({freq, traces});
-  }
-  return { headers: null, rows };
+      return {
+        mag: 20 * Math.log10(Math.max(mag, 1e-30)),
+        phase: Math.atan2(im, re) * 180 / Math.PI
+      };
+    })
+  }));
+  return {
+    headers: [parsed.xName || 'frequency', ...keep.map(v => v.name)],
+    types:   keep.map(v => v.type || 'voltage'),
+    rows
+  };
+}
+
+// 호환: 기존 parseRealWrdata 시그니처 유지 (Noise에서 직접 호출)
+function parseRealWrdata(txt) {
+  // 옛 형식 (no header, no singlescale) — Noise는 wrapper에서 wr_vecnames 켜져 있어도 그대로 작동
+  const result = parseWrdataWithHeader(txt, false);
+  if (!result) return { headers: null, rows: [] };
+  // Noise: default-scale 자동 제외
+  const keep = result.vars.filter(v => v.name !== result.xName);
+  return {
+    headers: null,
+    rows: result.dataRows.map(r => {
+      const out = [r[0]];
+      for (const v of keep) out.push(r[v.dataIdx]);
+      return out;
+    })
+  };
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2293,28 +2391,19 @@ function handleResult(kind, data, dt) {
     return;
   }
 
-  // display 마커에서 변수 이름 추출 (tran/dc/ac)
+  // display 마커에서 변수 타입(voltage/current/...) 추출 (tran/dc/ac)
   const fullLog = (data.stdout || '') + '\n' + (data.stderr || '');
   const vecInfo = (kind !== 'noise') ? parseVectorNamesFromLog(fullLog) : null;
 
   let parsed;
   if (kind === 'ac') {
-    parsed = parseAcWrdata(data.data);
-    if (vecInfo && vecInfo.yNames.length > 0) {
-      parsed.headers = [vecInfo.xName || 'frequency', ...vecInfo.yNames.map(y => y.name)];
-      parsed.types = vecInfo.yNames.map(y => y.type);
-    }
+    parsed = buildAcParsed(data.data, vecInfo);
   } else if (kind === 'noise') {
     parsed = parseRealWrdata(data.data);
     parsed.headers = ['frequency', 'inoise_spectrum', 'onoise_spectrum'];
-    parsed.types = ['voltage', 'voltage']; // noise 는 분리 안 함
+    parsed.types = ['voltage', 'voltage'];
   } else {
-    parsed = parseRealWrdata(data.data);
-    if (vecInfo && vecInfo.yNames.length > 0) {
-      const xfb = kind === 'tran' ? 'time' : 'sweep';
-      parsed.headers = [vecInfo.xName || xfb, ...vecInfo.yNames.map(y => y.name)];
-      parsed.types = vecInfo.yNames.map(y => y.type);
-    }
+    parsed = buildRealParsed(data.data, vecInfo, kind === 'tran' ? 'time' : 'sweep');
   }
 
   if (parsed.rows.length) {
