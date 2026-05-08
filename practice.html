@@ -1648,6 +1648,11 @@ function buildWrapper(kind) {
   // wr_singlescale: x를 매 변수마다 반복하지 않고 행 시작에 1번만 → 깔끔한 (x, y0, y1, ...) 형식
   const lines = ['.control', 'set wr_vecnames', 'set wr_singlescale', 'run'];
   if (kind === 'noise') {
+    // .noise 실행 후 ngspice는 plot 2개를 만든다:
+    //   noise1 = 주파수별 spectral density (inoise_spectrum, onoise_spectrum)
+    //   noise2 = 적분 total noise (inoise_total, onoise_total) ← run 직후 current plot
+    // spectrum을 dump하려면 noise1 plot으로 전환 필요.
+    lines.push('setplot noise1');
     lines.push('wrdata /noise.txt inoise_spectrum onoise_spectrum');
   } else {
     // display는 type(voltage/current/...) 정보를 주지만 wrdata 컬럼 순서와 다를 수 있음.
