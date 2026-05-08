@@ -204,9 +204,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
   </div>
   <div class="hctrl">
     <span class="badge">BSIM3v3 Level 49</span>
-    <select id="ex-select" class="btn btn-sec" title="예제 로드">
-      <option value="">예제 로드…</option>
-    </select>
     <button class="btn btn-rst" onclick="showGallery()">📚 갤러리</button>
     <button class="btn btn-rst" onclick="exportState()" title="현재 설정을 JSON 파일로 저장">💾 내보내기</button>
     <button class="btn btn-rst" onclick="document.getElementById('import-file').click()" title="JSON 파일에서 설정 불러오기">📂 불러오기</button>
@@ -401,7 +398,7 @@ quit
     <p style="font-size:11.5px;color:var(--muted);">단축키는 editor 안/밖 어디서나 작동합니다. 다른 입력란에 포커스가 있을 때는 비활성화.</p>
 
     <h3>6. 예제</h3>
-    <p>헤더의 <b>예제 로드</b> 드롭다운(빠른 로드) 또는 <b>📚 갤러리</b> 버튼(카테고리별 12종)에서 회로를 로드할 수 있습니다.</p>
+    <p>헤더의 <b>📚 갤러리</b> 버튼에서 카테고리별 14종 회로를 로드할 수 있습니다 (수동 4 / MOSFET 단일 4 / 증폭기 6).</p>
 
     <h3>7. 자동 저장 / 내보내기 / 불러오기</h3>
     <ul>
@@ -450,76 +447,6 @@ const ETRI_LIB = `.LIB MOS
 +PSCBE1=8E8 PSCBE2=7E-9 PVAG=-0.29474 DELTA=7.07618E-3
 +MOBMOD=1 NQSMOD=0 )
 .ENDL MOS`;
-
-/* ════════════════════════════════════════════════════════════════════
-   예제 프리셋
-═══════════════════════════════════════════════════════════════════════ */
-const EXAMPLES = [
-  {
-    name: '1. RC 저역통과 (.tran + .ac)',
-    netlist: `* RC low-pass filter
-* SPICE 입문용 — V1을 통해 transient pulse 입력 + AC 1V 입력
-V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
-R1 in out 1k
-C1 out 0 100n
-.tran 1u 3m
-.ac dec 20 1 1Meg
-.end
-`
-  },
-  {
-    name: '2. NMOS 공통소스 증폭기 (.dc + .ac)',
-    netlist: `* NMOS common-source amplifier (R-load)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-* DC + AC 입력
-Vin in 0 DC 1.0 AC 1
-R1 vdd out 10k
-M1 out in 0 0 nmos4 W=20u L=1u
-.dc Vin 0 5 0.01
-.ac dec 20 1 100Meg
-.end
-`
-  },
-  {
-    name: '3. 5T OTA (.dc + .ac)',
-    netlist: `* 5T OTA — DC sweep + AC (small-signal)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vss 0   0 DC 0
-Vb  vb  0 DC 0.93
-* 차동입력: Vcm + 0.5 Vid, Vcm - 0.5 Vid
-Vcm vcm 0 DC 1.65
-Vid vid 0 DC 0 AC 1
-Eip ip  0 vcm vid 0.5
-Ein in  0 vcm vid -0.5
-M1 nodea ip  vp  0   nmos4 W=20u L=1u
-M2 vout  in  vp  0   nmos4 W=20u L=1u
-M3 nodea nodea vdd vdd pmos4 W=10u L=1u
-M4 vout  nodea vdd vdd pmos4 W=10u L=1u
-M5 vp    vb    0   0   nmos4 W=40u L=1u
-.dc Vcm 0 5 0.01
-.ac dec 20 1 100Meg
-.end
-`
-  },
-  {
-    name: '4. Diff pair tail current (.dc Vicm sweep)',
-    netlist: `* Diff pair Vicm sweep — Vp(tail), Vout, Vx(nodeA) 동작점 분석
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vb  vb  0 DC 0.93
-Vcm vcm 0 DC 1.65
-M1 nodea vcm vp 0 nmos4 W=20u L=1u
-M2 vout  vcm vp 0 nmos4 W=20u L=1u
-M3 nodea nodea vdd vdd pmos4 W=10u L=1u
-M4 vout  nodea vdd vdd pmos4 W=10u L=1u
-M5 vp    vb    0   0   nmos4 W=40u L=1u
-.dc Vcm 0 5 0.01
-.end
-`
-  }
-];
 
 /* ════════════════════════════════════════════════════════════════════
    예제 갤러리 (카테고리별)
@@ -704,6 +631,76 @@ M5 vp    vb    0   0   nmos4 W=40u L=1u
 .end
 `
   },
+  {
+    cat: 'amp', title: '2단 OTA (Miller 보상)', tag: 'DC + AC', stars: 3,
+    desc: '5T OTA + PMOS 공통소스 2단. Cc + nulling Rz로 Miller 보상. 단일단보다 높은 게인.',
+    netlist: `* 2단 OTA — Stage 1 (5T OTA) + Stage 2 (PMOS CS) + Miller 보상
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+Vb  vb  0 DC 0.93
+Vcm vcm 0 DC 1.65
+Vid vid 0 DC 0 AC 1
+Eip ip 0 vcm vid 0.5
+Ein in 0 vcm vid -0.5
+* Stage 1: 5T OTA core
+M1 nodea ip vp 0   nmos4 W=20u L=1u
+M2 vo1   in vp 0   nmos4 W=20u L=1u
+M3 nodea nodea vdd vdd pmos4 W=10u L=1u
+M4 vo1   nodea vdd vdd pmos4 W=10u L=1u
+M5 vp    vb    0   0   nmos4 W=40u L=1u
+* Stage 2: PMOS common-source + NMOS current-source load
+M6 vout vo1 vdd vdd pmos4 W=10u L=1u
+M7 vout vb  0   0   nmos4 W=20u L=1u
+* Miller 보상 (Cc + nulling Rz)
+Rz vo1 nz 2k
+Cc nz vout 2p
+* 출력 부하
+CL vout 0 1p
+.dc Vid -0.3 0.3 0.005
+.ac dec 30 1 100Meg
+.end
+`
+  },
+  {
+    cat: 'amp', title: 'Folded Cascode OTA', tag: 'DC + AC', stars: 3,
+    desc: 'NMOS 입력쌍 + PMOS top current source. 캐스코드로 출력 임피던스↑ → 고이득. Wide ICMR.',
+    netlist: `* Folded Cascode OTA (NMOS 입력)
+* 모든 바이어스는 학습용으로 voltage source 사용
+.lib "/model.lib" MOS
+VDD vdd 0 DC 5
+* 바이어스
+Vbt  vbt  0 DC 0.93   ; tail
+Vbp  vbp  0 DC 3.7    ; PMOS top current source
+Vbpc vbpc 0 DC 2.5    ; PMOS cascode
+Vbnc vbnc 0 DC 2.0    ; NMOS cascode
+* 차동입력
+Vcm vcm 0 DC 1.65
+Vid vid 0 DC 0 AC 1
+Eip ip 0 vcm vid 0.5
+Ein in 0 vcm vid -0.5
+* NMOS 입력쌍 + tail
+M0 vt vbt 0 0 nmos4 W=40u L=1u
+M1 nA ip vt 0 nmos4 W=20u L=1u
+M2 nB in vt 0 nmos4 W=20u L=1u
+* PMOS top current sources (folding)
+M3 nA vbp vdd vdd pmos4 W=80u L=1u
+M4 nB vbp vdd vdd pmos4 W=80u L=1u
+* PMOS cascodes
+M5 nC   vbpc nA vdd pmos4 W=40u L=1u
+M6 vout vbpc nB vdd pmos4 W=40u L=1u
+* NMOS cascodes
+M7 nC   vbnc nD 0 nmos4 W=20u L=1u
+M8 vout vbnc nE 0 nmos4 W=20u L=1u
+* NMOS bottom mirror (M9 diode-connect, M10 mirror)
+M9  nD nD 0 0 nmos4 W=20u L=1u
+M10 nE nD 0 0 nmos4 W=20u L=1u
+* 출력 부하
+CL vout 0 1p
+.dc Vid -0.3 0.3 0.005
+.ac dec 30 1 100Meg
+.end
+`
+  },
 ];
 
 function showGallery() {
@@ -765,6 +762,7 @@ function loadGalleryExample(idx) {
   refreshAllParams();
   refreshDetected();
   hideGallery();
+  flushSave();
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -803,7 +801,9 @@ window.addEventListener('DOMContentLoaded', () => {
     styleActiveLine: true,
     lineWrapping: false
   });
-  cm.setValue(EXAMPLES[0].netlist);
+  // 초기 netlist는 갤러리의 RC LPF (.tran + .ac 모두 보여주는 입문 예제)
+  const initial = (GALLERY.find(g => g.title.indexOf('RC 저역통과') >= 0) || GALLERY[0]).netlist;
+  cm.setValue(initial);
   cm.on('change', () => { refreshDetected(); saveToLocalStorage(); });
   refreshDetected();
   refreshAllParams();
@@ -812,20 +812,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.param-row input, .param-row select').forEach(el => {
     el.addEventListener('change', saveToLocalStorage);
     el.addEventListener('input', saveToLocalStorage);
-  });
-
-  const sel = document.getElementById('ex-select');
-  EXAMPLES.forEach((e, i) => {
-    const opt = document.createElement('option');
-    opt.value = String(i);
-    opt.textContent = e.name;
-    sel.appendChild(opt);
-  });
-  sel.addEventListener('change', () => {
-    if (sel.value === '') return;
-    const ex = EXAMPLES[+sel.value];
-    if (ex) { cm.setValue(ex.netlist); refreshAllParams(); }
-    sel.value = '';
   });
 
   document.querySelectorAll('.tab').forEach(t => {
@@ -934,6 +920,17 @@ function saveToLocalStorage() {
   }, 400);
 }
 
+// debounce 없이 즉시 저장 (예제 로드/import 시처럼 새로고침 직후 유실 방지)
+function flushSave() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = null;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeState()));
+  } catch (e) {
+    console.warn('localStorage 즉시저장 실패:', e);
+  }
+}
+
 function loadFromLocalStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -972,7 +969,7 @@ function importState(file) {
         if (!confirm('파일 버전이 다릅니다 (file v=' + state.version + ', expected ' + STATE_VERSION + '). 그래도 가져올까요?')) return;
       }
       applyState(state);
-      saveToLocalStorage();
+      flushSave();
       alert('✓ 설정을 불러왔습니다.\n저장 시각: ' + (state.savedAt || 'unknown'));
     } catch (err) {
       alert('파일 형식이 올바르지 않습니다:\n' + err.message);
