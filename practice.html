@@ -101,7 +101,34 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .ac-pair{display:grid;grid-template-rows:1fr 1fr;gap:6px;flex:1;min-height:0;}
 .ac-sub{display:flex;flex-direction:column;min-height:0;}
 .ac-sub .lbl{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:3px;}
-.ac-sub canvas{flex:1;}
+.ac-sub canvas{flex:1;min-height:0;}
+
+/* CHART CARD (variable list left + chart right) */
+.charts-container{display:flex;flex-direction:column;flex:1;min-height:0;gap:6px;}
+.chart-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;}
+.chart-card{display:grid;grid-template-columns:155px 1fr;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:#fafbfd;min-height:240px;flex-shrink:0;}
+.chart-card .card-vars{display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--border);padding-right:8px;min-width:0;}
+.chart-card .card-vars-head{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between;}
+.chart-card .card-close{background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;line-height:1;padding:0 4px;border-radius:3px;}
+.chart-card .card-close:hover{background:rgba(192,57,43,.1);}
+.chart-card .var-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px;}
+.chart-card .var-list label{display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 4px;border-radius:3px;font-family:'Consolas','Courier New',monospace;font-size:11px;line-height:1.3;}
+.chart-card .var-list label:hover{background:rgba(41,128,185,.08);}
+.chart-card .var-list label .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.chart-card .var-list label .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chart-card .var-list input[type="checkbox"]{cursor:pointer;margin:0;flex-shrink:0;}
+.chart-card .card-allbtns{display:flex;gap:3px;}
+.chart-card .card-allbtns button{flex:1;font-size:10px;padding:2px 0;border:1px solid var(--border);background:#fff;border-radius:3px;cursor:pointer;color:var(--text);}
+.chart-card .card-allbtns button:hover{background:#eef2f7;}
+.chart-card .card-chart{display:flex;flex-direction:column;min-height:0;min-width:0;}
+.chart-card .card-chart canvas{flex:1;min-height:0;width:100%!important;}
+.chart-card .card-chart.ac-pair{display:grid;grid-template-rows:1fr 1fr;gap:6px;}
+.chart-card .card-chart .ac-sub{display:flex;flex-direction:column;min-height:0;}
+.chart-card .card-chart .ac-sub canvas{flex:1;min-height:0;}
+
+.add-chart-bar{display:flex;justify-content:center;padding:4px 0;flex-shrink:0;}
+.add-chart-bar button{padding:5px 14px;border:1px dashed var(--secondary);background:#fff;color:var(--secondary);border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:600;}
+.add-chart-bar button:hover{background:var(--secondary);color:#fff;}
 
 /* PARAM ROW (per tab) */
 .param-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;font-size:11.5px;flex-shrink:0;}
@@ -213,16 +240,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <span class="hint">예: 1u 3m → <code>.tran 1u 3m</code></span>
           <button class="apply" onclick="applyParams('tran')">netlist에 반영</button>
         </div>
-        <div class="var-selector" id="vars-tran" hidden>
-          <span class="var-label">📊 표시</span>
-          <span class="var-list"></span>
-          <span class="all-btns">
-            <button onclick="setAllVars('tran', true)">All</button>
-            <button onclick="setAllVars('tran', false)">None</button>
-          </span>
-        </div>
         <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
-        <div class="chart-box" id="box-tran" hidden><canvas id="chart-tran"></canvas></div>
+        <div class="charts-container" id="cc-tran" hidden>
+          <div class="chart-list" id="charts-tran"></div>
+          <div class="add-chart-bar"><button onclick="addChart('tran')">+ 그래프 추가</button></div>
+        </div>
       </div>
 
       <div class="tab-pane" id="pane-dc">
@@ -234,16 +256,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>step <input id="p-dc-step" value="0.01" style="width:55px"></label>
           <button class="apply" onclick="applyParams('dc')">netlist에 반영</button>
         </div>
-        <div class="var-selector" id="vars-dc" hidden>
-          <span class="var-label">📊 표시</span>
-          <span class="var-list"></span>
-          <span class="all-btns">
-            <button onclick="setAllVars('dc', true)">All</button>
-            <button onclick="setAllVars('dc', false)">None</button>
-          </span>
-        </div>
         <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
-        <div class="chart-box" id="box-dc" hidden><canvas id="chart-dc"></canvas></div>
+        <div class="charts-container" id="cc-dc" hidden>
+          <div class="chart-list" id="charts-dc"></div>
+          <div class="add-chart-bar"><button onclick="addChart('dc')">+ 그래프 추가</button></div>
+        </div>
       </div>
 
       <div class="tab-pane" id="pane-ac">
@@ -255,18 +272,10 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>fstop <input id="p-ac-fstop" value="100Meg" style="width:65px"></label>
           <button class="apply" onclick="applyParams('ac')">netlist에 반영</button>
         </div>
-        <div class="var-selector" id="vars-ac" hidden>
-          <span class="var-label">📊 표시</span>
-          <span class="var-list"></span>
-          <span class="all-btns">
-            <button onclick="setAllVars('ac', true)">All</button>
-            <button onclick="setAllVars('ac', false)">None</button>
-          </span>
-        </div>
         <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
-        <div class="ac-pair" id="box-ac" hidden>
-          <div class="ac-sub"><div class="lbl">|H(jω)| [dB]</div><canvas id="chart-ac-mag"></canvas></div>
-          <div class="ac-sub"><div class="lbl">∠H(jω) [deg]</div><canvas id="chart-ac-phase"></canvas></div>
+        <div class="charts-container" id="cc-ac" hidden>
+          <div class="chart-list" id="charts-ac"></div>
+          <div class="add-chart-bar"><button onclick="addChart('ac')">+ 그래프 추가</button></div>
         </div>
       </div>
 
@@ -285,16 +294,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>fstop <input id="p-noise-fstop" value="100Meg" style="width:65px"></label>
           <button class="apply" onclick="applyParams('noise')">netlist에 반영</button>
         </div>
-        <div class="var-selector" id="vars-noise" hidden>
-          <span class="var-label">📊 표시</span>
-          <span class="var-list"></span>
-          <span class="all-btns">
-            <button onclick="setAllVars('noise', true)">All</button>
-            <button onclick="setAllVars('noise', false)">None</button>
-          </span>
-        </div>
         <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
-        <div class="chart-box" id="box-noise" hidden><canvas id="chart-noise"></canvas></div>
+        <div class="charts-container" id="cc-noise" hidden>
+          <div class="chart-list" id="charts-noise"></div>
+          <div class="add-chart-bar"><button onclick="addChart('noise')">+ 그래프 추가</button></div>
+        </div>
       </div>
     </div>
 
@@ -481,7 +485,8 @@ CodeMirror.defineSimpleMode('spice', {
    상태
 ═══════════════════════════════════════════════════════════════════════ */
 let cm;
-let charts = {tran:null, dc:null, ac_mag:null, ac_phase:null, noise:null};
+let chartCards = {tran: [], dc: [], ac: [], noise: []};
+let cardIdCounter = 0;
 let lastResults = {tran:null, dc:null, ac:null, noise:null};
 let currentWorker = null;
 let activeTab = 'tran';
@@ -527,7 +532,14 @@ function switchTab(name) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
   document.getElementById('run-kind').textContent = KIND_LABEL[name];
   readParamsFromNetlist(name);
-  setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 30);
+  // 활성 탭의 차트 카드 리사이즈
+  setTimeout(() => {
+    chartCards[name].forEach(card => {
+      if (card.chart) card.chart.resize();
+      if (card.chartMag) card.chartMag.resize();
+      if (card.chartPhase) card.chartPhase.resize();
+    });
+  }, 30);
 }
 
 function clearEditor() {
@@ -940,31 +952,31 @@ function handleResult(kind, data, dt) {
   const fullLog = (data.stdout || '') + '\n' + (data.stderr || '');
   const vecInfo = (kind !== 'noise') ? parseVectorNamesFromLog(fullLog) : null;
 
+  let parsed;
   if (kind === 'ac') {
-    const parsed = parseAcWrdata(data.data);
+    parsed = parseAcWrdata(data.data);
     if (vecInfo && vecInfo.yNames.length > 0) {
       parsed.headers = [vecInfo.xName || 'frequency', ...vecInfo.yNames];
     }
-    if (parsed.rows.length) { lastResults.ac = parsed; renderAC(parsed); }
-    updateTabCount('ac', parsed.rows.length, true);
   } else if (kind === 'noise') {
-    const parsed = parseRealWrdata(data.data);
+    parsed = parseRealWrdata(data.data);
     parsed.headers = ['frequency', 'inoise_spectrum', 'onoise_spectrum'];
-    if (parsed.rows.length) { lastResults.noise = parsed; renderNoise(parsed); }
-    updateTabCount('noise', parsed.rows.length, true);
   } else {
-    const parsed = parseRealWrdata(data.data);
+    parsed = parseRealWrdata(data.data);
     if (vecInfo && vecInfo.yNames.length > 0) {
       const xfb = kind === 'tran' ? 'time' : 'sweep';
       parsed.headers = [vecInfo.xName || xfb, ...vecInfo.yNames];
     }
-    if (parsed.rows.length) {
-      lastResults[kind] = parsed;
-      const xlab = kind === 'tran' ? 'time [s]' : (parsed.headers && parsed.headers[0]) || 'sweep var';
-      renderReal(kind, parsed, xlab, 'V / I');
-    }
-    updateTabCount(kind, parsed.rows.length, true);
   }
+
+  if (parsed.rows.length) {
+    lastResults[kind] = parsed;
+    clearCards(kind);
+    document.getElementById('empty-' + kind).style.display = 'none';
+    document.getElementById('cc-' + kind).hidden = false;
+    createCard(kind);
+  }
+  updateTabCount(kind, parsed.rows.length, true);
 
   setStatus('done (' + dt + ' ms)', 'ok');
   const r = lastResults[kind];
@@ -1000,11 +1012,18 @@ function getYLabels(parsed, fallbackPrefix, count) {
   return out;
 }
 
-function buildDatasets(parsed) {
-  const nTraces = parsed.rows[0].length - 1;
-  const labels = getYLabels(parsed, 'y', nTraces);
+function getTabLabels(tab, parsed) {
+  if (tab === 'ac') {
+    const n = parsed.rows[0] ? parsed.rows[0].traces.length : 0;
+    return getYLabels(parsed, 'H', n);
+  }
+  const n = parsed.rows[0] ? parsed.rows[0].length - 1 : 0;
+  return getYLabels(parsed, 'y', n);
+}
+
+function makeRealDatasets(parsed, labels) {
   const datasets = [];
-  for (let k = 0; k < nTraces; k++) {
+  for (let k = 0; k < labels.length; k++) {
     datasets.push({
       label: labels[k],
       data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
@@ -1016,136 +1035,198 @@ function buildDatasets(parsed) {
   return datasets;
 }
 
-function renderReal(tab, parsed, xlab, ylab) {
-  document.getElementById('empty-' + tab).style.display = 'none';
-  document.getElementById('box-' + tab).hidden = false;
-  if (charts[tab]) { charts[tab].destroy(); charts[tab] = null; }
-  const ctx = document.getElementById('chart-' + tab).getContext('2d');
-  const datasets = buildDatasets(parsed);
-  charts[tab] = new Chart(ctx, {
-    type: 'line',
-    data: { datasets },
-    options: chartOpts(xlab, ylab, false, false)
-  });
-  buildVarSelector(tab, datasets.map(d => d.label));
-}
-
-function renderAC(parsed) {
-  document.getElementById('empty-ac').style.display = 'none';
-  document.getElementById('box-ac').hidden = false;
-  const acRows = parsed.rows;
-  const nTraces = acRows[0].traces.length;
-  const labels = getYLabels(parsed, 'H', nTraces);
-  const magDS = [], phaseDS = [];
-  for (let k = 0; k < nTraces; k++) {
-    magDS.push({
-      label: labels[k],
-      data: acRows.map(r => ({x: r.freq, y: r.traces[k].mag})),
-      borderColor: COLORS[k % COLORS.length],
-      backgroundColor: COLORS[k % COLORS.length],
-      borderWidth: 1.5, pointRadius: 0, tension: 0
-    });
-    phaseDS.push({
-      label: labels[k],
-      data: acRows.map(r => ({x: r.freq, y: r.traces[k].phase})),
-      borderColor: COLORS[k % COLORS.length],
-      backgroundColor: COLORS[k % COLORS.length],
-      borderWidth: 1.5, pointRadius: 0, tension: 0
-    });
-  }
-  if (charts.ac_mag) charts.ac_mag.destroy();
-  if (charts.ac_phase) charts.ac_phase.destroy();
-  charts.ac_mag = new Chart(document.getElementById('chart-ac-mag').getContext('2d'), {
-    type: 'line', data: { datasets: magDS },
-    options: chartOpts('frequency [Hz]', '|H| [dB]', true, false)
-  });
-  charts.ac_phase = new Chart(document.getElementById('chart-ac-phase').getContext('2d'), {
-    type: 'line', data: { datasets: phaseDS },
-    options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
-  });
-  buildVarSelector('ac', labels);
-}
-
-function renderNoise(parsed) {
-  document.getElementById('empty-noise').style.display = 'none';
-  document.getElementById('box-noise').hidden = false;
-  if (charts.noise) { charts.noise.destroy(); charts.noise = null; }
-  const nTraces = parsed.rows[0].length - 1;
-  const fallback = ['inoise_spectrum', 'onoise_spectrum'];
-  const labels = [];
-  for (let k = 0; k < nTraces; k++) {
-    labels.push((parsed.headers && parsed.headers[k+1]) || fallback[k] || ('y'+(k+1)));
-  }
+function makeAcDatasets(parsed, labels, key) {
+  // key: 'mag' or 'phase'
   const datasets = [];
-  for (let k = 0; k < nTraces; k++) {
+  for (let k = 0; k < labels.length; k++) {
     datasets.push({
       label: labels[k],
-      data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
+      data: parsed.rows.map(r => ({x: r.freq, y: r.traces[k][key]})),
       borderColor: COLORS[k % COLORS.length],
       backgroundColor: COLORS[k % COLORS.length],
       borderWidth: 1.5, pointRadius: 0, tension: 0
     });
   }
-  charts.noise = new Chart(document.getElementById('chart-noise').getContext('2d'), {
-    type: 'line', data: { datasets },
-    options: chartOpts('frequency [Hz]', '√(V²/Hz) or A²/Hz', true, true)
-  });
-  buildVarSelector('noise', labels);
+  return datasets;
 }
 
-/* ── 노드 체크박스 (var-selector) ── */
-function buildVarSelector(tab, names) {
-  const sel = document.getElementById('vars-' + tab);
-  if (!sel) return;
-  if (!names || names.length === 0) { sel.hidden = true; return; }
-  sel.hidden = false;
-  const list = sel.querySelector('.var-list');
-  list.textContent = '';
-  names.forEach((name, idx) => {
+/* ── 차트 카드 시스템 ── */
+function clearCards(tab) {
+  for (const card of chartCards[tab]) {
+    if (card.chart) card.chart.destroy();
+    if (card.chartMag) card.chartMag.destroy();
+    if (card.chartPhase) card.chartPhase.destroy();
+    if (card.element && card.element.parentNode) card.element.parentNode.removeChild(card.element);
+  }
+  chartCards[tab] = [];
+}
+
+function addChart(tab) {
+  if (!lastResults[tab]) {
+    alert('먼저 ▶ Run을 눌러 시뮬레이션 결과를 만든 뒤 그래프를 추가해주세요.');
+    return;
+  }
+  createCard(tab);
+}
+
+function createCard(tab) {
+  const parsed = lastResults[tab];
+  if (!parsed) return null;
+  const id = 'card-' + tab + '-' + (++cardIdCounter);
+  const labels = getTabLabels(tab, parsed);
+
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  card.dataset.cardId = id;
+
+  // LEFT: variable list
+  const left = document.createElement('div');
+  left.className = 'card-vars';
+
+  const head = document.createElement('div');
+  head.className = 'card-vars-head';
+  const title = document.createElement('span');
+  title.textContent = '📊 표시 노드';
+  head.appendChild(title);
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'card-close';
+  closeBtn.textContent = '×';
+  closeBtn.title = '이 그래프 제거';
+  closeBtn.onclick = () => removeCard(tab, id);
+  head.appendChild(closeBtn);
+  left.appendChild(head);
+
+  const varList = document.createElement('div');
+  varList.className = 'var-list';
+  left.appendChild(varList);
+
+  const allBtns = document.createElement('div');
+  allBtns.className = 'card-allbtns';
+  const allBtn = document.createElement('button');
+  allBtn.textContent = 'All';
+  allBtn.onclick = () => setAllInCard(card, true);
+  const noneBtn = document.createElement('button');
+  noneBtn.textContent = 'None';
+  noneBtn.onclick = () => setAllInCard(card, false);
+  allBtns.appendChild(allBtn);
+  allBtns.appendChild(noneBtn);
+  left.appendChild(allBtns);
+
+  card.appendChild(left);
+
+  // RIGHT: chart(s)
+  const right = document.createElement('div');
+  right.className = 'card-chart';
+
+  const entry = { id, element: card };
+
+  if (tab === 'ac') {
+    right.classList.add('ac-pair');
+    const subM = document.createElement('div'); subM.className = 'ac-sub';
+    const lblM = document.createElement('div'); lblM.className = 'lbl'; lblM.textContent = '|H(jω)| [dB]';
+    const cvM = document.createElement('canvas');
+    subM.appendChild(lblM); subM.appendChild(cvM);
+    const subP = document.createElement('div'); subP.className = 'ac-sub';
+    const lblP = document.createElement('div'); lblP.className = 'lbl'; lblP.textContent = '∠H(jω) [deg]';
+    const cvP = document.createElement('canvas');
+    subP.appendChild(lblP); subP.appendChild(cvP);
+    right.appendChild(subM); right.appendChild(subP);
+    card.appendChild(right);
+
+    // 컨테이너에 먼저 attach (canvas 사이즈 측정 위해)
+    document.getElementById('charts-' + tab).appendChild(card);
+
+    entry.chartMag = new Chart(cvM.getContext('2d'), {
+      type: 'line',
+      data: { datasets: makeAcDatasets(parsed, labels, 'mag') },
+      options: chartOpts('frequency [Hz]', '|H| [dB]', true, false)
+    });
+    entry.chartPhase = new Chart(cvP.getContext('2d'), {
+      type: 'line',
+      data: { datasets: makeAcDatasets(parsed, labels, 'phase') },
+      options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
+    });
+  } else {
+    const cv = document.createElement('canvas');
+    right.appendChild(cv);
+    card.appendChild(right);
+
+    document.getElementById('charts-' + tab).appendChild(card);
+
+    let xlab, ylab, xLog = false, yLog = false;
+    if (tab === 'tran')  { xlab = 'time [s]';        ylab = 'V / I'; }
+    else if (tab === 'dc') { xlab = (parsed.headers && parsed.headers[0]) || 'sweep'; ylab = 'V / I'; }
+    else if (tab === 'noise') { xlab = 'frequency [Hz]'; ylab = '√(V²/Hz) or A²/Hz'; xLog = true; yLog = true; }
+
+    entry.chart = new Chart(cv.getContext('2d'), {
+      type: 'line',
+      data: { datasets: makeRealDatasets(parsed, labels) },
+      options: chartOpts(xlab, ylab, xLog, yLog)
+    });
+  }
+
+  // Build checkboxes
+  labels.forEach((name, idx) => {
     const lbl = document.createElement('label');
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = true;
     cb.dataset.idx = String(idx);
-    cb.addEventListener('change', () => toggleVar(tab, idx, cb.checked));
+    cb.addEventListener('change', () => toggleCardVar(entry, idx, cb.checked));
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
     swatch.style.background = COLORS[idx % COLORS.length];
-    const txt = document.createElement('span');
-    txt.textContent = name;
+    const nm = document.createElement('span');
+    nm.className = 'nm';
+    nm.textContent = name;
+    nm.title = name;
     lbl.appendChild(cb);
     lbl.appendChild(swatch);
-    lbl.appendChild(txt);
-    list.appendChild(lbl);
+    lbl.appendChild(nm);
+    varList.appendChild(lbl);
   });
+
+  chartCards[tab].push(entry);
+  return entry;
 }
 
-function toggleVar(tab, idx, visible) {
-  if (tab === 'ac') {
-    if (charts.ac_mag && charts.ac_mag.data.datasets[idx]) {
-      charts.ac_mag.data.datasets[idx].hidden = !visible;
-      charts.ac_mag.update('none');
-    }
-    if (charts.ac_phase && charts.ac_phase.data.datasets[idx]) {
-      charts.ac_phase.data.datasets[idx].hidden = !visible;
-      charts.ac_phase.update('none');
-    }
-  } else {
-    const c = charts[tab];
-    if (c && c.data.datasets[idx]) {
-      c.data.datasets[idx].hidden = !visible;
-      c.update('none');
-    }
+function toggleCardVar(entry, idx, visible) {
+  if (entry.chart && entry.chart.data.datasets[idx]) {
+    entry.chart.data.datasets[idx].hidden = !visible;
+    entry.chart.update('none');
+  }
+  if (entry.chartMag && entry.chartMag.data.datasets[idx]) {
+    entry.chartMag.data.datasets[idx].hidden = !visible;
+    entry.chartMag.update('none');
+  }
+  if (entry.chartPhase && entry.chartPhase.data.datasets[idx]) {
+    entry.chartPhase.data.datasets[idx].hidden = !visible;
+    entry.chartPhase.update('none');
   }
 }
 
-function setAllVars(tab, on) {
-  const sel = document.getElementById('vars-' + tab);
-  if (!sel) return;
-  sel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    cb.checked = on;
-    toggleVar(tab, parseInt(cb.dataset.idx, 10), on);
+function setAllInCard(cardEl, on) {
+  cardEl.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    if (cb.checked !== on) {
+      cb.checked = on;
+      cb.dispatchEvent(new Event('change'));
+    }
   });
+}
+
+function removeCard(tab, id) {
+  const idx = chartCards[tab].findIndex(c => c.id === id);
+  if (idx === -1) return;
+  if (chartCards[tab].length <= 1) {
+    alert('최소 1개의 그래프는 유지됩니다. 다른 그래프를 먼저 추가하세요.');
+    return;
+  }
+  const card = chartCards[tab][idx];
+  if (card.chart) card.chart.destroy();
+  if (card.chartMag) card.chartMag.destroy();
+  if (card.chartPhase) card.chartPhase.destroy();
+  if (card.element && card.element.parentNode) card.element.parentNode.removeChild(card.element);
+  chartCards[tab].splice(idx, 1);
 }
 
 function chartOpts(xlab, ylab, xLog, yLog) {
