@@ -208,6 +208,9 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
       <option value="">예제 로드…</option>
     </select>
     <button class="btn btn-rst" onclick="showGallery()">📚 갤러리</button>
+    <button class="btn btn-rst" onclick="exportState()" title="현재 설정을 JSON 파일로 저장">💾 내보내기</button>
+    <button class="btn btn-rst" onclick="document.getElementById('import-file').click()" title="JSON 파일에서 설정 불러오기">📂 불러오기</button>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importState(this.files[0]);this.value='';">
     <button class="btn btn-rst" onclick="showHelp()">❓ 도움말</button>
   </div>
 </header>
@@ -400,7 +403,15 @@ quit
     <h3>6. 예제</h3>
     <p>헤더의 <b>예제 로드</b> 드롭다운(빠른 로드) 또는 <b>📚 갤러리</b> 버튼(카테고리별 12종)에서 회로를 로드할 수 있습니다.</p>
 
-    <h3>7. 제한</h3>
+    <h3>7. 자동 저장 / 내보내기 / 불러오기</h3>
+    <ul>
+      <li><b>자동 저장</b>: netlist · 파라미터 입력값 · 활성 탭 · 로그 높이가 브라우저 localStorage에 자동 저장됩니다. 다음에 페이지를 열면 이전 작업이 그대로 복원됩니다.</li>
+      <li><b>💾 내보내기</b>: 현재 설정을 JSON 파일로 다운로드. 다른 사람과 공유하거나 백업용으로 사용.</li>
+      <li><b>📂 불러오기</b>: JSON 파일을 선택해 설정을 복원. 현재 작업이 덮어쓰기되니 주의.</li>
+      <li><b>주의</b>: 시뮬레이션 결과(차트 데이터)는 저장되지 않습니다. 복원 후 다시 ▶ Run 해야 차트가 나타납니다.</li>
+    </ul>
+
+    <h3>8. 제한</h3>
     <ul>
       <li>실행은 30초 timeout. AC sweep을 너무 광대역으로 잡으면 중단될 수 있습니다.</li>
       <li>nested <code>.dc</code> sweep은 1차 sweep만 표시됩니다.</li>
@@ -793,9 +804,15 @@ window.addEventListener('DOMContentLoaded', () => {
     lineWrapping: false
   });
   cm.setValue(EXAMPLES[0].netlist);
-  cm.on('change', refreshDetected);
+  cm.on('change', () => { refreshDetected(); saveToLocalStorage(); });
   refreshDetected();
   refreshAllParams();
+
+  // 파라미터 입력 변화 시 자동 저장
+  document.querySelectorAll('.param-row input, .param-row select').forEach(el => {
+    el.addEventListener('change', saveToLocalStorage);
+    el.addEventListener('input', saveToLocalStorage);
+  });
 
   const sel = document.getElementById('ex-select');
   EXAMPLES.forEach((e, i) => {
@@ -817,7 +834,153 @@ window.addEventListener('DOMContentLoaded', () => {
 
   setupShortcuts();
   setupSplitter();
+
+  // 마지막으로: 이전 세션 상태 복원 (있으면 위 default들을 덮어씀)
+  loadFromLocalStorage();
 });
+
+/* ════════════════════════════════════════════════════════════════════
+   상태 저장/복원 (localStorage + Export/Import)
+═══════════════════════════════════════════════════════════════════════ */
+const STORAGE_KEY = 'spice-practice-state';
+const STATE_VERSION = 1;
+
+function serializeState() {
+  const v = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  };
+  const log = document.getElementById('log-wrap');
+  return {
+    version: STATE_VERSION,
+    savedAt: new Date().toISOString(),
+    netlist: cm ? cm.getValue() : '',
+    activeTab: activeTab,
+    params: {
+      tran:  { tstep: v('p-tran-tstep'), tstop: v('p-tran-tstop') },
+      dc:    { src: v('p-dc-src'), start: v('p-dc-start'), stop: v('p-dc-stop'), step: v('p-dc-step') },
+      ac:    { type: v('p-ac-type'), n: v('p-ac-n'), fstart: v('p-ac-fstart'), fstop: v('p-ac-fstop') },
+      noise: { out: v('p-noise-out'), src: v('p-noise-src'), type: v('p-noise-type'),
+               n: v('p-noise-n'), fstart: v('p-noise-fstart'), fstop: v('p-noise-fstop') }
+    },
+    logHeight: log ? log.offsetHeight : 240
+  };
+}
+
+function applyState(state) {
+  if (!state || typeof state !== 'object') return;
+  // 1. netlist
+  if (typeof state.netlist === 'string' && cm) {
+    cm.setValue(state.netlist);
+  }
+  // 2. params
+  if (state.params) {
+    const setIf = (id, val) => {
+      if (val === undefined || val === null) return;
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    };
+    const p = state.params;
+    if (p.tran) {
+      setIf('p-tran-tstep', p.tran.tstep);
+      setIf('p-tran-tstop', p.tran.tstop);
+    }
+    if (p.dc) {
+      setIf('p-dc-src',   p.dc.src);
+      setIf('p-dc-start', p.dc.start);
+      setIf('p-dc-stop',  p.dc.stop);
+      setIf('p-dc-step',  p.dc.step);
+    }
+    if (p.ac) {
+      setIf('p-ac-type',  p.ac.type);
+      setIf('p-ac-n',     p.ac.n);
+      setIf('p-ac-fstart',p.ac.fstart);
+      setIf('p-ac-fstop', p.ac.fstop);
+    }
+    if (p.noise) {
+      setIf('p-noise-out',   p.noise.out);
+      setIf('p-noise-src',   p.noise.src);
+      setIf('p-noise-type',  p.noise.type);
+      setIf('p-noise-n',     p.noise.n);
+      setIf('p-noise-fstart',p.noise.fstart);
+      setIf('p-noise-fstop', p.noise.fstop);
+    }
+  }
+  // 3. log height
+  if (state.logHeight && state.logHeight > 60) {
+    const log = document.getElementById('log-wrap');
+    if (log) log.style.height = state.logHeight + 'px';
+  }
+  // 4. active tab — switchTab을 직접 호출하면 readParamsFromNetlist가 위에서 설정한 값을 덮어쓸 수 있으므로 inline으로 처리
+  if (state.activeTab && ['tran','dc','ac','noise'].indexOf(state.activeTab) >= 0) {
+    activeTab = state.activeTab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+    document.querySelectorAll('.tab-pane').forEach(pn => pn.classList.toggle('active', pn.id === 'pane-' + activeTab));
+    const rk = document.getElementById('run-kind');
+    if (rk) rk.textContent = KIND_LABEL[activeTab];
+  }
+  refreshDetected();
+}
+
+let _saveTimer = null;
+function saveToLocalStorage() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeState()));
+    } catch (e) {
+      console.warn('localStorage 저장 실패:', e);
+    }
+  }, 400);
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    if (state && state.version === STATE_VERSION) {
+      applyState(state);
+      return true;
+    }
+  } catch (e) {
+    console.warn('localStorage 복원 실패:', e);
+  }
+  return false;
+}
+
+function exportState() {
+  const state = serializeState();
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+  a.href = url;
+  a.download = `spice-practice-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importState(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const state = JSON.parse(e.target.result);
+      if (state.version !== STATE_VERSION) {
+        if (!confirm('파일 버전이 다릅니다 (file v=' + state.version + ', expected ' + STATE_VERSION + '). 그래도 가져올까요?')) return;
+      }
+      applyState(state);
+      saveToLocalStorage();
+      alert('✓ 설정을 불러왔습니다.\n저장 시각: ' + (state.savedAt || 'unknown'));
+    } catch (err) {
+      alert('파일 형식이 올바르지 않습니다:\n' + err.message);
+    }
+  };
+  reader.onerror = () => alert('파일을 읽지 못했습니다.');
+  reader.readAsText(file);
+}
 
 /* ── 에디터 / 로그 높이 splitter ── */
 function setupSplitter() {
@@ -851,6 +1014,7 @@ function setupSplitter() {
     r.classList.remove('dragging');
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
+    saveToLocalStorage();
   };
 
   r.addEventListener('mousedown', (e) => { onDown(e.clientY); e.preventDefault(); });
@@ -916,6 +1080,7 @@ function switchTab(name) {
       if (card.chartPhase) card.chartPhase.resize();
     });
   }, 30);
+  saveToLocalStorage();
 }
 
 function clearEditor() {
