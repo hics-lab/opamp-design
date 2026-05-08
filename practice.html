@@ -114,6 +114,18 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .param-row button.apply:hover{background:var(--secondary);color:#fff;}
 .param-row .hint{color:var(--muted);font-size:10px;font-style:italic;}
 
+/* VAR SELECTOR (per tab, populated after Run) */
+.var-selector{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;border:1px dashed var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;font-size:11.5px;flex-shrink:0;}
+.var-selector .var-label{color:var(--primary);font-weight:700;font-size:11px;margin-right:4px;}
+.var-selector .var-list{display:flex;flex-wrap:wrap;gap:3px 8px;flex:1;}
+.var-selector label{display:flex;align-items:center;gap:4px;cursor:pointer;padding:2px 6px;border-radius:3px;font-family:'Consolas','Courier New',monospace;font-size:11px;}
+.var-selector label:hover{background:rgba(41,128,185,.08);}
+.var-selector label .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;}
+.var-selector input[type="checkbox"]{cursor:pointer;margin:0;}
+.var-selector .all-btns{display:flex;gap:3px;margin-left:auto;}
+.var-selector .all-btns button{font-size:10px;padding:2px 7px;border:1px solid var(--border);background:#fff;border-radius:3px;cursor:pointer;color:var(--text);}
+.var-selector .all-btns button:hover{background:#eef2f7;}
+
 .bottom-bar{padding:8px 12px;border-top:1px solid var(--border);background:#f6f8fb;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
 .bottom-bar .spacer{flex:1;}
 
@@ -201,6 +213,14 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <span class="hint">예: 1u 3m → <code>.tran 1u 3m</code></span>
           <button class="apply" onclick="applyParams('tran')">netlist에 반영</button>
         </div>
+        <div class="var-selector" id="vars-tran" hidden>
+          <span class="var-label">📊 표시</span>
+          <span class="var-list"></span>
+          <span class="all-btns">
+            <button onclick="setAllVars('tran', true)">All</button>
+            <button onclick="setAllVars('tran', false)">None</button>
+          </span>
+        </div>
         <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
         <div class="chart-box" id="box-tran" hidden><canvas id="chart-tran"></canvas></div>
       </div>
@@ -214,6 +234,14 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>step <input id="p-dc-step" value="0.01" style="width:55px"></label>
           <button class="apply" onclick="applyParams('dc')">netlist에 반영</button>
         </div>
+        <div class="var-selector" id="vars-dc" hidden>
+          <span class="var-label">📊 표시</span>
+          <span class="var-list"></span>
+          <span class="all-btns">
+            <button onclick="setAllVars('dc', true)">All</button>
+            <button onclick="setAllVars('dc', false)">None</button>
+          </span>
+        </div>
         <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
         <div class="chart-box" id="box-dc" hidden><canvas id="chart-dc"></canvas></div>
       </div>
@@ -226,6 +254,14 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>fstart <input id="p-ac-fstart" value="1" style="width:55px"></label>
           <label>fstop <input id="p-ac-fstop" value="100Meg" style="width:65px"></label>
           <button class="apply" onclick="applyParams('ac')">netlist에 반영</button>
+        </div>
+        <div class="var-selector" id="vars-ac" hidden>
+          <span class="var-label">📊 표시</span>
+          <span class="var-list"></span>
+          <span class="all-btns">
+            <button onclick="setAllVars('ac', true)">All</button>
+            <button onclick="setAllVars('ac', false)">None</button>
+          </span>
         </div>
         <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
         <div class="ac-pair" id="box-ac" hidden>
@@ -248,6 +284,14 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>fstart <input id="p-noise-fstart" value="1" style="width:55px"></label>
           <label>fstop <input id="p-noise-fstop" value="100Meg" style="width:65px"></label>
           <button class="apply" onclick="applyParams('noise')">netlist에 반영</button>
+        </div>
+        <div class="var-selector" id="vars-noise" hidden>
+          <span class="var-label">📊 표시</span>
+          <span class="var-list"></span>
+          <span class="all-btns">
+            <button onclick="setAllVars('noise', true)">All</button>
+            <button onclick="setAllVars('noise', false)">None</button>
+          </span>
         </div>
         <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
         <div class="chart-box" id="box-noise" hidden><canvas id="chart-noise"></canvas></div>
@@ -677,25 +721,48 @@ function buildWrapper(kind) {
 /* ════════════════════════════════════════════════════════════════════
    wrdata 파싱
 ═══════════════════════════════════════════════════════════════════════ */
+// wrdata 헤더는 "x_name y1_name x_name y2_name ..." 형태 — x는 반복, y만 추출
+// 반환: { headers: ['x','y1','y2',...] | null, rows: [[x,y1,y2,...], ...] }
 function parseRealWrdata(txt) {
-  const rows = [];
+  const out = { headers: null, rows: [] };
   for (const ln of txt.split('\n')) {
     const t = ln.trim();
     if (!t || t.startsWith('*')) continue;
-    const nums = t.split(/\s+/).map(Number);
-    if (!nums.every(Number.isFinite)) continue;
-    if (nums.length < 2 || nums.length % 2 !== 0) continue;
-    const row = [nums[0]];
-    for (let i = 1; i < nums.length; i += 2) row.push(nums[i]);
-    rows.push(row);
+    const tokens = t.split(/\s+/);
+    const nums = tokens.map(Number);
+    const allNum = nums.every(Number.isFinite);
+    if (allNum) {
+      if (nums.length < 2 || nums.length % 2 !== 0) continue;
+      const row = [nums[0]];
+      for (let i = 1; i < nums.length; i += 2) row.push(nums[i]);
+      out.rows.push(row);
+    } else if (!out.headers) {
+      // 첫 비숫자 라인 = 헤더
+      const hdrs = [tokens[0]];
+      for (let i = 1; i < tokens.length; i += 2) {
+        if (tokens[i]) hdrs.push(tokens[i]);
+      }
+      out.headers = hdrs;
+    }
   }
-  return rows;
+  return out;
 }
 
+// AC: 헤더는 x + 변수당 (re,im) 두 컬럼이 같은 이름으로 반복됨
+// e.g. "freq v(out) v(out) v(in) v(in)" → ['freq','v(out)','v(in)']
 function parseAcWrdata(txt) {
-  const reals = parseRealWrdata(txt);
-  const out = [];
-  for (const row of reals) {
+  const real = parseRealWrdata(txt);
+  let headers = null;
+  if (real.headers) {
+    headers = [real.headers[0]];
+    // y-headers는 [v(out), v(out), v(in), v(in)] → 짝수 인덱스만 변수명
+    const ys = real.headers.slice(1);
+    for (let i = 0; i < ys.length; i += 2) {
+      if (ys[i]) headers.push(ys[i]);
+    }
+  }
+  const rows = [];
+  for (const row of real.rows) {
     const freq = row[0];
     const traces = [];
     for (let i = 1; i + 1 < row.length; i += 2) {
@@ -705,9 +772,9 @@ function parseAcWrdata(txt) {
       const ph = Math.atan2(im, re) * 180 / Math.PI;
       traces.push({mag: magDb, phase: ph});
     }
-    out.push({freq, traces});
+    rows.push({freq, traces});
   }
-  return out;
+  return { headers, rows };
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -864,26 +931,26 @@ function handleResult(kind, data, dt) {
   }
 
   if (kind === 'ac') {
-    const rows = parseAcWrdata(data.data);
-    if (rows.length) { lastResults.ac = rows; renderAC(rows); }
-    updateTabCount('ac', rows.length, true);
+    const parsed = parseAcWrdata(data.data);
+    if (parsed.rows.length) { lastResults.ac = parsed; renderAC(parsed); }
+    updateTabCount('ac', parsed.rows.length, true);
   } else if (kind === 'noise') {
-    const rows = parseRealWrdata(data.data);
-    if (rows.length) { lastResults.noise = rows; renderNoise(rows); }
-    updateTabCount('noise', rows.length, true);
+    const parsed = parseRealWrdata(data.data);
+    if (parsed.rows.length) { lastResults.noise = parsed; renderNoise(parsed); }
+    updateTabCount('noise', parsed.rows.length, true);
   } else {
-    const rows = parseRealWrdata(data.data);
-    if (rows.length) {
-      lastResults[kind] = rows;
-      const xlab = kind === 'tran' ? 'time [s]' : 'sweep var';
-      renderReal(kind, rows, xlab, 'V / I');
+    const parsed = parseRealWrdata(data.data);
+    if (parsed.rows.length) {
+      lastResults[kind] = parsed;
+      const xlab = kind === 'tran' ? 'time [s]' : (parsed.headers && parsed.headers[0]) || 'sweep var';
+      renderReal(kind, parsed, xlab, 'V / I');
     }
-    updateTabCount(kind, rows.length, true);
+    updateTabCount(kind, parsed.rows.length, true);
   }
 
   setStatus('done (' + dt + ' ms)', 'ok');
   const r = lastResults[kind];
-  const npts = kind === 'ac' ? (r ? r.length : 0) : (r ? r.length : 0);
+  const npts = r ? r.rows.length : 0;
   setRunMeta(KIND_LABEL[kind] + ' 완료 — ' + npts + ' pts, ' + dt + ' ms');
 
   document.getElementById('btn-run').disabled = false;
@@ -907,13 +974,22 @@ function updateTabCount(name, n, requested) {
 ═══════════════════════════════════════════════════════════════════════ */
 const COLORS = ['#2980b9','#e67e22','#27ae60','#c0392b','#8e44ad','#16a085','#f39c12','#34495e'];
 
-function buildDatasets(rows, labelPrefix) {
-  const nTraces = rows[0].length - 1;
+function getYLabels(parsed, fallbackPrefix, count) {
+  const out = [];
+  for (let k = 0; k < count; k++) {
+    out.push((parsed.headers && parsed.headers[k+1]) || (fallbackPrefix + (k+1)));
+  }
+  return out;
+}
+
+function buildDatasets(parsed) {
+  const nTraces = parsed.rows[0].length - 1;
+  const labels = getYLabels(parsed, 'y', nTraces);
   const datasets = [];
   for (let k = 0; k < nTraces; k++) {
     datasets.push({
-      label: labelPrefix + (k+1),
-      data: rows.map(r => ({x: r[0], y: r[k+1]})),
+      label: labels[k],
+      data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
       borderColor: COLORS[k % COLORS.length],
       backgroundColor: COLORS[k % COLORS.length],
       borderWidth: 1.5, pointRadius: 0, tension: 0
@@ -922,33 +998,37 @@ function buildDatasets(rows, labelPrefix) {
   return datasets;
 }
 
-function renderReal(tab, rows, xlab, ylab) {
+function renderReal(tab, parsed, xlab, ylab) {
   document.getElementById('empty-' + tab).style.display = 'none';
   document.getElementById('box-' + tab).hidden = false;
   if (charts[tab]) { charts[tab].destroy(); charts[tab] = null; }
   const ctx = document.getElementById('chart-' + tab).getContext('2d');
+  const datasets = buildDatasets(parsed);
   charts[tab] = new Chart(ctx, {
     type: 'line',
-    data: { datasets: buildDatasets(rows, 'y') },
+    data: { datasets },
     options: chartOpts(xlab, ylab, false, false)
   });
+  buildVarSelector(tab, datasets.map(d => d.label));
 }
 
-function renderAC(acRows) {
+function renderAC(parsed) {
   document.getElementById('empty-ac').style.display = 'none';
   document.getElementById('box-ac').hidden = false;
+  const acRows = parsed.rows;
   const nTraces = acRows[0].traces.length;
+  const labels = getYLabels(parsed, 'H', nTraces);
   const magDS = [], phaseDS = [];
   for (let k = 0; k < nTraces; k++) {
     magDS.push({
-      label: 'H' + (k+1),
+      label: labels[k],
       data: acRows.map(r => ({x: r.freq, y: r.traces[k].mag})),
       borderColor: COLORS[k % COLORS.length],
       backgroundColor: COLORS[k % COLORS.length],
       borderWidth: 1.5, pointRadius: 0, tension: 0
     });
     phaseDS.push({
-      label: 'H' + (k+1),
+      label: labels[k],
       data: acRows.map(r => ({x: r.freq, y: r.traces[k].phase})),
       borderColor: COLORS[k % COLORS.length],
       backgroundColor: COLORS[k % COLORS.length],
@@ -965,19 +1045,24 @@ function renderAC(acRows) {
     type: 'line', data: { datasets: phaseDS },
     options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
   });
+  buildVarSelector('ac', labels);
 }
 
-function renderNoise(rows) {
+function renderNoise(parsed) {
   document.getElementById('empty-noise').style.display = 'none';
   document.getElementById('box-noise').hidden = false;
   if (charts.noise) { charts.noise.destroy(); charts.noise = null; }
-  const nTraces = rows[0].length - 1;
-  const labels = ['inoise', 'onoise', 'n3', 'n4'];
+  const nTraces = parsed.rows[0].length - 1;
+  const fallback = ['inoise_spectrum', 'onoise_spectrum'];
+  const labels = [];
+  for (let k = 0; k < nTraces; k++) {
+    labels.push((parsed.headers && parsed.headers[k+1]) || fallback[k] || ('y'+(k+1)));
+  }
   const datasets = [];
   for (let k = 0; k < nTraces; k++) {
     datasets.push({
-      label: labels[k] || ('y' + (k+1)),
-      data: rows.map(r => ({x: r[0], y: r[k+1]})),
+      label: labels[k],
+      data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
       borderColor: COLORS[k % COLORS.length],
       backgroundColor: COLORS[k % COLORS.length],
       borderWidth: 1.5, pointRadius: 0, tension: 0
@@ -986,6 +1071,62 @@ function renderNoise(rows) {
   charts.noise = new Chart(document.getElementById('chart-noise').getContext('2d'), {
     type: 'line', data: { datasets },
     options: chartOpts('frequency [Hz]', '√(V²/Hz) or A²/Hz', true, true)
+  });
+  buildVarSelector('noise', labels);
+}
+
+/* ── 노드 체크박스 (var-selector) ── */
+function buildVarSelector(tab, names) {
+  const sel = document.getElementById('vars-' + tab);
+  if (!sel) return;
+  if (!names || names.length === 0) { sel.hidden = true; return; }
+  sel.hidden = false;
+  const list = sel.querySelector('.var-list');
+  list.textContent = '';
+  names.forEach((name, idx) => {
+    const lbl = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = true;
+    cb.dataset.idx = String(idx);
+    cb.addEventListener('change', () => toggleVar(tab, idx, cb.checked));
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    swatch.style.background = COLORS[idx % COLORS.length];
+    const txt = document.createElement('span');
+    txt.textContent = name;
+    lbl.appendChild(cb);
+    lbl.appendChild(swatch);
+    lbl.appendChild(txt);
+    list.appendChild(lbl);
+  });
+}
+
+function toggleVar(tab, idx, visible) {
+  if (tab === 'ac') {
+    if (charts.ac_mag && charts.ac_mag.data.datasets[idx]) {
+      charts.ac_mag.data.datasets[idx].hidden = !visible;
+      charts.ac_mag.update('none');
+    }
+    if (charts.ac_phase && charts.ac_phase.data.datasets[idx]) {
+      charts.ac_phase.data.datasets[idx].hidden = !visible;
+      charts.ac_phase.update('none');
+    }
+  } else {
+    const c = charts[tab];
+    if (c && c.data.datasets[idx]) {
+      c.data.datasets[idx].hidden = !visible;
+      c.update('none');
+    }
+  }
+}
+
+function setAllVars(tab, on) {
+  const sel = document.getElementById('vars-' + tab);
+  if (!sel) return;
+  sel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.checked = on;
+    toggleVar(tab, parseInt(cb.dataset.idx, 10), on);
   });
 }
 
@@ -1021,23 +1162,25 @@ function chartOpts(xlab, ylab, xLog, yLog) {
 function exportCSV() {
   let csv = '', filename = activeTab + '.csv';
   if (activeTab === 'ac' && lastResults.ac) {
-    const n = lastResults.ac[0].traces.length;
-    const headers = ['freq'];
-    for (let k = 0; k < n; k++) { headers.push('H'+(k+1)+'_mag_dB'); headers.push('H'+(k+1)+'_phase_deg'); }
-    const rows = lastResults.ac.map(r => {
+    const parsed = lastResults.ac;
+    const nTraces = parsed.rows[0].traces.length;
+    const ylabs = getYLabels(parsed, 'H', nTraces);
+    const headers = [(parsed.headers && parsed.headers[0]) || 'freq'];
+    ylabs.forEach(lab => { headers.push(lab + '_mag_dB'); headers.push(lab + '_phase_deg'); });
+    const rows = parsed.rows.map(r => {
       const row = [r.freq];
       r.traces.forEach(t => { row.push(t.mag); row.push(t.phase); });
       return row;
     });
     csv = toCSV(rows, headers);
   } else if (lastResults[activeTab]) {
-    const rows = lastResults[activeTab];
-    let xlab = 'x';
-    if (activeTab === 'tran') xlab = 'time';
-    else if (activeTab === 'dc') xlab = 'sweep';
-    else if (activeTab === 'noise') xlab = 'freq';
-    const headers = [xlab].concat(seriesLabels(rows[0].length-1, activeTab === 'noise' ? null : 'y'));
-    csv = toCSV(rows, headers);
+    const parsed = lastResults[activeTab];
+    const nTraces = parsed.rows[0].length - 1;
+    const xlab = (parsed.headers && parsed.headers[0]) || (
+      activeTab === 'tran' ? 'time' : activeTab === 'noise' ? 'freq' : 'sweep'
+    );
+    const headers = [xlab].concat(getYLabels(parsed, 'y', nTraces));
+    csv = toCSV(parsed.rows, headers);
   } else {
     alert('내보낼 데이터가 없습니다 (현재 탭에 결과 없음).');
     return;
@@ -1047,13 +1190,6 @@ function exportCSV() {
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
-}
-
-function seriesLabels(n, prefix) {
-  const noiseNames = ['inoise', 'onoise', 'n3', 'n4'];
-  const out = [];
-  for (let k = 0; k < n; k++) out.push(prefix ? (prefix + (k+1)) : (noiseNames[k] || ('y'+(k+1))));
-  return out;
 }
 
 function toCSV(rows, headers) {
