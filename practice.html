@@ -53,7 +53,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .panel{background:var(--panel);border-radius:8px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 
 /* LEFT */
-.left{display:grid;grid-template-rows:auto 1fr auto;gap:8px;padding:10px;}
+.left{display:grid;grid-template-rows:auto 1fr auto auto;gap:6px;padding:10px;}
+.resizer-h{height:7px;cursor:row-resize;background:#dfe6e9;border-radius:3px;position:relative;flex-shrink:0;transition:background .15s;}
+.resizer-h:hover,.resizer-h.dragging{background:var(--secondary);}
+.resizer-h::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:2px;background:#95a5a6;border-radius:1px;}
+.resizer-h:hover::before,.resizer-h.dragging::before{background:#fff;}
 .left-toolbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
 .left-toolbar .label{font-weight:700;color:var(--primary);font-size:12px;}
 .left-toolbar .spacer{flex:1;}
@@ -123,10 +127,11 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .chart-card .card-allbtns button{flex:1;font-size:10px;padding:2px 0;border:1px solid var(--border);background:#fff;border-radius:3px;cursor:pointer;color:var(--text);}
 .chart-card .card-allbtns button:hover{background:#eef2f7;}
 .chart-card .card-chart{display:flex;flex-direction:column;min-height:0;min-width:0;}
-.chart-card .card-chart canvas{flex:1;min-height:0;width:100%!important;}
 .chart-card .card-chart.ac-pair{display:grid;grid-template-rows:1fr 1fr;gap:6px;}
 .chart-card .card-chart .ac-sub{display:flex;flex-direction:column;min-height:0;}
-.chart-card .card-chart .ac-sub canvas{flex:1;min-height:0;}
+/* canvas-wrap: position:relative + canvas position:absolute → Chart.js responsive 안정화 */
+.chart-card .canvas-wrap{position:relative;flex:1;min-height:0;width:100%;}
+.chart-card .canvas-wrap > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
 
 .add-chart-bar{display:flex;justify-content:center;padding:4px 0;flex-shrink:0;}
 .add-chart-bar button{padding:5px 14px;border:1px dashed var(--secondary);background:#fff;color:var(--secondary);border-radius:5px;cursor:pointer;font-size:11.5px;font-weight:600;}
@@ -222,7 +227,9 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
       <textarea id="editor"></textarea>
     </div>
 
-    <div class="log-wrap">
+    <div class="resizer-h" id="splitter-h" title="드래그해서 에디터/로그 높이 조절"></div>
+
+    <div class="log-wrap" id="log-wrap">
       <div class="log-head">
         <span>📜 ngspice 로그</span>
         <span class="meta" id="log-meta">대기 중</span>
@@ -809,7 +816,52 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   setupShortcuts();
+  setupSplitter();
 });
+
+/* ── 에디터 / 로그 높이 splitter ── */
+function setupSplitter() {
+  const r = document.getElementById('splitter-h');
+  const log = document.getElementById('log-wrap');
+  const leftPanel = document.querySelector('.left');
+  if (!r || !log || !leftPanel) return;
+
+  let dragging = false, startY = 0, startH = 0;
+
+  const onDown = (clientY) => {
+    dragging = true;
+    startY = clientY;
+    startH = log.offsetHeight;
+    r.classList.add('dragging');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+  };
+  const onMove = (clientY) => {
+    if (!dragging) return;
+    const dy = clientY - startY;
+    // 위로 드래그 → 로그 커짐, 아래로 → 로그 작아짐
+    const maxH = Math.max(120, leftPanel.clientHeight - 240);
+    const newH = Math.max(80, Math.min(maxH, startH - dy));
+    log.style.height = newH + 'px';
+    if (cm) cm.refresh();
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    r.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+
+  r.addEventListener('mousedown', (e) => { onDown(e.clientY); e.preventDefault(); });
+  document.addEventListener('mousemove', (e) => onMove(e.clientY));
+  document.addEventListener('mouseup', onUp);
+
+  // touch (태블릿용)
+  r.addEventListener('touchstart', (e) => { onDown(e.touches[0].clientY); e.preventDefault(); }, {passive:false});
+  document.addEventListener('touchmove', (e) => { if (dragging) { onMove(e.touches[0].clientY); e.preventDefault(); } }, {passive:false});
+  document.addEventListener('touchend', onUp);
+}
 
 /* ── 키보드 단축키 ── */
 function setupShortcuts() {
@@ -1448,12 +1500,18 @@ function createCard(tab) {
     right.classList.add('ac-pair');
     const subM = document.createElement('div'); subM.className = 'ac-sub';
     const lblM = document.createElement('div'); lblM.className = 'lbl'; lblM.textContent = '|H(jω)| [dB]';
+    const cwM = document.createElement('div'); cwM.className = 'canvas-wrap';
     const cvM = document.createElement('canvas');
-    subM.appendChild(lblM); subM.appendChild(cvM);
+    cwM.appendChild(cvM);
+    subM.appendChild(lblM); subM.appendChild(cwM);
+
     const subP = document.createElement('div'); subP.className = 'ac-sub';
     const lblP = document.createElement('div'); lblP.className = 'lbl'; lblP.textContent = '∠H(jω) [deg]';
+    const cwP = document.createElement('div'); cwP.className = 'canvas-wrap';
     const cvP = document.createElement('canvas');
-    subP.appendChild(lblP); subP.appendChild(cvP);
+    cwP.appendChild(cvP);
+    subP.appendChild(lblP); subP.appendChild(cwP);
+
     right.appendChild(subM); right.appendChild(subP);
     card.appendChild(right);
 
@@ -1471,8 +1529,10 @@ function createCard(tab) {
       options: chartOpts('frequency [Hz]', '∠H [deg]', true, false)
     });
   } else {
+    const cw = document.createElement('div'); cw.className = 'canvas-wrap';
     const cv = document.createElement('canvas');
-    right.appendChild(cv);
+    cw.appendChild(cv);
+    right.appendChild(cw);
     card.appendChild(right);
 
     document.getElementById('charts-' + tab).appendChild(card);
