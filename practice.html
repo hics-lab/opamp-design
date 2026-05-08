@@ -38,6 +38,8 @@ header h1{font-size:16px;font-weight:700;}
 .btn{padding:5px 12px;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;}
 .btn-pri{background:var(--accent);color:#fff;} .btn-pri:hover{background:#1f9b54;}
 .btn-pri:disabled{background:#9ec0a8;cursor:not-allowed;}
+.kbd{display:inline-block;padding:1px 5px;margin-left:4px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);border-radius:3px;font-size:9.5px;font-family:'Consolas','Courier New',monospace;font-weight:600;opacity:.85;letter-spacing:.3px;}
+.tab .kbd{background:#dfe6e9;border-color:var(--border);color:var(--muted);font-size:9px;}
 .btn-warn{background:#e67e22;color:#fff;} .btn-warn:hover{background:#d35400;}
 .btn-warn:disabled{background:#f1c894;cursor:not-allowed;}
 .btn-rst{background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.35);}
@@ -233,15 +235,15 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
   <!-- RIGHT -->
   <section class="panel right">
     <div class="tabs" id="tabs">
-      <div class="tab active" data-tab="tran">Tran <span class="count">—</span></div>
-      <div class="tab" data-tab="dc">DC <span class="count">—</span></div>
-      <div class="tab" data-tab="ac">AC <span class="count">—</span></div>
-      <div class="tab" data-tab="noise">Noise <span class="count">—</span></div>
+      <div class="tab active" data-tab="tran" title="Tran 탭 + 실행: Alt+1">Tran <span class="kbd">⌥1</span> <span class="count">—</span></div>
+      <div class="tab" data-tab="dc" title="DC 탭 + 실행: Alt+2">DC <span class="kbd">⌥2</span> <span class="count">—</span></div>
+      <div class="tab" data-tab="ac" title="AC 탭 + 실행: Alt+3">AC <span class="kbd">⌥3</span> <span class="count">—</span></div>
+      <div class="tab" data-tab="noise" title="Noise 탭 + 실행: Alt+4">Noise <span class="kbd">⌥4</span> <span class="count">—</span></div>
     </div>
 
     <div class="tab-toolbar">
-      <button id="btn-run" class="btn btn-pri" onclick="runActiveTab()">▶ Run <span id="run-kind">.tran</span></button>
-      <button id="btn-stop" class="btn btn-warn" onclick="stopSim()" disabled>■ Stop</button>
+      <button id="btn-run" class="btn btn-pri" onclick="runActiveTab()" title="현재 탭 실행 (F5 / Ctrl+Enter)">▶ Run <span id="run-kind">.tran</span><span class="kbd">F5</span></button>
+      <button id="btn-stop" class="btn btn-warn" onclick="stopSim()" disabled title="실행 중지 (Esc)">■ Stop<span class="kbd">Esc</span></button>
       <span id="status" class="status">idle</span>
     </div>
 
@@ -377,10 +379,21 @@ quit
     <h3>4. ngspice 로그</h3>
     <p>ngspice의 stdout/stderr 전체가 좌측 하단 <b>📜 ngspice 로그</b>에 표시됩니다. 디버깅 시 참고하세요.</p>
 
-    <h3>5. 예제</h3>
-    <p>헤더의 <b>예제 로드</b> 드롭다운에서 4종 예제를 즉시 로드할 수 있습니다.</p>
+    <h3>5. 키보드 단축키</h3>
+    <ul>
+      <li><code>F5</code> 또는 <code>Ctrl+Enter</code>: 현재 탭의 해석 실행</li>
+      <li><code>Esc</code>: 실행 중지</li>
+      <li><code>Alt+1</code>: Tran 탭 전환 + 실행</li>
+      <li><code>Alt+2</code>: DC 탭 전환 + 실행</li>
+      <li><code>Alt+3</code>: AC 탭 전환 + 실행</li>
+      <li><code>Alt+4</code>: Noise 탭 전환 + 실행</li>
+    </ul>
+    <p style="font-size:11.5px;color:var(--muted);">단축키는 editor 안/밖 어디서나 작동합니다. 다른 입력란에 포커스가 있을 때는 비활성화.</p>
 
-    <h3>6. 제한</h3>
+    <h3>6. 예제</h3>
+    <p>헤더의 <b>예제 로드</b> 드롭다운(빠른 로드) 또는 <b>📚 갤러리</b> 버튼(카테고리별 12종)에서 회로를 로드할 수 있습니다.</p>
+
+    <h3>7. 제한</h3>
     <ul>
       <li>실행은 30초 timeout. AC sweep을 너무 광대역으로 잡으면 중단될 수 있습니다.</li>
       <li>nested <code>.dc</code> sweep은 1차 sweep만 표시됩니다.</li>
@@ -794,7 +807,48 @@ window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.tab').forEach(t => {
     t.addEventListener('click', () => switchTab(t.dataset.tab));
   });
+
+  setupShortcuts();
 });
+
+/* ── 키보드 단축키 ── */
+function setupShortcuts() {
+  // CodeMirror 내부에서 동작
+  cm.setOption('extraKeys', {
+    'F5':         function() { runActiveTab(); },
+    'Ctrl-Enter': function() { runActiveTab(); },
+    'Cmd-Enter':  function() { runActiveTab(); },
+    'Esc':        function() { stopSim(); },
+    'Alt-1':      function() { switchTab('tran');  runKind('tran'); },
+    'Alt-2':      function() { switchTab('dc');    runKind('dc'); },
+    'Alt-3':      function() { switchTab('ac');    runKind('ac'); },
+    'Alt-4':      function() { switchTab('noise'); runKind('noise'); },
+  });
+
+  // editor 외부에서 동작 (document 레벨)
+  document.addEventListener('keydown', (e) => {
+    // 다른 input/textarea/select에 입력 중이면 통과
+    if (e.target.matches('input, textarea, select')) return;
+    // CodeMirror가 이미 처리한 경우 통과
+    if (cm.hasFocus()) return;
+
+    if (e.key === 'F5') {
+      e.preventDefault();
+      runActiveTab();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runActiveTab();
+    } else if (e.altKey && !e.ctrlKey && !e.metaKey && /^[1-4]$/.test(e.key)) {
+      e.preventDefault();
+      const tabs = ['tran','dc','ac','noise'];
+      const tab = tabs[parseInt(e.key, 10) - 1];
+      switchTab(tab);
+      runKind(tab);
+    } else if (e.key === 'Escape') {
+      stopSim();
+    }
+  });
+}
 
 function switchTab(name) {
   activeTab = name;
