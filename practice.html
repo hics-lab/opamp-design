@@ -149,7 +149,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
       <option value="">예제 로드…</option>
     </select>
     <button class="btn btn-rst" onclick="showHelp()">❓ 도움말</button>
-    <a class="btn btn-rst" href="opamp_design.html" style="text-decoration:none;display:inline-block;">↩ 5T OTA 페이지</a>
   </div>
 </header>
 
@@ -571,11 +570,11 @@ function buildAnalysisLine(kind) {
   return null;
 }
 
-function applyParams(kind) {
+function writeAnalysisLineToNetlist(kind, silent) {
   const line = buildAnalysisLine(kind);
   if (!line) {
-    alert('필수 파라미터가 비어 있습니다. 모든 입력란을 채워주세요.');
-    return;
+    if (!silent) alert('필수 파라미터가 비어 있습니다. 모든 입력란을 채워주세요.');
+    return false;
   }
   let src = cm.getValue();
   const re = new RegExp('^\\s*\\.' + kind + '\\b.*$', 'im');
@@ -586,8 +585,15 @@ function applyParams(kind) {
   } else {
     src = (src.endsWith('\n') ? src : src + '\n') + line + '\n.end\n';
   }
-  cm.setValue(src);
-  refreshDetected();
+  if (src !== cm.getValue()) {
+    cm.setValue(src);
+    refreshDetected();
+  }
+  return true;
+}
+
+function applyParams(kind) {
+  writeAnalysisLineToNetlist(kind, false);
 }
 
 function readParamsFromNetlist(kind) {
@@ -714,13 +720,16 @@ function runActiveTab() {
 function runKind(kind) {
   if (currentWorker) return;
 
+  // Run 시 입력란 값을 netlist에 자동 반영 (입력이 모두 차 있을 때만)
+  writeAnalysisLineToNetlist(kind, true);
+
   const src = cm.getValue();
   if (!src.trim()) { setStatus('netlist 비어있음', 'err'); return; }
 
   const ana = detectAnalyses(src);
   if (!ana[kind]) {
     setStatus('netlist에 .' + kind + ' 없음', 'err');
-    setRunMeta('netlist에 ' + KIND_LABEL[kind] + ' 라인을 추가한 뒤 다시 시도하세요.');
+    setRunMeta('입력란을 채우고 ▶ Run을 누르거나, 직접 ' + KIND_LABEL[kind] + ' 라인을 작성하세요.');
     return;
   }
 
