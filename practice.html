@@ -103,6 +103,17 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .ac-sub .lbl{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:3px;}
 .ac-sub canvas{flex:1;}
 
+/* PARAM ROW (per tab) */
+.param-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;font-size:11.5px;flex-shrink:0;}
+.param-row .pl{color:#8e44ad;font-weight:700;font-family:'Consolas',monospace;font-size:12px;min-width:48px;}
+.param-row label{display:flex;align-items:center;gap:4px;color:#555;font-size:11px;}
+.param-row input[type="text"],.param-row input:not([type]){width:62px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;font-family:'Consolas',monospace;font-size:11px;color:var(--text);}
+.param-row input:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 2px rgba(41,128,185,.15);}
+.param-row select{padding:3px 6px;border:1px solid #ccc;border-radius:3px;font-size:11px;background:#fff;}
+.param-row button.apply{padding:4px 10px;border:1px solid var(--secondary);background:#fff;color:var(--secondary);border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;margin-left:auto;}
+.param-row button.apply:hover{background:var(--secondary);color:#fff;}
+.param-row .hint{color:var(--muted);font-size:10px;font-style:italic;}
+
 .bottom-bar{padding:8px 12px;border-top:1px solid var(--border);background:#f6f8fb;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
 .bottom-bar .spacer{flex:1;}
 
@@ -184,16 +195,39 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 
     <div class="tab-area">
       <div class="tab-pane active" id="pane-tran">
+        <div class="param-row">
+          <span class="pl">.tran</span>
+          <label>tstep <input id="p-tran-tstep" value="1u" placeholder="1u"></label>
+          <label>tstop <input id="p-tran-tstop" value="3m" placeholder="3m"></label>
+          <span class="hint">예: 1u 3m → <code>.tran 1u 3m</code></span>
+          <button class="apply" onclick="applyParams('tran')">netlist에 반영</button>
+        </div>
         <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
         <div class="chart-box" id="box-tran" hidden><canvas id="chart-tran"></canvas></div>
       </div>
 
       <div class="tab-pane" id="pane-dc">
+        <div class="param-row">
+          <span class="pl">.dc</span>
+          <label>src <input id="p-dc-src" value="Vin" placeholder="Vin" style="width:55px"></label>
+          <label>start <input id="p-dc-start" value="0" style="width:50px"></label>
+          <label>stop <input id="p-dc-stop" value="5" style="width:50px"></label>
+          <label>step <input id="p-dc-step" value="0.01" style="width:55px"></label>
+          <button class="apply" onclick="applyParams('dc')">netlist에 반영</button>
+        </div>
         <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
         <div class="chart-box" id="box-dc" hidden><canvas id="chart-dc"></canvas></div>
       </div>
 
       <div class="tab-pane" id="pane-ac">
+        <div class="param-row">
+          <span class="pl">.ac</span>
+          <label>type <select id="p-ac-type"><option>DEC</option><option>OCT</option><option>LIN</option></select></label>
+          <label>N <input id="p-ac-n" value="20" style="width:42px"></label>
+          <label>fstart <input id="p-ac-fstart" value="1" style="width:55px"></label>
+          <label>fstop <input id="p-ac-fstop" value="100Meg" style="width:65px"></label>
+          <button class="apply" onclick="applyParams('ac')">netlist에 반영</button>
+        </div>
         <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
         <div class="ac-pair" id="box-ac" hidden>
           <div class="ac-sub"><div class="lbl">|H(jω)| [dB]</div><canvas id="chart-ac-mag"></canvas></div>
@@ -205,6 +239,16 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
         <div class="warn-banner">
           <b>⚠ Noise 결과 신뢰도 주의:</b> ETRI 0.5μm 모델은 <b>1/f noise 파라미터(NOIA/NOIB/NOIC/KF/AF)를 포함하지 않습니다.</b>
           본 결과는 <b>thermal noise만</b> 반영하며, 저주파 input-referred noise는 실제값보다 수십~수백 배 낮게 출력됩니다.
+        </div>
+        <div class="param-row">
+          <span class="pl">.noise</span>
+          <label>output <input id="p-noise-out" value="V(out)" style="width:65px"></label>
+          <label>src <input id="p-noise-src" value="Vin" style="width:50px"></label>
+          <label>type <select id="p-noise-type"><option>DEC</option><option>OCT</option><option>LIN</option></select></label>
+          <label>N <input id="p-noise-n" value="20" style="width:42px"></label>
+          <label>fstart <input id="p-noise-fstart" value="1" style="width:55px"></label>
+          <label>fstop <input id="p-noise-fstop" value="100Meg" style="width:65px"></label>
+          <button class="apply" onclick="applyParams('noise')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
         <div class="chart-box" id="box-noise" hidden><canvas id="chart-noise"></canvas></div>
@@ -413,6 +457,7 @@ window.addEventListener('DOMContentLoaded', () => {
   cm.setValue(EXAMPLES[0].netlist);
   cm.on('change', refreshDetected);
   refreshDetected();
+  refreshAllParams();
 
   const sel = document.getElementById('ex-select');
   EXAMPLES.forEach((e, i) => {
@@ -424,7 +469,7 @@ window.addEventListener('DOMContentLoaded', () => {
   sel.addEventListener('change', () => {
     if (sel.value === '') return;
     const ex = EXAMPLES[+sel.value];
-    if (ex) cm.setValue(ex.netlist);
+    if (ex) { cm.setValue(ex.netlist); refreshAllParams(); }
     sel.value = '';
   });
 
@@ -438,6 +483,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
   document.getElementById('run-kind').textContent = KIND_LABEL[name];
+  readParamsFromNetlist(name);
   setTimeout(() => Object.values(charts).forEach(c => c && c.resize()), 30);
 }
 
@@ -496,6 +542,90 @@ function refreshDetected() {
   document.getElementById('detected-summary').textContent = list.length
     ? '검출됨: ' + list.join(', ')
     : '검출된 해석 없음';
+}
+
+/* ── 파라미터 입력 ↔ netlist 동기화 ── */
+function buildAnalysisLine(kind) {
+  const v = (id) => document.getElementById(id).value.trim();
+  if (kind === 'tran') {
+    const a = v('p-tran-tstep'), b = v('p-tran-tstop');
+    if (!a || !b) return null;
+    return `.tran ${a} ${b}`;
+  }
+  if (kind === 'dc') {
+    const s = v('p-dc-src'), a = v('p-dc-start'), b = v('p-dc-stop'), c = v('p-dc-step');
+    if (!s || !a || !b || !c) return null;
+    return `.dc ${s} ${a} ${b} ${c}`;
+  }
+  if (kind === 'ac') {
+    const t = v('p-ac-type'), n = v('p-ac-n'), a = v('p-ac-fstart'), b = v('p-ac-fstop');
+    if (!t || !n || !a || !b) return null;
+    return `.ac ${t} ${n} ${a} ${b}`;
+  }
+  if (kind === 'noise') {
+    const o = v('p-noise-out'), s = v('p-noise-src'), t = v('p-noise-type'),
+          n = v('p-noise-n'), a = v('p-noise-fstart'), b = v('p-noise-fstop');
+    if (!o || !s || !t || !n || !a || !b) return null;
+    return `.noise ${o} ${s} ${t} ${n} ${a} ${b}`;
+  }
+  return null;
+}
+
+function applyParams(kind) {
+  const line = buildAnalysisLine(kind);
+  if (!line) {
+    alert('필수 파라미터가 비어 있습니다. 모든 입력란을 채워주세요.');
+    return;
+  }
+  let src = cm.getValue();
+  const re = new RegExp('^\\s*\\.' + kind + '\\b.*$', 'im');
+  if (re.test(src)) {
+    src = src.replace(re, line);
+  } else if (/^\s*\.end\s*$/im.test(src)) {
+    src = src.replace(/^\s*\.end\s*$/im, line + '\n.end');
+  } else {
+    src = (src.endsWith('\n') ? src : src + '\n') + line + '\n.end\n';
+  }
+  cm.setValue(src);
+  refreshDetected();
+}
+
+function readParamsFromNetlist(kind) {
+  const src = cm.getValue();
+  const line = extractAnalysisLine(src, kind);
+  if (!line) return;
+  const noComm = line.replace(/;.*$/, '').trim();
+  const tokens = noComm.split(/\s+/);
+  const setIf = (id, val) => {
+    if (val === undefined) return;
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) el.value = val;
+  };
+  if (kind === 'tran') {
+    setIf('p-tran-tstep', tokens[1]);
+    setIf('p-tran-tstop', tokens[2]);
+  } else if (kind === 'dc') {
+    setIf('p-dc-src',   tokens[1]);
+    setIf('p-dc-start', tokens[2]);
+    setIf('p-dc-stop',  tokens[3]);
+    setIf('p-dc-step',  tokens[4]);
+  } else if (kind === 'ac') {
+    setIf('p-ac-type',  tokens[1] && tokens[1].toUpperCase());
+    setIf('p-ac-n',     tokens[2]);
+    setIf('p-ac-fstart',tokens[3]);
+    setIf('p-ac-fstop', tokens[4]);
+  } else if (kind === 'noise') {
+    setIf('p-noise-out',   tokens[1]);
+    setIf('p-noise-src',   tokens[2]);
+    setIf('p-noise-type',  tokens[3] && tokens[3].toUpperCase());
+    setIf('p-noise-n',     tokens[4]);
+    setIf('p-noise-fstart',tokens[5]);
+    setIf('p-noise-fstop', tokens[6]);
+  }
+}
+
+function refreshAllParams() {
+  ['tran','dc','ac','noise'].forEach(readParamsFromNetlist);
 }
 
 // 한 종류의 해석 line만 추출 (학생 netlist 그대로)
