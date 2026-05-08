@@ -306,8 +306,8 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 
       <div class="tab-pane" id="pane-noise">
         <div class="warn-banner">
-          <b>⚠ Noise 결과 신뢰도 주의:</b> ETRI 0.5μm 모델은 <b>1/f noise 파라미터(NOIA/NOIB/NOIC/KF/AF)를 포함하지 않습니다.</b>
-          본 결과는 <b>thermal noise만</b> 반영하며, 저주파 input-referred noise는 실제값보다 수십~수백 배 낮게 출력됩니다.
+          <b>📌 필수:</b> 입력 source에 <code>AC 1</code> 이 있어야 합니다 (예: <code>V1 in 0 DC 5 AC 1</code>). 없으면 ngspice가 <i>"Noise input source has no AC value"</i> 오류를 내고 멈춥니다.<br>
+          <b>⚠ 1/f noise 미포함:</b> ETRI 0.5μm 모델에는 NOIA/NOIB/NOIC/KF/AF 파라미터가 없어 <b>thermal noise만</b> 반영됩니다. 저주파 input-referred noise는 실제보다 수십~수백 배 낮게 나옵니다.
         </div>
         <div class="param-row">
           <span class="pl">.noise</span>
