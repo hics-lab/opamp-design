@@ -116,12 +116,12 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 /* CHART CARD (variable list left + chart right) */
 .charts-container{display:flex;flex-direction:column;flex:1;min-height:0;gap:6px;}
 .chart-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;}
-.chart-card{display:grid;grid-template-columns:155px 1fr;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:#fafbfd;min-height:240px;flex-shrink:0;}
-.chart-card .card-vars{display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--border);padding-right:8px;min-width:0;}
+.chart-card{display:grid;grid-template-columns:155px 1fr;gap:8px;padding:8px;border:1px solid var(--border);border-radius:6px;background:#fafbfd;min-height:280px;max-height:60vh;flex-shrink:0;}
+.chart-card .card-vars{display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--border);padding-right:8px;min-width:0;min-height:0;}
 .chart-card .card-vars-head{font-size:10px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between;}
 .chart-card .card-close{background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;line-height:1;padding:0 4px;border-radius:3px;}
 .chart-card .card-close:hover{background:rgba(192,57,43,.1);}
-.chart-card .var-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px;}
+.chart-card .var-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1px;}
 .chart-card .var-list label{display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 4px;border-radius:3px;font-family:'Consolas','Courier New',monospace;font-size:11px;line-height:1.3;}
 .chart-card .var-list label:hover{background:rgba(41,128,185,.08);}
 .chart-card .var-list label .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;flex-shrink:0;}
@@ -2495,19 +2495,8 @@ function createCard(tab) {
     });
   }
 
-  // Build checkboxes (전체 변수 표시; V/I 그룹 헤더로 시각적 구분)
-  let lastGroup = null;
-  labels.forEach((name, idx) => {
-    if (splitVI) {
-      const grp = (types[idx] === 'current') ? 'I' : 'V';
-      if (grp !== lastGroup) {
-        const sep = document.createElement('div');
-        sep.className = 'var-group-head';
-        sep.textContent = (grp === 'V' ? '⚡ V' : '🔋 I');
-        varList.appendChild(sep);
-        lastGroup = grp;
-      }
-    }
+  // Build checkboxes — splitVI일 때 V를 먼저 모두, 다음에 I를 모두 표시
+  const appendCheckbox = (idx) => {
     const lbl = document.createElement('label');
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -2519,13 +2508,37 @@ function createCard(tab) {
     swatch.style.background = COLORS[idx % COLORS.length];
     const nm = document.createElement('span');
     nm.className = 'nm';
-    nm.textContent = name;
-    nm.title = name;
+    nm.textContent = labels[idx];
+    nm.title = labels[idx];
     lbl.appendChild(cb);
     lbl.appendChild(swatch);
     lbl.appendChild(nm);
     varList.appendChild(lbl);
-  });
+  };
+  const appendHead = (text) => {
+    const sep = document.createElement('div');
+    sep.className = 'var-group-head';
+    sep.textContent = text;
+    varList.appendChild(sep);
+  };
+
+  if (splitVI) {
+    const vIdxs = [], iIdxs = [];
+    labels.forEach((_, k) => {
+      if (types[k] === 'current') iIdxs.push(k);
+      else vIdxs.push(k);
+    });
+    if (vIdxs.length) {
+      appendHead('⚡ Voltage');
+      vIdxs.forEach(appendCheckbox);
+    }
+    if (iIdxs.length) {
+      appendHead('🔋 Current');
+      iIdxs.forEach(appendCheckbox);
+    }
+  } else {
+    labels.forEach((_, idx) => appendCheckbox(idx));
+  }
 
   chartCards[tab].push(entry);
   return entry;
