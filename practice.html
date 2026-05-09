@@ -156,6 +156,16 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .view .view-chart.bode-stack{display:flex;flex-direction:column;gap:4px;}
 .view .view-chart.bode-stack > .bode-pane{flex:1;min-height:0;position:relative;}
 .view .view-chart.bode-stack > .bode-pane > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
+/* Noise — chart on top, integration panel below */
+.view .view-chart.noise-stack{display:flex;flex-direction:column;gap:6px;position:static;}
+.view .view-chart.noise-stack > .noise-chart-wrap{flex:1;min-height:0;position:relative;}
+.view .view-chart.noise-stack > .noise-chart-wrap > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
+.noise-integrate{flex-shrink:0;padding:7px 10px;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;font-size:11.5px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.noise-integrate .label{font-weight:700;color:var(--primary);}
+.noise-integrate input[type="text"]{width:72px;padding:2px 5px;font-size:11.5px;font-family:Consolas,monospace;border:1px solid var(--border);border-radius:3px;}
+.noise-integrate .res{font-family:Consolas,monospace;color:#34495e;}
+.noise-integrate .res b{color:#c0392b;}
+.noise-integrate .sep{color:var(--muted);}
 
 /* PARAM ROW (per tab) */
 .param-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;font-size:11.5px;flex-shrink:0;}
@@ -2267,6 +2277,14 @@ function addView(tab, kind, isDuplicate) {
     pane2.appendChild(canvas2);
     right.appendChild(pane1);
     right.appendChild(pane2);
+  } else if (kind === 'noise') {
+    right.classList.add('noise-stack');
+    const wrap = document.createElement('div');
+    wrap.className = 'noise-chart-wrap';
+    canvas = document.createElement('canvas');
+    wrap.appendChild(canvas);
+    right.appendChild(wrap);
+    right.appendChild(buildNoiseIntegratePanel(view));
   } else {
     canvas = document.createElement('canvas');
     right.appendChild(canvas);
@@ -2277,6 +2295,7 @@ function addView(tab, kind, isDuplicate) {
 
   // ── 차트 생성 ────────────────────────────────────────
   buildViewChart(tab, view, canvas, canvas2);
+  if (kind === 'noise') updateNoiseIntegration(view);
   buildViewVarList(tab, view, varList);
 
   // ── 서브탭 버튼 ──────────────────────────────────────
@@ -2373,7 +2392,7 @@ function buildViewChart(tab, view, canvas, canvas2) {
 
   let ylab = 'Voltage [V]';
   if (kind === 'I') ylab = 'Current [A]';
-  else if (kind === 'noise') ylab = '√(V²/Hz) or A²/Hz';
+  else if (kind === 'noise') ylab = 'V/√Hz or A/√Hz';
 
   const xLog = (tab === 'noise');
   const yLog = (tab === 'noise');
@@ -2524,6 +2543,122 @@ function engFormat(value, sig) {
     }
   }
   return value.toExponential(2); // 매우 작은 값
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Noise band integration
+   - rows: [[f, inoise(V/√Hz), onoise(V/√Hz)], …]
+   - Squares spectrum to V²/Hz, integrates over [f1,f2] (trapezoidal,
+     log-log interpolation at edges), returns RMS noise (V or A).
+═══════════════════════════════════════════════════════════════════════ */
+function integrateNoiseBand(rows, varIdx, f1, f2) {
+  if (!rows || rows.length < 2) return null;
+  const data = rows
+    .map(r => [r[0], r[varIdx]])
+    .filter(p => isFinite(p[0]) && isFinite(p[1]) && p[0] > 0);
+  if (data.length < 2) return null;
+  const fmin = data[0][0], fmax = data[data.length-1][0];
+  f1 = Math.max(f1, fmin);
+  f2 = Math.min(f2, fmax);
+  if (!(f2 > f1)) return null;
+
+  function valAt(f) {
+    if (f <= data[0][0]) return data[0][1];
+    if (f >= data[data.length-1][0]) return data[data.length-1][1];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] >= f) {
+        const fa = data[i-1][0], fb = data[i][0];
+        const sa = data[i-1][1], sb = data[i][1];
+        if (sa > 0 && sb > 0 && fa > 0 && fb > fa) {
+          const t = Math.log(f/fa) / Math.log(fb/fa);
+          return Math.exp(Math.log(sa) + t * Math.log(sb/sa));
+        }
+        const t = (f - fa) / (fb - fa);
+        return sa + t * (sb - sa);
+      }
+    }
+    return data[data.length-1][1];
+  }
+
+  const knots = [f1];
+  for (const p of data) {
+    if (p[0] > f1 && p[0] < f2) knots.push(p[0]);
+  }
+  knots.push(f2);
+
+  // Trapezoidal on S² (since S is V/√Hz, S² is V²/Hz)
+  let acc = 0;
+  for (let i = 1; i < knots.length; i++) {
+    const fa = knots[i-1], fb = knots[i];
+    const sa = valAt(fa), sb = valAt(fb);
+    acc += 0.5 * (sa*sa + sb*sb) * (fb - fa);
+  }
+  return Math.sqrt(Math.max(acc, 0));
+}
+
+// SPICE-style number parse (e.g. "1Meg", "100k", "1u")
+function parseSiNum(s) {
+  if (typeof s !== 'string') return Number(s);
+  const m = s.trim().match(/^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$/);
+  if (!m) return NaN;
+  const x = parseFloat(m[1]);
+  const suf = m[2].toLowerCase();
+  const map = {'t':1e12,'g':1e9,'meg':1e6,'k':1e3,'':1,'m':1e-3,'u':1e-6,'n':1e-9,'p':1e-12,'f':1e-15};
+  return (suf in map) ? x * map[suf] : NaN;
+}
+
+function detectNoiseInputType() {
+  // Inspect netlist for ".noise V(out) <src>" — if <src> starts with V → voltage, I → current
+  const src = cm ? cm.getValue() : '';
+  const m = src.match(/^\s*\.noise\s+\S+\s+(\S+)/im);
+  if (!m) return 'V';
+  const c = m[1].trim()[0].toUpperCase();
+  return (c === 'I') ? 'I' : 'V';
+}
+
+function buildNoiseIntegratePanel(view) {
+  const panel = document.createElement('div');
+  panel.className = 'noise-integrate';
+  panel.innerHTML =
+    '<span class="label">∫ Noise power</span>' +
+    '<span>f₁ <input type="text" class="ni-f1" value="">Hz</span>' +
+    '<span>f₂ <input type="text" class="ni-f2" value="">Hz</span>' +
+    '<span class="sep">→</span>' +
+    '<span class="res">—</span>';
+  view._panel = panel;
+  panel.querySelector('.ni-f1').addEventListener('input', () => updateNoiseIntegration(view));
+  panel.querySelector('.ni-f2').addEventListener('input', () => updateNoiseIntegration(view));
+  return panel;
+}
+
+function updateNoiseIntegration(view) {
+  if (!view || !view._panel) return;
+  const parsed = lastResults.noise;
+  const panel = view._panel;
+  const f1in = panel.querySelector('.ni-f1');
+  const f2in = panel.querySelector('.ni-f2');
+  const resEl = panel.querySelector('.res');
+  if (!parsed || !parsed.rows || parsed.rows.length < 2) {
+    resEl.textContent = '데이터 없음';
+    return;
+  }
+  // initialize defaults to data range if empty
+  const fmin = parsed.rows[0][0], fmax = parsed.rows[parsed.rows.length-1][0];
+  if (!f1in.value.trim()) f1in.value = engFormat(fmin, 4).replace(/\s/g, '');
+  if (!f2in.value.trim()) f2in.value = engFormat(fmax, 4).replace(/\s/g, '');
+  const f1 = parseSiNum(f1in.value);
+  const f2 = parseSiNum(f2in.value);
+  if (!isFinite(f1) || !isFinite(f2) || !(f2 > f1)) {
+    resEl.textContent = 'f₁ < f₂ 인 양수 값 필요';
+    return;
+  }
+  const inoise = integrateNoiseBand(parsed.rows, 1, f1, f2);
+  const onoise = integrateNoiseBand(parsed.rows, 2, f1, f2);
+  const inUnit = (detectNoiseInputType() === 'I') ? 'A' : 'V';
+  const fmt = (v, u) => v == null ? '—' : engFormat(v, 4) + u + '<sub>rms</sub>';
+  resEl.innerHTML =
+    'inoise = <b>' + fmt(inoise, inUnit) + '</b>' +
+    ' &nbsp;|&nbsp; onoise = <b>' + fmt(onoise, 'V') + '</b>';
 }
 
 function chartOpts(xlab, ylab, xLog, yLog) {
