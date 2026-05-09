@@ -1950,13 +1950,22 @@ function stopSim() {
   }
 }
 
+// 학생에게 무의미한 ngspice 잡음 메시지 필터링
+//   - /proc/meminfo: ngspice가 메모리 사용량 리포트하려다 WASM에 그 파일이 없어 실패 — 무해
+//   - "Note: can't find init file": ngspice 시작용 ~/.spiceinit 없음 (정상)
+function filterNoiseLog(text) {
+  return text
+    .replace(/^.*fopen\("\/proc\/meminfo"\): No such file or directory.*\r?\n?/gm, '')
+    .replace(/^Note: can't find init file\.\r?\n?/gm, '');
+}
+
 function appendLog(text) {
   const el = document.getElementById('log-body');
   if (el.classList.contains('empty')) {
     el.textContent = '';
     el.classList.remove('empty');
   }
-  el.textContent += text;
+  el.textContent += filterNoiseLog(text);
   el.scrollTop = el.scrollHeight;
   document.getElementById('log-meta').textContent = el.textContent.length + ' chars';
 }
