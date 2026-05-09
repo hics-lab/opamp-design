@@ -1927,7 +1927,17 @@ function updateTabCount(name, n, requested) {
 /* ════════════════════════════════════════════════════════════════════
    렌더링
 ═══════════════════════════════════════════════════════════════════════ */
-const COLORS = ['#2980b9','#e67e22','#27ae60','#c0392b','#8e44ad','#16a085','#f39c12','#34495e'];
+// Tableau 10 — visually distinct, suitable for line charts
+const COLORS = ['#4e79a7','#f28e2c','#e15759','#76b7b2','#59a14f','#edc949','#af7aa1','#ff9da7','#9c755f','#bab0ab'];
+// For indices beyond palette, generate distinct hues via golden-angle spacing (137.508°)
+function getColor(k) {
+  if (k < COLORS.length) return COLORS[k];
+  const hue = ((k - COLORS.length) * 137.508 + 30) % 360;
+  return `hsl(${hue.toFixed(0)}, 62%, 45%)`;
+}
+// Dash patterns to further distinguish overlapping traces past the palette
+const DASH_PATTERNS = [[], [6,4], [2,3], [10,3,2,3]];
+function getDash(k) { return DASH_PATTERNS[Math.floor(k / COLORS.length) % DASH_PATTERNS.length]; }
 
 function getYLabels(parsed, fallbackPrefix, count) {
   const out = [];
@@ -2121,9 +2131,10 @@ function buildViewChart(tab, view, canvas) {
       datasets.push({
         label: name,
         data: parsed.rows.map(r => ({x: r.freq, y: r.traces[k][kind]})),
-        borderColor: COLORS[k % COLORS.length],
-        backgroundColor: COLORS[k % COLORS.length],
-        borderWidth: 1.6, pointRadius: 0, tension: 0
+        borderColor: getColor(k),
+        backgroundColor: getColor(k),
+        borderDash: getDash(k),
+        borderWidth: 1.8, pointRadius: 0, tension: 0
       });
     });
     const xlab = 'frequency [Hz]';
@@ -2150,9 +2161,10 @@ function buildViewChart(tab, view, canvas) {
       datasets.push({
         label: name,
         data: parsed.rows.map(r => ({x: r[0], y: r[k+1]})),
-        borderColor: COLORS[k % COLORS.length],
-        backgroundColor: COLORS[k % COLORS.length],
-        borderWidth: 1.6, pointRadius: 0, tension: 0
+        borderColor: getColor(k),
+        backgroundColor: getColor(k),
+        borderDash: getDash(k),
+        borderWidth: 1.8, pointRadius: 0, tension: 0
       });
     } else {
       view.varToDataset[k] = -1;
@@ -2199,7 +2211,7 @@ function buildViewVarList(tab, view, listEl) {
     cb.addEventListener('change', () => toggleViewVar(view, k, cb.checked));
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
-    swatch.style.background = COLORS[k % COLORS.length];
+    swatch.style.background = getColor(k);
     const nm = document.createElement('span');
     nm.className = 'nm';
     nm.textContent = name;
