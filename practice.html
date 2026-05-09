@@ -1355,6 +1355,13 @@ function clearLog() {
 function showHelp() { document.getElementById('help-modal').hidden = false; }
 function hideHelp() { document.getElementById('help-modal').hidden = true; }
 
+// Click on modal backdrop (outside the modal-body) closes the modal
+document.addEventListener('click', e => {
+  if (e.target.classList && e.target.classList.contains('modal') && !e.target.hidden) {
+    e.target.hidden = true;
+  }
+});
+
 // Help modal sidebar tab switching
 document.addEventListener('click', e => {
   const btn = e.target.closest('#help-nav button');
