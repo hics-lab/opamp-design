@@ -2599,12 +2599,28 @@ function integrateNoiseBand(rows, varIdx, f1, f2) {
 // SPICE-style number parse (e.g. "1Meg", "100k", "1u")
 function parseSiNum(s) {
   if (typeof s !== 'string') return Number(s);
-  const m = s.trim().match(/^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$/);
+  const m = s.trim().match(/^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*([a-zA-Zμ]*)$/);
   if (!m) return NaN;
   const x = parseFloat(m[1]);
-  const suf = m[2].toLowerCase();
+  const suf = m[2].toLowerCase().replace('μ', 'u');
   const map = {'t':1e12,'g':1e9,'meg':1e6,'k':1e3,'':1,'m':1e-3,'u':1e-6,'n':1e-9,'p':1e-12,'f':1e-15};
   return (suf in map) ? x * map[suf] : NaN;
+}
+
+// Format a number using SPICE-compatible suffix (Meg, u — not engFormat's 'M' which means milli, or 'μ')
+function spiceNumFormat(v, sig) {
+  if (!Number.isFinite(v) || v === 0) return String(v);
+  const ps = [
+    {e: 12, p: 'T'}, {e: 9, p: 'G'}, {e: 6, p: 'Meg'}, {e: 3, p: 'k'},
+    {e: 0, p: ''},
+    {e: -3, p: 'm'}, {e: -6, p: 'u'}, {e: -9, p: 'n'}, {e: -12, p: 'p'}, {e: -15, p: 'f'}
+  ];
+  const abs = Math.abs(v);
+  for (const {e, p} of ps) {
+    const sc = Math.pow(10, e);
+    if (abs >= sc * 0.999) return parseFloat((v/sc).toPrecision(sig||4)) + p;
+  }
+  return v.toExponential(2);
 }
 
 function detectNoiseInputType() {
@@ -2644,8 +2660,8 @@ function updateNoiseIntegration(view) {
   }
   // initialize defaults to data range if empty
   const fmin = parsed.rows[0][0], fmax = parsed.rows[parsed.rows.length-1][0];
-  if (!f1in.value.trim()) f1in.value = engFormat(fmin, 4).replace(/\s/g, '');
-  if (!f2in.value.trim()) f2in.value = engFormat(fmax, 4).replace(/\s/g, '');
+  if (!f1in.value.trim()) f1in.value = spiceNumFormat(fmin, 4);
+  if (!f2in.value.trim()) f2in.value = spiceNumFormat(fmax, 4);
   const f1 = parseSiNum(f1in.value);
   const f2 = parseSiNum(f2in.value);
   if (!isFinite(f1) || !isFinite(f2) || !(f2 > f1)) {
