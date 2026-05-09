@@ -152,6 +152,10 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .view .view-allbtns button:hover{background:#eef2f7;}
 .view .view-chart{flex:1;min-height:0;min-width:0;position:relative;}
 .view .view-chart > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
+/* Bode plot — two stacked canvases (mag on top, phase below) sharing x-axis */
+.view .view-chart.bode-stack{display:flex;flex-direction:column;gap:4px;}
+.view .view-chart.bode-stack > .bode-pane{flex:1;min-height:0;position:relative;}
+.view .view-chart.bode-stack > .bode-pane > canvas{position:absolute!important;top:0;left:0;width:100%!important;height:100%!important;}
 
 /* PARAM ROW (per tab) */
 .param-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;padding:6px 10px;margin-bottom:8px;font-size:11.5px;flex-shrink:0;}
@@ -1184,7 +1188,7 @@ function setupSplitterV() {
 
   const refreshCharts = () => {
     if (cm) cm.refresh();
-    chartViews[activeTab].forEach(v => { if (v.chart) v.chart.resize(); });
+    chartViews[activeTab].forEach(v => { if (v.chart) v.chart.resize(); if (v.chart2) v.chart2.resize(); });
   };
 
   const onDown = (clientX) => {
@@ -1494,7 +1498,7 @@ function switchTab(name) {
   readParamsFromNetlist(name);
   // 활성 탭의 차트 리사이즈
   setTimeout(() => {
-    chartViews[name].forEach(v => { if (v.chart) v.chart.resize(); });
+    chartViews[name].forEach(v => { if (v.chart) v.chart.resize(); if (v.chart2) v.chart2.resize(); });
   }, 30);
   saveToLocalStorage();
 }
@@ -2123,13 +2127,14 @@ function getTabLabels(tab, parsed) {
 ═══════════════════════════════════════════════════════════════════════ */
 const VIEW_KIND_TITLE = {
   V: '⚡ Voltage', I: '🔋 Current',
-  mag: '|H(jω)| dB', phase: '∠H(jω) deg',
+  bode: '📐 Bode',
   noise: '🌫 Noise'
 };
 
 function clearViews(tab) {
   for (const v of chartViews[tab]) {
     if (v.chart) v.chart.destroy();
+    if (v.chart2) v.chart2.destroy();
     if (v.element && v.element.parentNode) v.element.parentNode.removeChild(v.element);
     if (v.tabBtn && v.tabBtn.parentNode) v.tabBtn.parentNode.removeChild(v.tabBtn);
   }
@@ -2146,8 +2151,7 @@ function renderResults(tab) {
   clearViews(tab);
 
   if (tab === 'ac') {
-    addView(tab, 'mag');
-    addView(tab, 'phase');
+    addView(tab, 'bode');
   } else if (tab === 'noise') {
     addView(tab, 'noise');
   } else {
@@ -2175,8 +2179,7 @@ function rebuildAddButtons(tab) {
 
   const choices = []; // [{kind, label, title}]
   if (tab === 'ac') {
-    choices.push({kind: 'mag',   label: '+ |H| dB',   title: 'Magnitude 그래프 추가'});
-    choices.push({kind: 'phase', label: '+ ∠H deg',   title: 'Phase 그래프 추가'});
+    choices.push({kind: 'bode', label: '+ Bode', title: 'Bode plot 추가'});
   } else if (tab === 'noise') {
     choices.push({kind: 'noise', label: '+ Noise',    title: 'Noise 그래프 추가'});
   } else {
@@ -2240,14 +2243,29 @@ function addView(tab, kind, isDuplicate) {
 
   const right = document.createElement('div');
   right.className = 'view-chart';
-  const canvas = document.createElement('canvas');
-  right.appendChild(canvas);
+  let canvas, canvas2 = null;
+  if (kind === 'bode') {
+    right.classList.add('bode-stack');
+    const pane1 = document.createElement('div');
+    pane1.className = 'bode-pane';
+    canvas = document.createElement('canvas');
+    pane1.appendChild(canvas);
+    const pane2 = document.createElement('div');
+    pane2.className = 'bode-pane';
+    canvas2 = document.createElement('canvas');
+    pane2.appendChild(canvas2);
+    right.appendChild(pane1);
+    right.appendChild(pane2);
+  } else {
+    canvas = document.createElement('canvas');
+    right.appendChild(canvas);
+  }
   el.appendChild(right);
 
   document.getElementById('views-content-' + tab).appendChild(el);
 
   // ── 차트 생성 ────────────────────────────────────────
-  buildViewChart(tab, view, canvas);
+  buildViewChart(tab, view, canvas, canvas2);
   buildViewVarList(tab, view, varList);
 
   // ── 서브탭 버튼 ──────────────────────────────────────
@@ -2275,33 +2293,42 @@ function addView(tab, kind, isDuplicate) {
   return view;
 }
 
-function buildViewChart(tab, view, canvas) {
+function buildViewChart(tab, view, canvas, canvas2) {
   const parsed = lastResults[tab];
   const labels = getTabLabels(tab, parsed);
   const kind = view.kind;
   let datasets = [];
   view.varToDataset = []; // varIdx -> dsIdx (or -1)
 
-  if (kind === 'mag' || kind === 'phase') {
-    // AC: each variable has mag/phase; show one aspect
-    labels.forEach((name, k) => {
-      view.varToDataset[k] = datasets.length;
-      datasets.push({
-        label: name,
-        data: parsed.rows.map(r => ({x: r.freq, y: r.traces[k][kind]})),
-        borderColor: getColor(k),
-        backgroundColor: getColor(k),
-        borderDash: getDash(k),
-        borderWidth: 1.8, pointRadius: 0, tension: 0
-      });
+  if (kind === 'bode') {
+    // AC: stacked mag (top) + phase (bottom), x-axis synced. Voltages only.
+    const types = parsed.types || labels.map(() => 'voltage');
+    const acVars = labels
+      .map((name, k) => ({k, name, isI: types[k] === 'current'}))
+      .filter(v => !v.isI);
+    const makeDs = (which) => acVars.map(({k, name}) => ({
+      label: name,
+      data: parsed.rows.map(r => ({x: r.freq, y: r.traces[k][which]})),
+      borderColor: getColor(k),
+      backgroundColor: getColor(k),
+      borderDash: getDash(k),
+      borderWidth: 1.8, pointRadius: 0, tension: 0
+    }));
+    let dsIdx = 0;
+    labels.forEach((_, k) => {
+      view.varToDataset[k] = (types[k] !== 'current') ? dsIdx++ : -1;
     });
-    const xlab = 'frequency [Hz]';
-    const ylab = (kind === 'mag') ? '|H| [dB]' : '∠H [deg]';
-    view.chart = new Chart(canvas.getContext('2d'), {
-      type: 'line', data: { datasets },
-      options: chartOpts(xlab, ylab, true, false)
-    });
+
+    const optsMag = chartOpts('', '|H| [dB]', true, false);
+    optsMag.scales.x.title.display = false; // x-label only on bottom plot
+    const optsPhase = chartOpts('frequency [Hz]', '∠H [deg]', true, false);
+    optsPhase.plugins.legend.display = false; // single legend on top
+
+    view.chart  = new Chart(canvas.getContext('2d'),  { type: 'line', data: { datasets: makeDs('mag')   }, options: optsMag });
+    view.chart2 = new Chart(canvas2.getContext('2d'), { type: 'line', data: { datasets: makeDs('phase') }, options: optsPhase });
     setupChartInteractions(view.chart);
+    setupChartInteractions(view.chart2);
+    syncBodeXAxis(view.chart, view.chart2);
     return;
   }
 
@@ -2347,6 +2374,29 @@ function buildViewChart(tab, view, canvas) {
   setupChartInteractions(view.chart);
 }
 
+// Two-way x-axis sync between the two Bode subplots
+function syncBodeXAxis(a, b) {
+  let syncing = false;
+  const handler = (src, dst) => () => {
+    if (syncing) return;
+    syncing = true;
+    const sx = src.scales.x;
+    dst.options.scales.x.min = sx.min;
+    dst.options.scales.x.max = sx.max;
+    dst.update('none');
+    syncing = false;
+  };
+  const aToB = handler(a, b), bToA = handler(b, a);
+  a.options.plugins.zoom.zoom.onZoomComplete = aToB;
+  a.options.plugins.zoom.pan.onPanComplete   = aToB;
+  b.options.plugins.zoom.zoom.onZoomComplete = bToA;
+  b.options.plugins.zoom.pan.onPanComplete   = bToA;
+  // Track right-drag region zoom & dblclick reset that bypass plugin events:
+  // wrap the chart's update so any time x-scale changes we re-sync (cheap).
+  a._bodeSibling = b;
+  b._bodeSibling = a;
+}
+
 function buildViewVarList(tab, view, listEl) {
   const parsed = lastResults[tab];
   const labels = getTabLabels(tab, parsed);
@@ -2356,7 +2406,8 @@ function buildViewVarList(tab, view, listEl) {
   labels.forEach((name, k) => {
     const isI = (types[k] === 'current');
     let include = false;
-    if (kind === 'mag' || kind === 'phase' || kind === 'noise') include = true;
+    if (kind === 'noise') include = true;
+    else if (kind === 'bode' && !isI) include = true;
     else if (kind === 'V' && !isI) include = true;
     else if (kind === 'I' && isI) include = true;
     if (!include) return;
@@ -2382,9 +2433,11 @@ function buildViewVarList(tab, view, listEl) {
 function toggleViewVar(view, varIdx, visible) {
   const dsIdx = view.varToDataset ? view.varToDataset[varIdx] : -1;
   if (dsIdx < 0) return;
-  if (view.chart && view.chart.data.datasets[dsIdx]) {
-    view.chart.data.datasets[dsIdx].hidden = !visible;
-    view.chart.update('none');
+  for (const c of [view.chart, view.chart2]) {
+    if (c && c.data.datasets[dsIdx]) {
+      c.data.datasets[dsIdx].hidden = !visible;
+      c.update('none');
+    }
   }
 }
 
@@ -2409,6 +2462,7 @@ function setActiveView(tab, idx) {
   setTimeout(() => {
     const v = chartViews[tab][idx];
     if (v && v.chart) v.chart.resize();
+    if (v && v.chart2) v.chart2.resize();
   }, 30);
 }
 
@@ -2421,6 +2475,7 @@ function removeView(tab, id) {
   if (idx === -1) return;
   const view = chartViews[tab][idx];
   if (view.chart) view.chart.destroy();
+  if (view.chart2) view.chart2.destroy();
   if (view.element && view.element.parentNode) view.element.parentNode.removeChild(view.element);
   if (view.tabBtn && view.tabBtn.parentNode) view.tabBtn.parentNode.removeChild(view.tabBtn);
   chartViews[tab].splice(idx, 1);
