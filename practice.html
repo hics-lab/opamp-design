@@ -336,8 +336,8 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 <div id="gallery-modal" class="modal" hidden>
   <div class="modal-body" style="max-width:880px;">
     <button class="modal-close" onclick="hideGallery()">×</button>
-    <h2>📚 예제 갤러리</h2>
-    <p class="gal-intro">회로를 클릭하면 editor에 즉시 로드됩니다. 모든 예제는 ETRI 0.5μm BSIM3v3 모델로 바로 시뮬레이션 가능합니다.</p>
+    <h2>📖 SPICE 튜토리얼</h2>
+    <p class="gal-intro">SPICE 기본 소자(V/I/R/L/C/M)와 시뮬레이션 종류(.dc / .tran / .ac / .noise) 사용법을 익히는 5가지 회로. 클릭하면 editor에 로드됩니다.</p>
     <div id="gallery-content"></div>
   </div>
 </div>
@@ -405,7 +405,7 @@ quit
     </ul>
 
     <h3>7. 예제</h3>
-    <p>헤더의 <b>📚 갤러리</b> 버튼에서 카테고리별 14종 회로를 로드할 수 있습니다 (수동 4 / MOSFET 단일 4 / 증폭기 6).</p>
+    <p>헤더의 <b>📖 갤러리</b> 버튼에서 5가지 SPICE 튜토리얼을 로드할 수 있습니다. 기본 소자 (V/I/R/L/C/M)와 시뮬레이션 종류 (.dc / .tran / .ac / .noise) 사용법을 다룹니다.</p>
 
     <h3>8. 자동 저장 / 내보내기 / 불러오기</h3>
     <ul>
@@ -671,97 +671,56 @@ rc1   mid n2 r='2*(rcont/ncont)'
    예제 갤러리 (카테고리별)
 ═══════════════════════════════════════════════════════════════════════ */
 const GALLERY_CATEGORIES = [
-  { id: 'passive', label: '🔌 수동 회로 (R / C / L)' },
-  { id: 'mos',     label: '🔬 MOSFET 단일 트랜지스터' },
-  { id: 'amp',     label: '⚡ 증폭기 회로 블록' },
-  { id: 'bias',    label: '📐 바이어스 / 기준 회로' },
+  { id: 'tutorial', label: '📖 SPICE 튜토리얼' },
 ];
 
 const GALLERY = [
-  // ────── 수동 회로 ──────
   {
-    cat: 'passive', title: '저항 분배기', tag: 'DC', stars: 1,
-    desc: '두 저항이 입력 전압을 분배. R1=R2이면 출력은 입력의 절반.',
-    netlist: `* 저항 분배기 (Voltage Divider)
-* V1: 입력 전원 (DC 5V, 0~10V sweep)
+    cat: 'tutorial', title: "1. 저항 분배기", tag: "DC", stars: 1,
+    desc: "V source + R + .dc sweep",
+    netlist: `* 저항 분배기 — DC sweep 튜토리얼
+* V1: 입력 전원 (sweep 0~10V)
 * R1, R2: 직렬 저항 (각 1kΩ)
-V1  in 0 DC 5
-R1  in mid 1k
-R2  mid 0 1k
+V1 in 0 DC 5
+R1 in mid 1k
+R2 mid 0 1k
 .dc V1 0 10 0.1
 .end
 `
   },
   {
-    cat: 'passive', title: 'RC 저역통과 필터', tag: 'Tran + AC', stars: 1,
-    desc: 'fc = 1/(2πRC). 시간 응답 (계단 입력) + 주파수 응답.',
-    netlist: `* RC 저역통과 필터 (fc ≈ 1.59 kHz)
-* V1: 입력 (AC 1V + PULSE 0→1V step)
-* R1: 직렬 저항 (1kΩ)
-* C1: 출력 캐패시터 (100nF)
-V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
+    cat: 'tutorial', title: "2. RC step 응답", tag: "Tran", stars: 1,
+    desc: "V PULSE + R + C + .tran (시간 응답)",
+    netlist: `* RC 저역통과 step 응답 — transient 튜토리얼
+* V1: PULSE 입력 0→1V (100us 시점)
+* R1, C1: RC 필터 (tau = R*C = 100us)
+V1 in 0 PULSE(0 1 100u 1n 1n 0.5m 1m)
 R1 in out 1k
 C1 out 0 100n
 .tran 1u 3m
-.ac dec 20 1 1Meg
 .end
 `
   },
   {
-    cat: 'passive', title: 'RC 고역통과 필터', tag: 'Tran + AC', stars: 1,
-    desc: 'C가 직렬, R이 병렬. DC 차단, 고주파 통과.',
-    netlist: `* RC 고역통과 필터 (fc ≈ 1.59 kHz)
-* V1: 입력 (AC 1V + PULSE step)
-* C1: 직렬 캐패시터 (100nF)
-* R1: 출력 저항 (1kΩ)
-V1 in 0 DC 0 AC 1 PULSE(0 1 100u 1n 1n 0.5m 1m)
-C1 in out 100n
-R1 out 0 1k
-.tran 1u 3m
-.ac dec 20 1 1Meg
-.end
-`
-  },
-  {
-    cat: 'passive', title: 'RLC 직렬 공진기', tag: 'AC', stars: 2,
-    desc: 'L=1mH, C=1μF → f0 ≈ 5kHz. R로 Q-factor 조절.',
-    netlist: `* RLC 직렬 공진기 (f0 ≈ 5 kHz, Q ≈ 3.16)
-* V1: AC 입력 (1V)
-* L1: 인덕터 (1mH)
-* C1: 커패시터 (1μF)
-* R1: 출력 저항 (10Ω, Q를 결정)
+    cat: 'tutorial', title: "3. RC 주파수 응답", tag: "AC", stars: 1,
+    desc: "V AC + R + C + .ac (Bode plot, fc ≈ 1.59 kHz)",
+    netlist: `* RC 저역통과 주파수 응답 — AC 분석 튜토리얼 (fc 약 1.59 kHz)
+* V1: AC source (1V)
+* R1: 1kohm, C1: 100nF
 V1 in 0 AC 1
-L1 in n1 1m
-C1 n1 out 1u
-R1 out 0 10
-.ac dec 100 100 100k
-.end
-`
-  },
-
-  // ────── MOSFET 단일 ──────
-  {
-    cat: 'mos', title: 'NMOS 출력특성 (Id–Vds)', tag: 'DC', stars: 1,
-    desc: 'Vgs=2V 고정, Vds 변화 → 트라이오드/포화 영역 관찰.',
-    netlist: `* NMOS 출력 특성 (Id vs Vds, Vgs=2V 고정)
-* VDS: 드레인 전압 (sweep 0~5V)
-* VGS: 게이트 전압 (DC 2V 고정)
-* M1: NMOS (W=20μ, L=1μ)
-.lib "/model.lib" MOS
-VDS d 0 DC 0
-VGS g 0 DC 2
-M1 d g 0 0 nmos4 W=20u L=1u
-.dc VDS 0 5 0.02
+R1 in out 1k
+C1 out 0 100n
+.ac dec 20 1 1Meg
 .end
 `
   },
   {
-    cat: 'mos', title: 'NMOS 전이특성 (Id–Vgs)', tag: 'DC', stars: 1,
-    desc: 'Vds=2V 고정, Vgs 변화. ETRI nmos4 Vth ≈ 0.69V.',
-    netlist: `* NMOS 전이 특성 (Id vs Vgs, Vds=2V 고정, Vth ≈ 0.69V)
-* VDS: 드레인 전압 (DC 2V 고정, saturation)
-* VGS: 게이트 전압 (sweep 0~3V)
-* M1: NMOS (W=20μ, L=1μ)
+    cat: 'tutorial', title: "4. NMOS Id–Vgs", tag: "DC", stars: 2,
+    desc: ".lib + M element + .dc (MOSFET 모델 사용)",
+    netlist: `* NMOS 전이특성 — MOSFET 모델 사용 튜토리얼
+* .lib: ETRI 0.5um 모델 로드 (MOS 섹션)
+* VDS: drain 전압 (DC 2V), VGS: gate 전압 (sweep 0~3V)
+* M1: NMOS (W=20u, L=1u; Vth 약 0.69V)
 .lib "/model.lib" MOS
 VDS d 0 DC 2
 VGS g 0 DC 0
@@ -771,13 +730,13 @@ M1 d g 0 0 nmos4 W=20u L=1u
 `
   },
   {
-    cat: 'mos', title: 'NMOS 공통소스 (R load)', tag: 'DC + AC', stars: 2,
-    desc: '소신호 게인 ≈ −gm·RD. DC 전이커브 + AC 게인.',
-    netlist: `* NMOS 공통소스 증폭기 (R load)
+    cat: 'tutorial', title: "5. NMOS 증폭기 종합", tag: "DC + AC + Noise", stars: 2,
+    desc: "한 회로로 DC bias / AC gain / Noise 모두",
+    netlist: `* NMOS 공통소스 증폭기 — DC + AC + Noise 종합 튜토리얼
 * VDD: 전원 (5V)
-* Vin: 입력 (DC 1V + AC 1V)
-* RL: drain pull-up 저항 (10kΩ, VDD-out)
-* M1: NMOS (W=20μ, L=1μ)
+* Vin: DC 1V + AC 1V (AC=1은 .ac와 .noise에 모두 필요)
+* RL: drain 부하 (10kohm)
+* M1: NMOS (W=20u, L=1u)
 .lib "/model.lib" MOS
 VDD vdd 0 DC 5
 Vin in 0 DC 1.0 AC 1
@@ -785,258 +744,12 @@ RL  vdd out 10k
 M1  out in 0 0 nmos4 W=20u L=1u
 .dc Vin 0 5 0.01
 .ac dec 20 1 100Meg
-.end
-`
-  },
-  {
-    cat: 'mos', title: 'NMOS 소스폴로워', tag: 'DC + AC', stars: 2,
-    desc: '게인 ≈ +1, 낮은 출력 임피던스 (버퍼).',
-    netlist: `* NMOS 소스폴로워 (Common-Drain)
-* VDD: 전원 (5V)
-* Vin: 입력 (DC 2.5V + AC 1V)
-* M1: NMOS (drain=VDD, source=out, W=50μ, L=1μ)
-* RL: source 부하 저항 (10kΩ)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vin g 0 DC 2.5 AC 1
-M1 vdd g out 0 nmos4 W=50u L=1u
-RL out 0 10k
-.dc Vin 0 5 0.01
-.ac dec 20 1 100Meg
-.end
-`
-  },
-
-  // ────── 증폭기 회로 ──────
-  {
-    cat: 'amp', title: 'NMOS 전류미러', tag: 'DC', stars: 2,
-    desc: 'Iref=100μA 기준, M2가 동일 전류 복제. Vd 변화 시 동작 확인.',
-    netlist: `* NMOS 전류미러 (1:1, Iref = 100μA)
-* VDD: 전원 (5V)
-* Iref: 기준 전류원 (100μA, vdd→ref)
-* M1: 다이오드 연결 NMOS (W=20μ, L=1μ)
-* M2: 미러 NMOS (W=20μ, L=1μ; gate=ref와 공유)
-* Vd: 출력 노드 sweep (0~5V)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Iref vdd ref DC 100u
-Vd  vout 0 DC 1
-M1 ref ref 0 0 nmos4 W=20u L=1u
-M2 vout ref 0 0 nmos4 W=20u L=1u
-.dc Vd 0 5 0.01
-.end
-`
-  },
-  {
-    cat: 'amp', title: 'PMOS 공통소스 (R load)', tag: 'DC + AC', stars: 2,
-    desc: 'PMOS 입력, R 부하. 음의 소신호 게인.',
-    netlist: `* PMOS 공통소스 증폭기 (R load)
-* VDD: 전원 (5V)
-* Vin: 입력 (DC 4V + AC 1V)
-* M1: PMOS (source=VDD, W=50μ, L=1μ)
-* RL: drain pull-down 저항 (10kΩ, out-GND)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vin g 0 DC 4.0 AC 1
-RL  out 0 10k
-M1  out g vdd vdd pmos4 W=50u L=1u
-.dc Vin 0 5 0.01
-.ac dec 20 1 100Meg
-.end
-`
-  },
-  {
-    cat: 'amp', title: '차동쌍 Vid sweep', tag: 'DC', stars: 2,
-    desc: 'Vcm 고정, Vid 변화 → 차동 전이 곡선. 5T OTA 입력단.',
-    netlist: `* 차동쌍 Vid sweep (5T OTA 입력단)
-* VDD: 전원 (5V)
-* Vb: tail bias (0.93V)
-* Vcm: common-mode 입력 (DC 1.65V 고정)
-* Vid: 차동 입력 (sweep -1V~+1V)
-* Bip, Bin: 차동입력 분리 (ip=Vcm+Vid/2, in=Vcm-Vid/2)
-* M1, M2: NMOS 입력쌍 (W=20μ, L=1μ)
-* M3 (diode), M4 (mirror): PMOS 부하 (W=10μ, L=1μ)
-* M5: NMOS tail (W=40μ, L=1μ)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vb  vb  0 DC 0.93
-Vid vid 0 DC 0
-Vcm vcm 0 DC 1.65
-Bip ip 0 V = V(vcm) + 0.5*V(vid)
-Bin in 0 V = V(vcm) - 0.5*V(vid)
-M1 nodea ip vp 0   nmos4 W=20u L=1u
-M2 vout  in vp 0   nmos4 W=20u L=1u
-M3 nodea nodea vdd vdd pmos4 W=10u L=1u
-M4 vout  nodea vdd vdd pmos4 W=10u L=1u
-M5 vp    vb    0   0   nmos4 W=40u L=1u
-.dc Vid -1 1 0.005
-.end
-`
-  },
-  {
-    cat: 'amp', title: '5T OTA 전체 스윕', tag: 'DC + AC', stars: 3,
-    desc: '5-트랜지스터 OTA. Vcm DC sweep + Vid AC 게인/대역폭.',
-    netlist: `* 5T OTA (단일단 차동 증폭기)
-* VDD: 전원 (5V)
-* Vb: tail bias (0.93V)
-* Vcm: common-mode 입력 (DC, sweep 0~5V for ICMR)
-* Vid: 차동 입력 (DC 0 + AC 1V)
-* Bip, Bin: 차동입력 분리 (ip=Vcm+Vid/2, in=Vcm-Vid/2)
-* M1, M2: NMOS 입력쌍 (W=20μ, L=1μ)
-* M3 (diode), M4 (mirror): PMOS 부하 (W=10μ, L=1μ)
-* M5: NMOS tail (W=40μ, L=1μ)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vb  vb  0 DC 0.93
-Vcm vcm 0 DC 1.65
-Vid vid 0 DC 0 AC 1
-Bip ip 0 V = V(vcm) + 0.5*V(vid)
-Bin in 0 V = V(vcm) - 0.5*V(vid)
-M1 nodea ip vp 0   nmos4 W=20u L=1u
-M2 vout  in vp 0   nmos4 W=20u L=1u
-M3 nodea nodea vdd vdd pmos4 W=10u L=1u
-M4 vout  nodea vdd vdd pmos4 W=10u L=1u
-M5 vp    vb    0   0   nmos4 W=40u L=1u
-.dc Vcm 0 5 0.01
-.ac dec 20 1 100Meg
-.end
-`
-  },
-  {
-    cat: 'amp', title: '2단 OTA (Miller 보상)', tag: 'DC + AC', stars: 3,
-    desc: '5T OTA + PMOS 공통소스 2단. Cc + nulling Rz로 Miller 보상. 단일단보다 높은 게인.',
-    netlist: `* 2단 OTA (Stage 1: 5T OTA + Stage 2: PMOS CS + Miller 보상)
-* VDD: 전원 (5V)
-* Vb: bias (0.93V)  — Stage 1 tail M5와 Stage 2 NMOS load M7 공통
-* Vcm: common-mode (1.65V), Vid: 차동 입력 (DC 0 + AC 1V)
-* Bip, Bin: 차동입력 분리
-* Stage 1 (5T OTA core):
-*   M1, M2: NMOS 입력쌍 (W=20μ, L=1μ)
-*   M3 (diode), M4 (mirror): PMOS 부하 (W=10μ, L=1μ)
-*   M5: NMOS tail (W=40μ, L=1μ)
-* Stage 2 (PMOS CS + 능동부하):
-*   M6: PMOS 공통소스 (W=10μ, L=1μ; source=VDD)
-*   M7: NMOS 전류원 부하 (W=20μ, L=1μ)
-* Miller 보상:
-*   Rz: nulling 저항 (2kΩ)
-*   Cc: Miller 캐패시터 (2pF, vo1↔vout)
-* CL: 출력 부하 (1pF)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vb  vb  0 DC 0.93
-Vcm vcm 0 DC 1.65
-Vid vid 0 DC 0 AC 1
-Bip ip 0 V = V(vcm) + 0.5*V(vid)
-Bin in 0 V = V(vcm) - 0.5*V(vid)
-M1 nodea ip vp 0   nmos4 W=20u L=1u
-M2 vo1   in vp 0   nmos4 W=20u L=1u
-M3 nodea nodea vdd vdd pmos4 W=10u L=1u
-M4 vo1   nodea vdd vdd pmos4 W=10u L=1u
-M5 vp    vb    0   0   nmos4 W=40u L=1u
-M6 vout vo1 vdd vdd pmos4 W=10u L=1u
-M7 vout vb  0   0   nmos4 W=20u L=1u
-Rz vo1 nz 2k
-Cc nz vout 2p
-CL vout 0 1p
-.dc Vid -0.3 0.3 0.005
-.ac dec 30 1 100Meg
-.end
-`
-  },
-  {
-    cat: 'amp', title: 'Folded Cascode OTA', tag: 'DC + AC', stars: 3,
-    desc: 'NMOS 입력쌍 + PMOS top current source. 캐스코드로 출력 임피던스↑ → 고이득. Wide ICMR.',
-    netlist: `* Folded Cascode OTA (NMOS 입력)
-* VDD: 전원 (5V)
-* Vbt: NMOS tail bias (0.93V)
-* Vbp: PMOS top current source bias (3.7V)
-* Vbpc: PMOS cascode bias (2.5V)
-* Vbnc: NMOS cascode bias (2.0V)
-* Vcm: common-mode (1.65V), Vid: 차동 입력 (DC 0 + AC 1V)
-* Bip, Bin: 차동입력 분리
-* M0: NMOS tail (W=40μ, L=1μ)
-* M1, M2: NMOS 입력쌍 (W=20μ, L=1μ; drain→nA, nB)
-* M3, M4: PMOS top current sources (W=80μ, L=1μ; folding 전류 공급)
-* M5, M6: PMOS cascodes (W=40μ, L=1μ; nC와 vout 출력)
-* M7, M8: NMOS cascodes (W=20μ, L=1μ)
-* M9: NMOS bottom diode (W=20μ, L=1μ; mirror reference)
-* M10: NMOS bottom mirror (W=20μ, L=1μ; M9 게이트 공유)
-* CL: 출력 부하 (1pF)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-Vbt  vbt  0 DC 0.93
-Vbp  vbp  0 DC 3.7
-Vbpc vbpc 0 DC 2.5
-Vbnc vbnc 0 DC 2.0
-Vcm vcm 0 DC 1.65
-Vid vid 0 DC 0 AC 1
-Bip ip 0 V = V(vcm) + 0.5*V(vid)
-Bin in 0 V = V(vcm) - 0.5*V(vid)
-M0 vt vbt 0 0 nmos4 W=40u L=1u
-M1 nA ip vt 0 nmos4 W=20u L=1u
-M2 nB in vt 0 nmos4 W=20u L=1u
-M3 nA vbp vdd vdd pmos4 W=80u L=1u
-M4 nB vbp vdd vdd pmos4 W=80u L=1u
-M5 nC   vbpc nA vdd pmos4 W=40u L=1u
-M6 vout vbpc nB vdd pmos4 W=40u L=1u
-M7 nC   vbnc nD 0 nmos4 W=20u L=1u
-M8 vout vbnc nE 0 nmos4 W=20u L=1u
-M9  nD nD 0 0 nmos4 W=20u L=1u
-M10 nE nD 0 0 nmos4 W=20u L=1u
-CL vout 0 1p
-.dc Vid -0.3 0.3 0.005
-.ac dec 30 1 100Meg
-.end
-`
-  },
-
-  // ────── 바이어스 / 기준 회로 ──────
-  {
-    cat: 'bias', title: 'Bandgap reference (PTAT)', tag: 'DC TEMP', stars: 3,
-    desc: 'PNP 면적비 1:8 → ΔVbe = VT·ln(8) ≈ 54mV @ 27°C. 온도에 비례 (PTAT).',
-    netlist: `* Bandgap Reference — PTAT 빌딩 블록
-* VDD: 전원 (5V)
-* Iref: 기준 전류원 (50μA, ref→GND)
-* M_DB: PMOS 다이오드 (W=20μ, L=2μ; mirror reference)
-* M_M1, M_M2: PMOS 미러 (W=20μ, L=2μ; 두 branch에 50μA 강제)
-* Q1: PNP BJT, 면적 1× (pnp10)
-* Q2: PNP BJT, 면적 8× (pnp10 area=8)
-.lib "/model.lib" MOS
-.lib "/model.lib" BJT
-VDD vdd 0 DC 5
-Iref ref 0 DC 50u
-M_DB ref ref vdd vdd pmos4 W=20u L=2u
-M_M1 e1  ref vdd vdd pmos4 W=20u L=2u
-M_M2 e2  ref vdd vdd pmos4 W=20u L=2u
-Q1 0 0 e1 pnp10
-Q2 0 0 e2 pnp10 area=8
-.dc TEMP -25 100 5
-.end
-`
-  },
-  {
-    cat: 'bias', title: 'Constant-gm bias', tag: 'DC TEMP', stars: 3,
-    desc: 'K=4, Rs=2k → gm = 2(√K-1)/Rs = 1 mA/V. process/온도 무관 gm.',
-    netlist: `* Constant-gm Bias (Razavi §11.2; gm = 2(√K-1)/Rs ≈ 1 mA/V)
-* VDD: 전원 (5V)
-* M3 (diode), M4 (mirror): PMOS 1:1 미러 (W=20μ, L=2μ)
-* M1: NMOS small (W=10μ, L=1μ; gate=d2, source=GND)
-* M2: NMOS large (W=40μ, L=1μ; K=4, gate=drain=d2 diode, source=src)
-* Rs: M2 source 저항 (2kΩ)
-* .NODESET: 활성 평형점 유도 (zero-current 회피)
-.lib "/model.lib" MOS
-VDD vdd 0 DC 5
-M3 d1 d1 vdd vdd pmos4 W=20u L=2u
-M4 d2 d1 vdd vdd pmos4 W=20u L=2u
-M1 d1 d2 0 0 nmos4 W=10u L=1u
-M2 d2 d2 src 0 nmos4 W=40u L=1u
-Rs src 0 2k
-.NODESET V(d1)=3.5 V(d2)=1.2 V(src)=0.05
-.dc TEMP -25 100 5
+.noise V(out) Vin DEC 20 1 100Meg
 .end
 `
   },
 ];
+
 
 function showGallery() {
   buildGalleryContent();
@@ -1137,8 +850,11 @@ window.addEventListener('DOMContentLoaded', () => {
     styleActiveLine: true,
     lineWrapping: false
   });
-  // 초기 netlist는 갤러리의 RC LPF (.tran + .ac 모두 보여주는 입문 예제)
-  const initial = (GALLERY.find(g => g.title.indexOf('RC 저역통과') >= 0) || GALLERY[0]).netlist;
+  // 빈 sandbox로 시작 — 학생이 직접 작성하거나 갤러리에서 튜토리얼 로드
+  const initial = `* 회로를 직접 작성하거나, 헤더의 📚 갤러리에서 튜토리얼을 불러오세요
+* 도움이 필요하면 ❓ 도움말 클릭
+.end
+`;
   cm.setValue(initial);
   cm.on('change', () => { refreshDetected(); saveToLocalStorage(); });
   refreshDetected();
