@@ -1002,6 +1002,8 @@ CodeMirror.defineSimpleMode('spice', {
 let cm;
 let chartViews = {tran: [], dc: [], ac: [], noise: []};
 let activeViewIdx = {tran: 0, dc: 0, ac: 0, noise: 0};
+// 변수 선택 상태 (시뮬레이션 재실행 시 유지). 키 = 변수 이름. 값이 false면 해제됨, 미지정 = 체크됨(기본).
+let varSelections = {tran: {}, dc: {}, ac: {}, noise: {}};
 let viewIdCounter = 0;
 let lastResults = {tran:null, dc:null, ac:null, noise:null};
 let currentWorker = null;
@@ -1253,7 +1255,8 @@ function serializeState() {
                n: v('p-noise-n'), fstart: v('p-noise-fstart'), fstop: v('p-noise-fstop') }
     },
     logHeight: log ? log.offsetHeight : 240,
-    leftWidth: leftPanel ? leftPanel.offsetWidth : null
+    leftWidth: leftPanel ? leftPanel.offsetWidth : null,
+    varSelections: varSelections
   };
 }
 
@@ -1331,6 +1334,14 @@ function applyState(state) {
     document.querySelectorAll('.tab-pane').forEach(pn => pn.classList.toggle('active', pn.id === 'pane-' + activeTab));
     const rk = document.getElementById('run-kind');
     if (rk) rk.textContent = KIND_LABEL[activeTab];
+  }
+  // 5. 변수 선택 상태 (체크박스)
+  if (state.varSelections && typeof state.varSelections === 'object') {
+    for (const k of ['tran','dc','ac','noise']) {
+      if (state.varSelections[k] && typeof state.varSelections[k] === 'object') {
+        varSelections[k] = state.varSelections[k];
+      }
+    }
   }
   refreshDetected();
 }
@@ -2412,12 +2423,19 @@ function buildViewVarList(tab, view, listEl) {
     else if (kind === 'I' && isI) include = true;
     if (!include) return;
 
+    const sel = varSelections[tab];
+    const isChecked = (name in sel) ? !!sel[name] : true;
+
     const lbl = document.createElement('label');
     const cb = document.createElement('input');
     cb.type = 'checkbox';
-    cb.checked = true;
+    cb.checked = isChecked;
     cb.dataset.idx = String(k);
-    cb.addEventListener('change', () => toggleViewVar(view, k, cb.checked));
+    cb.addEventListener('change', () => {
+      varSelections[tab][name] = cb.checked;
+      toggleViewVar(view, k, cb.checked);
+      saveToLocalStorage();
+    });
     const swatch = document.createElement('span');
     swatch.className = 'swatch';
     swatch.style.background = getColor(k);
@@ -2427,6 +2445,9 @@ function buildViewVarList(tab, view, listEl) {
     nm.title = name;
     lbl.appendChild(cb); lbl.appendChild(swatch); lbl.appendChild(nm);
     listEl.appendChild(lbl);
+
+    // 초기 차트 상태가 dataset visible이므로, 저장된 상태가 false면 해당 dataset를 hide
+    if (!isChecked) toggleViewVar(view, k, false);
   });
 }
 
