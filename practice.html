@@ -251,9 +251,10 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 <header>
   <div>
     <h1>🧪 SPICE 실습 페이지</h1>
-    <div class="subtitle">자유 netlist sandbox &nbsp;|&nbsp;
+    <div class="subtitle">© 2026 Sejong University HICS Lab &nbsp;|&nbsp;
       Powered by <a href="https://ngspice.sourceforge.io/" target="_blank" rel="noopener" title="ngspice — BSD-3-Clause license">ngspice</a> <span class="lic">(BSD-3)</span> &nbsp;|&nbsp;
-      <a href="https://www.moafab.kr/css/board/myChip_notice/read" target="_blank" rel="noopener" title="ETRI 0.5μm Analog CMOS PDK — 모아팹 myChip 공지사항">ETRI 0.5μm PDK</a> <span class="lic">(MoaFab myChip)</span>
+      <a href="https://www.moafab.kr/css/board/myChip_notice/read" target="_blank" rel="noopener" title="ETRI 0.5μm Analog CMOS PDK — 모아팹 myChip 공지사항">ETRI 0.5μm PDK</a> <span class="lic">(MoaFab myChip)</span> &nbsp;|&nbsp;
+      <a href="https://github.com/hics-lab/icdesign" target="_blank" rel="noopener" title="MIT License — see LICENSE on the repo"><span class="lic">MIT License</span></a>
     </div>
   </div>
   <div class="hctrl">
@@ -584,6 +585,11 @@ Bin in 0 V = V(vcm) - 0.5*V(vid)</pre>
 
       <!-- ────────── Credits ────────── -->
       <section class="help-section" data-tab="credits">
+        <h3>본 페이지</h3>
+        <p>🧪 <b>SPICE 실습 페이지</b> — © 2026 세종대학교 HICS Lab.<br>
+          <b>MIT License</b> 로 공개. 저작권 표시만 유지하면 사용·수정·재배포 자유.</p>
+        <p>GitHub: <a href="https://github.com/hics-lab/icdesign" target="_blank" rel="noopener">github.com/hics-lab/icdesign</a></p>
+
         <h3>오픈소스 / 공개 자료</h3>
         <ul>
           <li><b>ngspice</b> — BSD-3-Clause license.
@@ -605,6 +611,19 @@ Bin in 0 V = V(vcm) - 0.5*V(vid)</pre>
 </div>
 
 <script>
+/*!
+ * SPICE 실습 페이지
+ * Copyright (c) 2026 Sejong University HICS Lab
+ * Licensed under the MIT License — see LICENSE in the repo.
+ * Source: https://github.com/hics-lab/icdesign
+ *
+ * 사용된 외부 컴포넌트:
+ *   ngspice (BSD-3-Clause)             https://ngspice.sourceforge.io/
+ *   CodeMirror 5 (MIT)                 https://codemirror.net/5/
+ *   Chart.js + chartjs-plugin-zoom (MIT)
+ *   ETRI 0.5μm PDK — MoaFab myChip 공개 자료
+ */
+
 /* ════════════════════════════════════════════════════════════════════
    ETRI 0.5μm MOS 모델 (opamp_design.html 1736-1761에서 복사)
 ═══════════════════════════════════════════════════════════════════════ */
