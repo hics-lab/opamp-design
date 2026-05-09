@@ -264,7 +264,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>tstep <input id="p-tran-tstep" value="1u" placeholder="1u"></label>
           <label>tstop <input id="p-tran-tstop" value="3m" placeholder="3m"></label>
           <span class="hint">예: 1u 3m → <code>.tran 1u 3m</code></span>
-          <button class="apply" onclick="applyParams('tran')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-tran">netlist에 <code>.tran</code>을 추가한 뒤 <b>▶ Run .tran</b>을 눌러주세요.</div>
         <div class="views-container" id="cc-tran" hidden>
@@ -280,7 +279,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>start <input id="p-dc-start" value="0" style="width:50px"></label>
           <label>stop <input id="p-dc-stop" value="5" style="width:50px"></label>
           <label>step <input id="p-dc-step" value="0.01" style="width:55px"></label>
-          <button class="apply" onclick="applyParams('dc')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-dc">netlist에 <code>.dc</code>를 추가한 뒤 <b>▶ Run .dc</b>를 눌러주세요.</div>
         <div class="views-container" id="cc-dc" hidden>
@@ -296,7 +294,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>N <input id="p-ac-n" value="20" style="width:42px"></label>
           <label>fstart <input id="p-ac-fstart" value="1" style="width:55px"></label>
           <label>fstop <input id="p-ac-fstop" value="100Meg" style="width:65px"></label>
-          <button class="apply" onclick="applyParams('ac')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-ac">netlist에 <code>.ac</code>를 추가한 뒤 <b>▶ Run .ac</b>를 눌러주세요.</div>
         <div class="views-container" id="cc-ac" hidden>
@@ -318,7 +315,6 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
           <label>N <input id="p-noise-n" value="20" style="width:42px"></label>
           <label>fstart <input id="p-noise-fstart" value="1" style="width:55px"></label>
           <label>fstop <input id="p-noise-fstop" value="100Meg" style="width:65px"></label>
-          <button class="apply" onclick="applyParams('noise')">netlist에 반영</button>
         </div>
         <div class="empty-msg" id="empty-noise">netlist에 <code>.noise</code>를 추가한 뒤 <b>▶ Run .noise</b>를 눌러주세요.</div>
         <div class="views-container" id="cc-noise" hidden>
