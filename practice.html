@@ -421,6 +421,73 @@ quit
       <li>nested <code>.dc</code> sweep은 1차 sweep만 표시됩니다.</li>
       <li>한 번에 하나의 ngspice 세션만 실행됩니다 (Stop 버튼으로 중단 가능).</li>
     </ul>
+
+    <h3>10. SPICE 소자 / 소스 syntax</h3>
+    <p>ngspice manual 기준 소자 1행 형식 (첫 글자가 소자 종류를 결정):</p>
+<pre>R&lt;name&gt; n+ n- &lt;value&gt;                      ; 저항       (예: R1 in out 1k)
+C&lt;name&gt; n+ n- &lt;value&gt; [IC=&lt;v0&gt;]             ; 커패시터    (예: C1 out 0 100n)
+L&lt;name&gt; n+ n- &lt;value&gt; [IC=&lt;i0&gt;]             ; 인덕터
+D&lt;name&gt; n+ n- &lt;model&gt;                       ; 다이오드
+Q&lt;name&gt; nC nB nE [nS] &lt;model&gt;               ; BJT
+M&lt;name&gt; nD nG nS nB &lt;model&gt; W=&lt;w&gt; L=&lt;l&gt;     ; MOSFET   (예: M1 d g 0 0 nmos4 W=20u L=1u)</pre>
+    <p>독립/종속 소스:</p>
+<pre>V&lt;name&gt; n+ n- &lt;DC value&gt; [AC &lt;mag&gt; [phase]] [stim]  ; 전압원
+I&lt;name&gt; n+ n- &lt;DC value&gt; [AC &lt;mag&gt;] [stim]          ; 전류원
+E&lt;name&gt; n+ n- nc+ nc- &lt;gain&gt;                        ; VCVS (선형만; POLY는 ngspice WASM 미지원)
+B&lt;name&gt; n+ n- V=&lt;expr&gt;                              ; behavioral source — 비선형/수식 입력
+                                                     ; 예: B1 vcm 0 V = V(in1)+V(in2)/2</pre>
+    <p>전압원 stim (PULSE / SIN / EXP / PWL / AC):</p>
+<pre>V1 in 0 DC 0 AC 1                                        ; AC 분석/노이즈용
+V1 in 0 PULSE(V1 V2 TD TR TF PW PER)                     ; 펄스 (예: PULSE(0 1 100u 1n 1n 0.5m 1m))
+V1 in 0 SIN(VO VA FREQ TD THETA)                         ; 정현파
+V1 in 0 EXP(V1 V2 TD1 TAU1 TD2 TAU2)                     ; 지수 응답
+V1 in 0 PWL(t1 v1 t2 v2 ...)                             ; piecewise linear</pre>
+    <p>단위 prefix (대소문자 무관, 다만 <b><code>M</code> = milli, <code>Meg</code> = mega</b>):</p>
+<pre>T = 1e12   G = 1e9    Meg = 1e6   K = 1e3
+M = 1e-3   U = 1e-6   N = 1e-9    P = 1e-12   F = 1e-15</pre>
+    <p>예: <code>1Meg</code> = 1,000,000Ω, <code>1M</code> = 0.001Ω. 흔한 실수.</p>
+    <p>모델 파일 include:</p>
+<pre>.lib "/model.lib" MOS                ; 본 페이지에선 ETRI PDK가 /model.lib로 자동 마운트됨
+                                     ; MOS / DIODE / BJT / RES / CAP 섹션 선택 가능
+.include "/model.lib"                ; 라이브러리가 아닌 일반 include</pre>
+
+    <h3>11. 분석 명령 syntax</h3>
+<pre>* DC sweep — 한 소스를 step 단위로 sweep
+.dc &lt;src&gt; &lt;start&gt; &lt;stop&gt; &lt;step&gt; [&lt;src2&gt; &lt;s2&gt; &lt;e2&gt; &lt;st2&gt;]
+   예: .dc VGS 0 3 0.005
+       .dc VDS 0 5 0.05 VGS 0.5 1.5 0.25     ; nested (외부 sweep만 차트 표시)
+
+* Transient — 시간 영역
+.tran &lt;tstep&gt; &lt;tstop&gt; [&lt;tstart&gt; [&lt;tmax&gt;]] [UIC]
+   예: .tran 1u 3m
+       .tran 10u 5m 1m            ; 1ms 이후만 출력
+       UIC = 초기조건(IC=) 사용, .op 건너뜀
+
+* AC — 주파수 영역 (소형신호; .op 후 small-signal linearization)
+.ac &lt;dec|oct|lin&gt; &lt;Npoints&gt; &lt;fstart&gt; &lt;fstop&gt;
+   예: .ac dec 20 1 1Meg          ; decade당 20점, 1Hz~1MHz
+       .ac lin 100 50 60          ; 50~60Hz 100점
+
+* Noise — 입력 referred / 출력 noise spectrum
+.noise V(&lt;output&gt;[,&lt;ref&gt;]) &lt;input_src&gt; &lt;dec|oct|lin&gt; &lt;N&gt; &lt;fstart&gt; &lt;fstop&gt;
+   예: .noise V(out) Vin DEC 20 1 100Meg
+       - input_src에 반드시 AC=1 명시 (.noise는 AC를 내부 사용)
+       - inoise_spectrum / onoise_spectrum 두 신호 출력</pre>
+
+    <h3>12. 자주 만나는 오류 / 팁</h3>
+    <ul>
+      <li><b>Noise input source has no AC value</b> — <code>.noise</code> 입력 소스에 <code>AC 1</code>을 추가. 예: <code>Vin in 0 DC 1.0 AC 1</code></li>
+      <li><b>MOSFET 모델을 못 찾음</b> — <code>.lib "/model.lib" MOS</code>가 M 소자보다 위 줄에 있어야 함.</li>
+      <li><b>저항이 거의 0Ω으로 동작</b> — <code>1M</code> 썼는지 확인. mega는 <code>1Meg</code>.</li>
+      <li><b>마지막 줄에 <code>.end</code> 누락</b> — 입력 끝을 ngspice가 인식 못해 동작점만 풀고 분석을 건너뜀.</li>
+      <li><b>POLY 사용 시 동작 안 함</b> — ngspice WASM은 XSPICE 기반 POLY를 지원하지 않음. <code>B</code> source로 대체:
+<pre>* 차동 증폭기 입력 (vcm + vid/2, vcm − vid/2)
+Bip ip 0 V = V(vcm) + 0.5*V(vid)
+Bin in 0 V = V(vcm) - 0.5*V(vid)</pre></li>
+      <li><b>AC 결과가 평평한 직선</b> — <code>AC 1</code>이 입력 소스에 없으면 회로가 small-signal로 들뜨지 않음.</li>
+      <li><b>Nested DC sweep</b> — ngspice는 두 변수 모두 sweep하지만 본 페이지 차트는 1차 변수만 표시.</li>
+      <li><b>주석</b> — 첫 줄은 자동으로 title (주석으로 처리). 본문에서는 <code>*</code>로 시작하는 줄, 또는 <code>$</code>·<code>;</code> 이후가 주석.</li>
+    </ul>
   </div>
 </div>
 
