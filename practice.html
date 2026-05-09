@@ -70,6 +70,18 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .left-toolbar .label{font-weight:700;color:var(--primary);font-size:12px;}
 .left-toolbar .spacer{flex:1;}
 
+/* netlist tab bar */
+.nl-tabbar{display:flex;align-items:center;gap:2px;padding:5px 6px 0;background:#f6f8fb;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;}
+.nl-tabbar::-webkit-scrollbar{height:4px;}
+.nl-tab{display:inline-flex;align-items:center;gap:5px;padding:5px 8px 6px;font-size:11.5px;background:#e8eef3;border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;cursor:pointer;max-width:160px;color:var(--text);user-select:none;flex-shrink:0;transition:background .1s;}
+.nl-tab:hover:not(.active){background:#dde6ed;}
+.nl-tab.active{background:#fff;border-bottom:1px solid #fff;margin-bottom:-1px;font-weight:600;color:var(--primary);position:relative;z-index:1;}
+.nl-tab .ttl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+.nl-tab .x{color:var(--muted);padding:0 4px;border-radius:50%;font-size:13px;line-height:1;}
+.nl-tab .x:hover{background:#c0392b;color:#fff;}
+.nl-tab-add{padding:4px 9px;background:none;border:1px dashed var(--border);border-radius:5px 5px 0 0;color:var(--muted);cursor:pointer;font-size:13px;flex-shrink:0;}
+.nl-tab-add:hover{background:#eef2f7;color:var(--primary);border-color:var(--secondary);}
+
 .editor-wrap{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;overflow:hidden;min-height:0;}
 .editor-wrap .CodeMirror{flex:1;height:auto;font-family:'Consolas','Courier New',monospace;font-size:12.5px;line-height:1.45;}
 .cm-spice-comment{color:#7f8c8d;font-style:italic;}
@@ -244,6 +256,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 
   <!-- LEFT -->
   <section class="panel left">
+    <div class="nl-tabbar" id="nl-tabbar"></div>
     <div class="left-toolbar">
       <span class="label">📝 Netlist</span>
       <span id="detected-summary">—</span>
@@ -959,11 +972,9 @@ function buildGalleryContent() {
 function loadGalleryExample(idx) {
   const ex = GALLERY[idx];
   if (!ex) return;
-  cm.setValue(ex.netlist);
-  refreshAllParams();
-  refreshDetected();
+  // 새 탭에 로드 (현재 작업 보존)
+  newNetlistTab(ex.netlist);
   hideGallery();
-  flushSave();
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -993,6 +1004,129 @@ let currentWorker = null;
 let activeTab = 'tran';
 const KIND_LABEL = {tran: '.tran', dc: '.dc', ac: '.ac', noise: '.noise'};
 
+/* ────── Netlist 멀티 탭 ────── */
+const DEFAULT_NETLIST = `* 회로를 직접 작성하거나, 헤더의 📚 갤러리에서 튜토리얼을 불러오세요
+* 도움이 필요하면 ❓ 도움말 클릭
+.end
+`;
+let netlistTabs = [{id: 1, title: 'Untitled 1', content: DEFAULT_NETLIST}];
+let activeNetTab = 0;
+let nextNetTabId = 2;
+let _suspendCmChange = false;  // suppress change-handler during programmatic setValue
+
+function deriveTabTitle(content, fallbackN) {
+  const firstLine = (content || '').split('\n').find(l => l.trim()) || '';
+  const t = firstLine.trim();
+  if (t.startsWith('*')) {
+    const stripped = t.replace(/^\*+\s*/, '').split(/[—–]/)[0].trim();
+    if (stripped && !/^회로를 직접|^도움이 필요/.test(stripped)) {
+      return stripped.length > 22 ? stripped.slice(0, 20) + '…' : stripped;
+    }
+  }
+  return 'Untitled ' + fallbackN;
+}
+
+function renderNetlistTabs() {
+  const bar = document.getElementById('nl-tabbar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  netlistTabs.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'nl-tab' + (i === activeNetTab ? ' active' : '');
+    el.title = t.title;
+    el.innerHTML = '<span class="ttl"></span><span class="x" title="닫기">×</span>';
+    el.querySelector('.ttl').textContent = t.title;
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('x')) { closeNetlistTab(i); return; }
+      switchNetlistTab(i);
+    });
+    bar.appendChild(el);
+  });
+  const add = document.createElement('button');
+  add.className = 'nl-tab-add';
+  add.textContent = '+';
+  add.title = '새 netlist 탭';
+  add.onclick = () => newNetlistTab();
+  bar.appendChild(add);
+}
+
+function _saveActiveTabContent() {
+  if (cm && netlistTabs[activeNetTab]) {
+    netlistTabs[activeNetTab].content = cm.getValue();
+  }
+}
+
+function switchNetlistTab(idx) {
+  if (idx < 0 || idx >= netlistTabs.length) return;
+  if (idx === activeNetTab) return;
+  _saveActiveTabContent();
+  activeNetTab = idx;
+  _suspendCmChange = true;
+  cm.setValue(netlistTabs[idx].content);
+  _suspendCmChange = false;
+  renderNetlistTabs();
+  refreshDetected();
+  refreshAllParams();
+  flushSave();
+}
+
+function newNetlistTab(content) {
+  _saveActiveTabContent();
+  const text = (typeof content === 'string') ? content : DEFAULT_NETLIST;
+  const id = nextNetTabId++;
+  const title = deriveTabTitle(text, id);
+  netlistTabs.push({id, title, content: text});
+  activeNetTab = netlistTabs.length - 1;
+  _suspendCmChange = true;
+  cm.setValue(text);
+  _suspendCmChange = false;
+  renderNetlistTabs();
+  refreshDetected();
+  refreshAllParams();
+  flushSave();
+}
+
+function closeNetlistTab(idx) {
+  if (idx < 0 || idx >= netlistTabs.length) return;
+  const t = netlistTabs[idx];
+  // confirm only if non-empty / non-default
+  const trimmed = (t.content || '').trim();
+  const isDefault = trimmed === DEFAULT_NETLIST.trim();
+  if (!isDefault && trimmed.length > 0) {
+    if (!confirm(`"${t.title}" 탭을 닫을까요?\n저장되지 않은 내용은 사라집니다.`)) return;
+  }
+  if (netlistTabs.length === 1) {
+    // last tab: reset instead of close
+    netlistTabs[0] = {id: nextNetTabId++, title: 'Untitled ' + (nextNetTabId - 1), content: DEFAULT_NETLIST};
+    activeNetTab = 0;
+    _suspendCmChange = true;
+    cm.setValue(DEFAULT_NETLIST);
+    _suspendCmChange = false;
+  } else {
+    netlistTabs.splice(idx, 1);
+    if (activeNetTab >= netlistTabs.length) activeNetTab = netlistTabs.length - 1;
+    else if (idx < activeNetTab) activeNetTab--;
+    else if (idx === activeNetTab) { /* stay on same idx */ }
+    _suspendCmChange = true;
+    cm.setValue(netlistTabs[activeNetTab].content);
+    _suspendCmChange = false;
+  }
+  renderNetlistTabs();
+  refreshDetected();
+  refreshAllParams();
+  flushSave();
+}
+
+function _updateActiveTabTitle() {
+  if (!cm || !netlistTabs[activeNetTab]) return;
+  const t = netlistTabs[activeNetTab];
+  const newTitle = deriveTabTitle(cm.getValue(), t.id);
+  if (newTitle !== t.title) {
+    t.title = newTitle;
+    renderNetlistTabs();
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   cm = CodeMirror.fromTextArea(document.getElementById('editor'), {
     mode: 'spice',
@@ -1003,13 +1137,15 @@ window.addEventListener('DOMContentLoaded', () => {
     styleActiveLine: true,
     lineWrapping: false
   });
-  // 빈 sandbox로 시작 — 학생이 직접 작성하거나 갤러리에서 튜토리얼 로드
-  const initial = `* 회로를 직접 작성하거나, 헤더의 📚 갤러리에서 튜토리얼을 불러오세요
-* 도움이 필요하면 ❓ 도움말 클릭
-.end
-`;
-  cm.setValue(initial);
-  cm.on('change', () => { refreshDetected(); saveToLocalStorage(); });
+  cm.setValue(netlistTabs[0].content);
+  renderNetlistTabs();
+  cm.on('change', () => {
+    if (_suspendCmChange) return;
+    _saveActiveTabContent();
+    _updateActiveTabTitle();
+    refreshDetected();
+    saveToLocalStorage();
+  });
   refreshDetected();
   refreshAllParams();
 
@@ -1087,7 +1223,7 @@ function setupSplitterV() {
    상태 저장/복원 (localStorage + Export/Import)
 ═══════════════════════════════════════════════════════════════════════ */
 const STORAGE_KEY = 'spice-practice-state';
-const STATE_VERSION = 1;
+const STATE_VERSION = 2;
 
 function serializeState() {
   const v = (id) => {
@@ -1096,10 +1232,14 @@ function serializeState() {
   };
   const log = document.getElementById('log-wrap');
   const leftPanel = document.querySelector('.left');
+  // ensure latest editor content is captured before serializing
+  if (cm && netlistTabs[activeNetTab]) netlistTabs[activeNetTab].content = cm.getValue();
   return {
     version: STATE_VERSION,
     savedAt: new Date().toISOString(),
-    netlist: cm ? cm.getValue() : '',
+    netlistTabs: netlistTabs.map(t => ({id: t.id, title: t.title, content: t.content})),
+    activeNetTab: activeNetTab,
+    nextNetTabId: nextNetTabId,
     activeTab: activeTab,
     params: {
       tran:  { tstep: v('p-tran-tstep'), tstop: v('p-tran-tstop') },
@@ -1115,9 +1255,27 @@ function serializeState() {
 
 function applyState(state) {
   if (!state || typeof state !== 'object') return;
-  // 1. netlist
-  if (typeof state.netlist === 'string' && cm) {
+  // 1. netlist tabs (v2) — fall back to single string (v1)
+  if (Array.isArray(state.netlistTabs) && state.netlistTabs.length > 0 && cm) {
+    netlistTabs = state.netlistTabs.map(t => ({
+      id: t.id, title: t.title || 'Untitled', content: t.content || ''
+    }));
+    activeNetTab = (typeof state.activeNetTab === 'number' && state.activeNetTab < netlistTabs.length)
+      ? state.activeNetTab : 0;
+    nextNetTabId = state.nextNetTabId || (Math.max(...netlistTabs.map(t => t.id || 0)) + 1);
+    _suspendCmChange = true;
+    cm.setValue(netlistTabs[activeNetTab].content);
+    _suspendCmChange = false;
+    renderNetlistTabs();
+  } else if (typeof state.netlist === 'string' && cm) {
+    // legacy v1 — wrap into single tab
+    netlistTabs = [{id: 1, title: deriveTabTitle(state.netlist, 1), content: state.netlist}];
+    activeNetTab = 0;
+    nextNetTabId = 2;
+    _suspendCmChange = true;
     cm.setValue(state.netlist);
+    _suspendCmChange = false;
+    renderNetlistTabs();
   }
   // 2. params
   if (state.params) {
@@ -1201,7 +1359,7 @@ function loadFromLocalStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const state = JSON.parse(raw);
-    if (state && state.version === STATE_VERSION) {
+    if (state && (state.version === STATE_VERSION || state.version === 1)) {
       applyState(state);
       return true;
     }
@@ -1342,7 +1500,7 @@ function switchTab(name) {
 }
 
 function clearEditor() {
-  if (confirm('editor 내용을 지울까요?')) cm.setValue('');
+  if (confirm('현재 탭의 내용을 지울까요?')) cm.setValue('');
 }
 
 function clearLog() {
