@@ -1747,6 +1747,10 @@ function runKind(kind) {
   setRunMeta(KIND_LABEL[kind] + ' 시뮬레이션 — ngspice WASM 로드 중…');
   document.getElementById('btn-run').disabled = true;
   document.getElementById('btn-stop').disabled = false;
+  // reset log on each run so each session's output is isolated
+  const _logEl = document.getElementById('log-body');
+  _logEl.textContent = '';
+  _logEl.classList.add('empty');
   appendLog('━━━ ' + KIND_LABEL[kind] + ' 실행 시작 ━━━\n');
   const t0 = performance.now();
 
