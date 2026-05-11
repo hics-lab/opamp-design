@@ -66,20 +66,18 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .resizer-h:hover,.resizer-h.dragging{background:var(--secondary);}
 .resizer-h::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:2px;background:#95a5a6;border-radius:1px;}
 .resizer-h:hover::before,.resizer-h.dragging::before{background:#fff;}
-.left-toolbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
-.left-toolbar .label{font-weight:700;color:var(--primary);font-size:12px;}
-.left-toolbar .spacer{flex:1;}
-
-/* netlist tab bar */
-.nl-tabbar{display:flex;align-items:center;gap:2px;padding:5px 6px 0;background:#f6f8fb;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;}
-.nl-tabbar::-webkit-scrollbar{height:4px;}
-.nl-tab{display:inline-flex;align-items:center;gap:5px;padding:5px 8px 6px;font-size:11.5px;background:#e8eef3;border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;cursor:pointer;max-width:160px;color:var(--text);user-select:none;flex-shrink:0;transition:background .1s;}
+/* netlist tab bar — tabs + inline toolbar on one row */
+.nl-tabbar{display:flex;align-items:flex-end;gap:8px;padding:4px 8px 0;background:#f6f8fb;border-bottom:1px solid var(--border);flex-shrink:0;}
+.nl-tabs{display:flex;align-items:flex-end;gap:2px;flex:1;min-width:0;overflow-x:auto;}
+.nl-tabs::-webkit-scrollbar{height:4px;}
+.nl-toolbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);flex-shrink:0;padding-bottom:4px;}
+.nl-tab{display:inline-flex;align-items:center;gap:5px;padding:4px 8px 5px;font-size:11.5px;background:#e8eef3;border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;cursor:pointer;max-width:160px;color:var(--text);user-select:none;flex-shrink:0;transition:background .1s;}
 .nl-tab:hover:not(.active){background:#dde6ed;}
 .nl-tab.active{background:#fff;border-bottom:1px solid #fff;margin-bottom:-1px;font-weight:600;color:var(--primary);position:relative;z-index:1;}
 .nl-tab .ttl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
 .nl-tab .x{color:var(--muted);padding:0 4px;border-radius:50%;font-size:13px;line-height:1;}
 .nl-tab .x:hover{background:#c0392b;color:#fff;}
-.nl-tab-add{padding:4px 9px;background:none;border:1px dashed var(--border);border-radius:5px 5px 0 0;color:var(--muted);cursor:pointer;font-size:13px;flex-shrink:0;}
+.nl-tab-add{padding:3px 9px;background:none;border:1px dashed var(--border);border-radius:5px 5px 0 0;color:var(--muted);cursor:pointer;font-size:13px;flex-shrink:0;}
 .nl-tab-add:hover{background:#eef2f7;color:var(--primary);border-color:var(--secondary);}
 
 .editor-wrap{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;overflow:hidden;min-height:0;}
@@ -271,12 +269,12 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 
   <!-- LEFT -->
   <section class="panel left">
-    <div class="nl-tabbar" id="nl-tabbar"></div>
-    <div class="left-toolbar">
-      <span class="label">📝 Netlist</span>
-      <span id="detected-summary">—</span>
-      <span class="spacer"></span>
-      <button class="btn btn-sec" onclick="clearEditor()">Clear</button>
+    <div class="nl-tabbar">
+      <div class="nl-tabs" id="nl-tabbar"></div>
+      <div class="nl-toolbar">
+        <span id="detected-summary">—</span>
+        <button class="btn btn-sec" onclick="clearEditor()">Clear</button>
+      </div>
     </div>
 
     <div class="editor-wrap">
