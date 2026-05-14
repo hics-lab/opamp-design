@@ -2613,10 +2613,14 @@ function integrateNoiseBand(rows, varIdx, f1, f2) {
   return Math.sqrt(Math.max(acc, 0));
 }
 
-// SPICE-style number parse (e.g. "1Meg", "100k", "1u")
+// SPICE-style number parse (e.g. "1Meg", "100k", "1u", "10kHz")
+// 후행 단위 (Hz, Ω, ohm, s) 는 무시하고 SI prefix 만 본다
 function parseSiNum(s) {
   if (typeof s !== 'string') return Number(s);
-  const m = s.trim().match(/^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*([a-zA-Zμ]*)$/);
+  let t = s.trim().replace(/\s+/g, '');
+  // strip common unit suffixes — order matters (Meg/Hz 같은 다중자 먼저)
+  t = t.replace(/(?:hz|Ω|ohm|sec)$/i, '');
+  const m = t.match(/^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)([a-zA-Zμ]*)$/);
   if (!m) return NaN;
   const x = parseFloat(m[1]);
   const suf = m[2].toLowerCase().replace('μ', 'u');
@@ -2652,21 +2656,50 @@ function detectNoiseInputType() {
 function buildNoiseIntegratePanel(view) {
   const panel = document.createElement('div');
   panel.className = 'noise-integrate';
-  panel.innerHTML =
-    '<span class="label">∫ Noise power</span>' +
-    '<span>f₁ <input type="text" class="ni-f1" value="">Hz</span>' +
-    '<span>f₂ <input type="text" class="ni-f2" value="">Hz</span>' +
-    '<span class="sep">→</span>' +
-    '<span class="res">—</span>';
+
+  const lbl = document.createElement('span');
+  lbl.className = 'label';
+  lbl.textContent = '∫ Noise power';
+  panel.appendChild(lbl);
+
+  function makeRangeBox(prefix) {
+    const wrap = document.createElement('span');
+    wrap.appendChild(document.createTextNode(prefix + ' '));
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.autocomplete = 'off';
+    wrap.appendChild(inp);
+    wrap.appendChild(document.createTextNode(' Hz'));
+    return [wrap, inp];
+  }
+  const [f1Wrap, f1in] = makeRangeBox('f₁');
+  const [f2Wrap, f2in] = makeRangeBox('f₂');
+  panel.appendChild(f1Wrap);
+  panel.appendChild(f2Wrap);
+
+  const sep = document.createElement('span');
+  sep.className = 'sep';
+  sep.textContent = '→';
+  panel.appendChild(sep);
+
+  const res = document.createElement('span');
+  res.className = 'res';
+  res.textContent = '—';
+  panel.appendChild(res);
+
+  // store direct refs (more reliable than querySelector across re-renders)
   view._panel = panel;
-  const f1in = panel.querySelector('.ni-f1');
-  const f2in = panel.querySelector('.ni-f2');
-  const onEdit = () => recalcNoiseIntegration(view);
-  // 'input' fires on every keystroke; 'change' on blur/Enter (belt-and-suspenders)
-  f1in.addEventListener('input',  onEdit);
-  f2in.addEventListener('input',  onEdit);
-  f1in.addEventListener('change', onEdit);
-  f2in.addEventListener('change', onEdit);
+  view._f1in = f1in;
+  view._f2in = f2in;
+  view._resEl = res;
+
+  const handler = () => recalcNoiseIntegration(view);
+  // listen to every event type that might signal an edit
+  ['input', 'change', 'keyup', 'paste'].forEach(ev => {
+    f1in.addEventListener(ev, handler);
+    f2in.addEventListener(ev, handler);
+  });
+
   return panel;
 }
 
@@ -2678,29 +2711,23 @@ function fillNoiseIntegrationDefaults(view) {
     recalcNoiseIntegration(view);
     return;
   }
-  const f1in = view._panel.querySelector('.ni-f1');
-  const f2in = view._panel.querySelector('.ni-f2');
   const fmin = parsed.rows[0][0], fmax = parsed.rows[parsed.rows.length-1][0];
-  if (!f1in.value.trim()) f1in.value = spiceNumFormat(fmin, 4);
-  if (!f2in.value.trim()) f2in.value = spiceNumFormat(fmax, 4);
+  if (!view._f1in.value.trim()) view._f1in.value = spiceNumFormat(fmin, 4);
+  if (!view._f2in.value.trim()) view._f2in.value = spiceNumFormat(fmax, 4);
   recalcNoiseIntegration(view);
 }
 
 // 사용자 입력 변화 시마다 호출 — 입력값을 절대 덮어쓰지 않고 계산만 수행
 function recalcNoiseIntegration(view) {
-  if (!view || !view._panel) return;
-  const panel = view._panel;
+  if (!view || !view._resEl) return;
   const parsed = lastResults.noise;
-  const f1in = panel.querySelector('.ni-f1');
-  const f2in = panel.querySelector('.ni-f2');
-  const resEl = panel.querySelector('.res');
-  if (!resEl) return;
+  const resEl = view._resEl;
   if (!parsed || !parsed.rows || parsed.rows.length < 2) {
     resEl.textContent = '데이터 없음';
     return;
   }
-  const f1 = parseSiNum(f1in.value);
-  const f2 = parseSiNum(f2in.value);
+  const f1 = parseSiNum(view._f1in.value);
+  const f2 = parseSiNum(view._f2in.value);
   if (!isFinite(f1) || !isFinite(f2) || !(f2 > f1)) {
     resEl.textContent = 'f₁ < f₂ 인 양수 값 필요';
     return;
@@ -2714,7 +2741,7 @@ function recalcNoiseIntegration(view) {
     ' &nbsp;|&nbsp; onoise = <b>' + fmt(onoise, 'V') + '</b>';
 }
 
-// 호환: 기존 호출 지점 (addView 안) 에서 한 번에 모두 처리
+// 호환 (기존 호출지점)
 function updateNoiseIntegration(view) { fillNoiseIntegrationDefaults(view); }
 
 function chartOpts(xlab, ylab, xLog, yLog) {
