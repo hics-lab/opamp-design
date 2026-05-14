@@ -81,7 +81,7 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .nl-tab-add:hover{background:#eef2f7;color:var(--primary);border-color:var(--secondary);}
 
 .editor-wrap{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;overflow:hidden;min-height:0;}
-.editor-wrap .CodeMirror{flex:1;height:auto;font-family:'Consolas','Courier New',monospace;font-size:12.5px;line-height:1.45;}
+.editor-wrap .CodeMirror{height:100%;font-family:'Consolas','Courier New',monospace;font-size:12.5px;line-height:1.45;}
 .cm-spice-comment{color:#7f8c8d;font-style:italic;}
 .cm-spice-dot{color:#8e44ad;font-weight:700;}
 .cm-spice-num{color:#2980b9;}
@@ -2659,26 +2659,46 @@ function buildNoiseIntegratePanel(view) {
     '<span class="sep">→</span>' +
     '<span class="res">—</span>';
   view._panel = panel;
-  panel.querySelector('.ni-f1').addEventListener('input', () => updateNoiseIntegration(view));
-  panel.querySelector('.ni-f2').addEventListener('input', () => updateNoiseIntegration(view));
+  const f1in = panel.querySelector('.ni-f1');
+  const f2in = panel.querySelector('.ni-f2');
+  const onEdit = () => recalcNoiseIntegration(view);
+  // 'input' fires on every keystroke; 'change' on blur/Enter (belt-and-suspenders)
+  f1in.addEventListener('input',  onEdit);
+  f2in.addEventListener('input',  onEdit);
+  f1in.addEventListener('change', onEdit);
+  f2in.addEventListener('change', onEdit);
   return panel;
 }
 
-function updateNoiseIntegration(view) {
+// 패널이 처음 만들어질 때 한 번만 호출 — 빈 입력에 데이터 범위로 기본값 채움
+function fillNoiseIntegrationDefaults(view) {
   if (!view || !view._panel) return;
   const parsed = lastResults.noise;
+  if (!parsed || !parsed.rows || parsed.rows.length < 2) {
+    recalcNoiseIntegration(view);
+    return;
+  }
+  const f1in = view._panel.querySelector('.ni-f1');
+  const f2in = view._panel.querySelector('.ni-f2');
+  const fmin = parsed.rows[0][0], fmax = parsed.rows[parsed.rows.length-1][0];
+  if (!f1in.value.trim()) f1in.value = spiceNumFormat(fmin, 4);
+  if (!f2in.value.trim()) f2in.value = spiceNumFormat(fmax, 4);
+  recalcNoiseIntegration(view);
+}
+
+// 사용자 입력 변화 시마다 호출 — 입력값을 절대 덮어쓰지 않고 계산만 수행
+function recalcNoiseIntegration(view) {
+  if (!view || !view._panel) return;
   const panel = view._panel;
+  const parsed = lastResults.noise;
   const f1in = panel.querySelector('.ni-f1');
   const f2in = panel.querySelector('.ni-f2');
   const resEl = panel.querySelector('.res');
+  if (!resEl) return;
   if (!parsed || !parsed.rows || parsed.rows.length < 2) {
     resEl.textContent = '데이터 없음';
     return;
   }
-  // initialize defaults to data range if empty
-  const fmin = parsed.rows[0][0], fmax = parsed.rows[parsed.rows.length-1][0];
-  if (!f1in.value.trim()) f1in.value = spiceNumFormat(fmin, 4);
-  if (!f2in.value.trim()) f2in.value = spiceNumFormat(fmax, 4);
   const f1 = parseSiNum(f1in.value);
   const f2 = parseSiNum(f2in.value);
   if (!isFinite(f1) || !isFinite(f2) || !(f2 > f1)) {
@@ -2693,6 +2713,9 @@ function updateNoiseIntegration(view) {
     'inoise = <b>' + fmt(inoise, inUnit) + '</b>' +
     ' &nbsp;|&nbsp; onoise = <b>' + fmt(onoise, 'V') + '</b>';
 }
+
+// 호환: 기존 호출 지점 (addView 안) 에서 한 번에 모두 처리
+function updateNoiseIntegration(view) { fillNoiseIntegrationDefaults(view); }
 
 function chartOpts(xlab, ylab, xLog, yLog) {
   const tickCb = function(value) { return engFormat(value, 3); };
