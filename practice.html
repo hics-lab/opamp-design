@@ -2694,7 +2694,10 @@ function buildNoiseIntegratePanel(view) {
   view._f2in = f2in;
   view._resEl = res;
 
-  const handler = () => recalcNoiseIntegration(view);
+  const handler = (e) => {
+    console.log('[noise-integrate]', e.type, 'on', e.target === f1in ? 'f1' : 'f2', '→', e.target.value);
+    recalcNoiseIntegration(view);
+  };
   // listen to every event type that might signal an edit
   ['input', 'change', 'keyup', 'paste'].forEach(ev => {
     f1in.addEventListener(ev, handler);
@@ -2721,23 +2724,24 @@ function fillNoiseIntegrationDefaults(view) {
 // 사용자 입력 변화 시마다 호출 — 입력값을 절대 덮어쓰지 않고 계산만 수행
 function recalcNoiseIntegration(view) {
   if (!view || !view._resEl) return;
+  view._recalcCount = (view._recalcCount || 0) + 1;
   const parsed = lastResults.noise;
   const resEl = view._resEl;
   if (!parsed || !parsed.rows || parsed.rows.length < 2) {
-    resEl.textContent = '데이터 없음';
+    resEl.textContent = '데이터 없음 (#' + view._recalcCount + ')';
     return;
   }
   const f1 = parseSiNum(view._f1in.value);
   const f2 = parseSiNum(view._f2in.value);
   if (!isFinite(f1) || !isFinite(f2) || !(f2 > f1)) {
-    resEl.textContent = 'f₁ < f₂ 인 양수 값 필요';
+    resEl.textContent = 'f₁ < f₂ 인 양수 값 필요 (#' + view._recalcCount + ')';
     return;
   }
   const inoise = integrateNoiseBand(parsed.rows, 1, f1, f2);
   const onoise = integrateNoiseBand(parsed.rows, 2, f1, f2);
   const inUnit = (detectNoiseInputType() === 'I') ? 'A' : 'V';
   const fmt = (v, u) => v == null ? '—' : engFormat(v, 5) + u + '<sub>rms</sub>';
-  const band = '<span class="band">[' + engFormat(f1, 3) + ' → ' + engFormat(f2, 3) + ' Hz]</span>';
+  const band = '<span class="band">[' + engFormat(f1, 3) + ' → ' + engFormat(f2, 3) + ' Hz, #' + view._recalcCount + ']</span>';
   resEl.innerHTML =
     'inoise = <b>' + fmt(inoise, inUnit) + '</b>' +
     ' &nbsp;|&nbsp; onoise = <b>' + fmt(onoise, 'V') + '</b>' +
