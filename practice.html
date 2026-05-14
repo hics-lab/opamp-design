@@ -161,7 +161,9 @@ select.btn{appearance:none;padding-right:22px;background-image:linear-gradient(4
 .noise-integrate{flex-shrink:0;padding:7px 10px;background:#f6f8fb;border:1px solid var(--border);border-radius:5px;font-size:11.5px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
 .noise-integrate .label{font-weight:700;color:var(--primary);}
 .noise-integrate input[type="text"]{width:72px;padding:2px 5px;font-size:11.5px;font-family:Consolas,monospace;border:1px solid var(--border);border-radius:3px;}
-.noise-integrate .res{font-family:Consolas,monospace;color:#34495e;}
+.noise-integrate .res{font-family:Consolas,monospace;color:#34495e;transition:background-color .4s ease-out;border-radius:3px;padding:1px 4px;}
+.noise-integrate .res.flash{background-color:#fff3cd;animation:noiseFlash .5s ease-out;}
+@keyframes noiseFlash{0%{background-color:#ffe066;}100%{background-color:transparent;}}
 .noise-integrate .res b{color:#c0392b;}
 .noise-integrate .sep{color:var(--muted);}
 
@@ -2739,6 +2741,10 @@ function recalcNoiseIntegration(view) {
   resEl.innerHTML =
     'inoise = <b>' + fmt(inoise, inUnit) + '</b>' +
     ' &nbsp;|&nbsp; onoise = <b>' + fmt(onoise, 'V') + '</b>';
+  // 시각적 피드백: 재계산이 일어났음을 사용자가 확인할 수 있도록 잠깐 색상 변화
+  resEl.classList.remove('flash');
+  void resEl.offsetWidth;       // force reflow so the next class add re-triggers animation
+  resEl.classList.add('flash');
 }
 
 // 호환 (기존 호출지점)
